@@ -15,13 +15,13 @@ Optimization is the modeling language in which modern data science, machine lear
 * Optimization-based formulations of statistical estimation and inverse problems in data science; predictive and generative models in machine learning; and control, bandit, and reinforcement learning problems in sequential decision-making. 
 * A high-level tour of the foundations of mathematical optimization, viewed as an algorithmic discipline, and what to expect from theory; key considerations such as convexity, smoothness, saddle points, and stochasticity; classical formulations, such as linear, quadratic, and semidefinite programs; numerical solvers such as CVXPY.
 * Popular optimization methods such as (online and stochastic) gradient methods, (quasi) Newton methods, algorithmic extensions to constrained, regularized, and distributed problems, as well as optimization methods that preserve privacy of sensitive data. 
-Modern software libraries such as PyTorch and Jax and the principles underlying "automatic differentiation" techniques. Best practices in tuning optimization methods, e.g., in deep learning problems.
+* Modern software libraries such as PyTorch and Jax and the principles underlying "automatic differentiation" techniques. Best practices in tuning optimization methods, e.g., in deep learning problems.
 By the end of this course, you will become an intelligent consumer of numerical methods and software for solving modern optimization problems. 
 
 ## Pre-requisites
-Basic calculus and linear algebra (Math 2400)
-Basic Probability (Stat 4300)
-Programming experience in a scripting language such as Python. Basic comfort in iteration and functions. 
+* Basic calculus and linear algebra (Math 2400)
+* Basic Probability (Stat 4300)
+* Programming experience in a scripting language such as Python. Basic comfort in iteration and functions. 
 
 ## Grading
 Homework (20%). There will be approximately three homework assignments on which you will demonstrate your understanding of the theory and programming components of the course. Gradescope will be used for homework submission and grading.
