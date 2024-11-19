@@ -1,6 +1,9 @@
 # Stat 4830: Numerical optimization for data science and machine learning 
 
-AKA: How to train your model
+AKA: 
+1. How to train your model
+2. Optimization in PyTorch
+3. Intro to graduate student descent
 
 See a rough outline of the course [here](rough_outline.md).
 
