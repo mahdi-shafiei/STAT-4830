@@ -2,6 +2,8 @@
 
 AKA: How to train your model
 
+See a rough outline of the course [here](rough_outline.md).
+
 ## Table of Contents
 - [Overview](#overview)
 - [Pre-requisites](#pre-requisites)
