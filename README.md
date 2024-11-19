@@ -3,9 +3,14 @@
 AKA: 
 1. How to train your model
 2. Optimization in PyTorch
-3. Intro to graduate student descent
 
 See a rough outline of the course [here](rough_outline.md).
+
+## High-level thoughts on the course
+
+This is an experimental undergraduate course meant for students who are (roughly) in their junior or senior year. By the end of the course, my goal is for you to be able to intelligently **apply numerical optimization techniques** in a research project in machine learning, data science, or related fields. We will discuss optimization theory a bit in the course, but that will not be the focus.
+
+There is a l
 
 ## Table of Contents
 - [Overview](#overview)
