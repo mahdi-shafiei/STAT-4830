@@ -24,18 +24,23 @@ By the end of this course, you will become an intelligent consumer of numerical 
 * Programming experience in a scripting language such as Python. Basic comfort in iteration and functions. 
 
 ## Grading
-Homework (20%). There will be approximately three homework assignments on which you will demonstrate your understanding of the theory and programming components of the course. Gradescope will be used for homework submission and grading.
-Quizzes (20%). Regular quizzes will be administered throughout the course. 
-Course project (60%). Students will work together in groups of 3-5 students. The size of the team will be taken into account when assigning grades. Larger teams must have more substantial projects. Project teams will be formed in the first four weeks of the semester. There are a series of milestones. 
-(10%) Initial project proposal.
-(10%) Midterm project presentation. 
-(40%) Final project report, presentation, and software deliverable (details below).
+Tentative breakdown:
+
+* **Homework (20%)**. There will be approximately two homework assignments on which you will demonstrate your understanding of the theory and programming components of the course. Gradescope will be used for homework submission and grading.
+* **Quizzes (20%)**. Regular quizzes will be administered throughout the course. 
+* **Course project (60%)**. Students will work together in groups of 3-5 students. The size of the team will be taken into account when assigning grades. Larger teams must have more substantial projects. Project teams will be formed in the first four weeks of the semester. There are a series of milestones. 
+  * (10%) Initial project proposal.
+  * (10%) Midterm project presentation. 
+  * (40%) Final project report, presentation, and software deliverable (details below).
 
 ### Course project details
 In the course project, you will apply the optimization skills you learned in the course. For example, your final project could include: 
 * Training/fine-tuning a model: A detailed write-up of your strategy for training or fine-tuning a model (e.g., language, code, math, or vision model). Describe failures, successes, and rabbit holes. Illustrate the use of the final model. Use GPUs to scale up. Compare multiple optimization methods and choose one with the "best" performance.
-Reproducibility: A detailed write-up of your attempt to reproduce, falsify, or improve numerical results from the optimization literature. 
-Educational tools and software: Educational resources illustrating advanced concepts related to but not covered in the course material. The project should be polished: the instructor should be comfortable including the deliverable in future versions of the course with little to no modification. 
+* Reproducibility: A detailed write-up of your attempt to reproduce, falsify, or improve numerical results from the optimization literature. 
+* Augmenting an existing research project: Let's say you're already working on a research project with, say, Penn faculty that includes an optimization component. We can likely find a way align your project in the course with your research project by improving the optimization component of your project. We will have to discuss a bit to make sure that the optimization component is extensive enough for course credit.
+* Improving optimizers on an existing/new benchmark: Recently, there have been several benchmarks proposed for optimization methods in ML. For example, (1) in [Modded-NanoGPT repo](https://github.com/KellerJordan/modded-nanogpt), some independent researchers are attempting to train small versions of GPT as fast as possible; (2) in [the AlgoPerf repo](https://github.com/mlcommons/algorithmic-efficiency) the ML Commons project is benchmarking optimization methods for training deep learning models. A potential project is to improve existing methods on such benchmarks or develop your own and set the inital records. 
+* Educational tools and software: Educational resources illustrating advanced concepts related to but not covered in the course material. The project should be polished: the instructor should be comfortable including the deliverable in future versions of the course with little to no modification. 
+
 I will post more project ideas in the course's first weeks, adapted to student interests. Each project must include a Google Colab (or equivalent) walkthrough of your results and claims. I must approve the scope of the project.
 
 ### Large language models policy
