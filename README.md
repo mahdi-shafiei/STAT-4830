@@ -8,9 +8,10 @@ See a rough outline of the course [here](rough_outline.md).
 
 ## High-level thoughts on the course
 
-This is an experimental undergraduate course meant for students who are (roughly) in their junior or senior year. By the end of the course, my goal is for you to be able to intelligently **apply numerical optimization techniques** in a research project in machine learning, data science, or related fields. We will discuss optimization theory a bit in the course, but that will not be the focus.
-
-There is a l
+* **Who is this course meant for?** This is an experimental undergraduate course meant for students who are (roughly) in their junior or senior year. 
+* **What is the goal of the course?** By the end of the course, my goal is for you to be able to **intelligently apply numerical optimization techniques** in a research project in machine learning, data science, or related fields. We will discuss optimization theory a bit in the course, but that will not be the focus.
+* **Production vs Research-level code?** We will mainly be coding python notebooks, developing research-level code that focuses on the intricaces of the optimization methods. Taking research level code to production is a separate skill that we will not focus on in this course. 
+* **Are there similar courses at Penn or other universities?** Not that I am aware of -- if you find some let me know! I will be developing this course from scratch and will be adapting to student interests as we go.
 
 ## Table of Contents
 - [Overview](#overview)
