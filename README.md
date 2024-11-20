@@ -1,4 +1,4 @@
-# Stat 4830: Numerical optimization for data science and machine learning 
+# STAT 4830: Numerical optimization for data science and machine learning 
 
 AKA: 
 1. How to train your model
