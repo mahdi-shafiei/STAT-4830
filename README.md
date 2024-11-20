@@ -4,14 +4,15 @@ AKA:
 1. How to train your model
 2. Optimization in PyTorch
 
-See a rough outline of the course [here](rough_outline.md).
+See a rough outline of the course [here](rough_outline.md). 
 
 ## High-level thoughts on the course
 
-* **Who is this course meant for?** This is an experimental undergraduate course meant for students who are (roughly) in their junior or senior year. The course might also be beneficial to PhD students who wish to apply optimization techniques in their research.
+* **Who is this course meant for?** This is an experimental undergraduate course meant for students who are (roughly) in their junior or senior year. The course should also be beneficial to PhD students who wish to apply optimization techniques in their research.
 * **What is the goal of the course?** By the end of the course, my goal is for you to be able to *intelligently apply numerical optimization techniques* in a research project in machine learning, data science, or related fields. We will discuss optimization theory in the course, but that will not be the focus.
 * **Production vs. Research-level code?** We will mainly be coding Python notebooks developing research-level code that focuses on the intricacies of optimization methods. Taking research-level code to production is a separate skill that we will not focus on in this course. 
 * **Are there similar courses at Penn or other universities?** Not that I am aware of—if you find some, let me know! I will develop this course from scratch and adapt it to student interests as we go.
+* **Which IDE should I use?** For local development, use [Cursor](https://www.cursor.com/). For remote development, use [Google Colab](https://colab.research.google.com/). 
 
 ## Table of Contents
 - [Overview](#overview)
@@ -20,6 +21,7 @@ See a rough outline of the course [here](rough_outline.md).
 - [Course project details](#course-project-details)
 - [Large language models policy](#large-language-models-policy)
 - [Textbooks, readings and software libraries](#textbooks-readings-and-software-libraries)
+
 
 ## Overview 
 Optimization is the modeling language in which modern data science, machine learning, and sequential decision-making problems are formulated and solved numerically. This course will teach you how to formulate these problems mathematically, choose appropriate algorithms to solve them, and implement and tune the algorithms in PyTorch. Tentative topics include:
@@ -58,7 +60,7 @@ I will post more project ideas adapted to student interests in the course's firs
 ### Large language models policy
 You can use large language models in all your coursework unless I explicitly forbid them. This includes models from OpenAI, Anthropic, Google, and others. However, I recommend that you do not fully trust their output.
 
-## Textbooks, readings and software libraries
+## Textbooks, readings, and software libraries
 This course material will be self-contained outside of the prerequisites, but there will be no official textbook. Some material will draw on recent research published in academic conferences and journals. Some will draw on software libraries that are mature or in development. Below, I have instead listed several resources that we may draw – more will be added throughout the course:
 
 ### Optimization
