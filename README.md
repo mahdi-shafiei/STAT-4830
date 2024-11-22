@@ -4,7 +4,9 @@ AKA:
 1. How to train your model
 2. Optimization in PyTorch
 
-*I'm currently developing this course for Spring 2025. See a rough outline of the course [here](rough_outline.md).* 
+> I'm currently developing this course for Spring 2025. I am literally pushing my incomplete thoughts to this public repo as soon as I have them (lol!). So be prepared for things to look rough until the semester starts.
+
+*See a rough outline of the course [here](rough_outline.md).* 
 
 ## High-level thoughts on the course
 
