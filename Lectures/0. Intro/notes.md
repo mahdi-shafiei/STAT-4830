@@ -17,14 +17,23 @@ Let's unpack this.
 
 Let's say we have a problem we want to solve or a goal we want to achieve in the real world. We want to do so in the "best" way possible while respecting some constraints. 
 
-Translating this into an optimization problem requires us to have thought clearly enough about our goals that we that we can answer the following questions:
+Translating this into an optimization problem requires us to have thought clearly enough about our goals that we can answer the following questions:
 * How can we encode the decision we wish to make or strategy we wish to take (or an approximation thereof) as a list of numbers (e.g., a vector).
 * How can we formulate a metric that measures how close we are to the goal or solution?
 * How can we formulate the constraints that bound the actions we can take?
 
-### Main application areas: Data science, machine learning, and sequential decision-making
+Going from a real-world problem to an optimization formulation is the *modeling processing.* It often requires multiple iterations and communication with domain experts. It is more art than science. 
 
+The application areas of this course mostly have preexisting mathematical formulations that you can start from. 
 
+### Application areas: Data science, machine learning, and sequential decision-making
+
+In this course, we will focus on three application areas: 
+1. Data science (e.g., statistical estimation, inverse problems)
+2. Machine learning (e.g., predictive modeling, generative modeling)
+3. Sequential decision-making (e.g., control, bandits, reinforcement learning)
+
+We will spend a little time discussing the mathematical formulations of these problems.
 
 <!-- 
 > This course will teach you how to formulate these problems mathematically, choose appropriate algorithms to solve them, and implement and tune the algorithms in PyTorch. Tentative topics include:
