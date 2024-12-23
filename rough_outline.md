@@ -44,7 +44,7 @@
 - Jacobians and the chain rule 
 - Formal gradients of nondifferentiable functions
 
-## You will never differentiate again
+## You will never differentiate by hand again
 ### Formal introduction to auto differentiation
 - Software: 
   - The details: Micrograd (https://github.com/karpathy/micrograd)

@@ -5,8 +5,6 @@
 - Deliverables  
 - Expectations and learning outcomes  
 
----
-
 ## What Is Optimization?
 
 In the syllabus, I mentioned:
@@ -20,11 +18,10 @@ Let's unpack what that means. Suppose we have a real-world problem or a goal we 
 
 2. **Define an Objective Function**  
    We then formulate a metric to measure how close we are to achieving our goal. If the goal is to minimize cost or error, we could write $\min_x f(x)$. For example, we might minimize 
-   
+
    $$
    f(x) = (x_1 - 100)^2 + (x_2 - 50)^2
-   $$
-
+   $$ 
    to keep the budgets near some target values.
 
 3. **Identify Relevant Constraints**  
@@ -32,7 +29,6 @@ Let's unpack what that means. Suppose we have a real-world problem or a goal we 
 
 This process—called *optimization modeling*—often involves creativity and iteration. Real-world complexity requires you to rethink which objectives and constraints really matter, and you might consult domain experts to confirm whether your formulation makes sense.
 
----
 
 ## Application Areas and Their Optimization Goals
 
