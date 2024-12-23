@@ -19,7 +19,11 @@ Let's unpack what that means. Suppose we have a real-world problem or a goal we 
    We need to encode our decision or strategy (or an approximation of it) as a list of numbers (e.g., a vector). For instance, if we're allocating resources between two projects, we might define $x = (x_1, x_2)$, where $x_1$ is the budget for project 1 and $x_2$ for project 2.
 
 2. **Define an Objective Function**  
-   We then formulate a metric to measure how close we are to achieving our goal. If the goal is to minimize cost or error, we could write $\min_x f(x)$. For example, we might minimize $$f(x) = (x_1 - 100)^2 + (x_2 - 50)^2$$
+   We then formulate a metric to measure how close we are to achieving our goal. If the goal is to minimize cost or error, we could write $\min_x f(x)$. For example, we might minimize 
+   
+   $$
+   f(x) = (x_1 - 100)^2 + (x_2 - 50)^2
+   $$
 
    to keep the budgets near some target values.
 
