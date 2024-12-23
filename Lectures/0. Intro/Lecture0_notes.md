@@ -20,7 +20,9 @@ Let's unpack what that means. Suppose we have a real-world problem or a goal we 
 
 2. **Define an Objective Function**  
    We then formulate a metric to measure how close we are to achieving our goal. If the goal is to minimize cost or error, we could write $\min_x f(x)$. For example, we might minimize
-   $$f(x) = (x_1 - 100)^2 + (x_2 - 50)^2$$
+   $$
+   f(x) = (x_1 - 100)^2 + (x_2 - 50)^2
+   $$
    to keep the budgets near some target values.
 
 3. **Identify Relevant Constraints**  
