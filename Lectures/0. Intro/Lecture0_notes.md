@@ -1,33 +1,56 @@
-# Lecture 0: Intro to the course
+# Lecture 0: Intro to the Course
 
-Outline: 
-* Content 
-* Deliverables 
-* Expectations and learning outcomes
+**Outline**  
+- Content  
+- Deliverables  
+- Expectations and learning outcomes  
 
-## What is optimization? 
+---
 
-In the syllabus, I wrote: 
+## What Is Optimization?
 
-> Optimization is the modeling language in which modern data science, machine learning, and sequential decision-making problems are formulated and solved numerically. 
+In the syllabus, I mentioned:
 
-Let's unpack this. 
+> Optimization is the modeling language in which modern data science, machine learning, and sequential decision-making problems are formulated and solved numerically.
 
-Let's say we have a problem we want to solve or a goal we want to achieve in the real world. We want to do so in the "best" way possible while respecting some constraints. 
+Let's unpack what that means. Suppose we have a real-world problem or a goal we want to achieve in the best possible way, subject to certain constraints. To do this, we have to:
 
-Translating this into an optimization problem requires us to have thought clearly enough about our goals that we can answer the following questions:
-* How can we encode the decision we wish to make or strategy we wish to take (or an approximation thereof) as a list of numbers (e.g., a vector).
-* How can we formulate a metric that measures how close we are to the goal or solution?
-* How can we formulate the constraints that bound the actions we can take?
+1. **Represent Our Decisions**  
+   We need to encode our decision or strategy (or an approximation of it) as a list of numbers (e.g., a vector). For instance, if we're allocating resources between two projects, we might define $x = (x_1, x_2)$, where $x_1$ is the budget for project 1 and $x_2$ for project 2.
 
-Going from a real-world problem to an optimization formulation is the *modeling processing.* It often requires multiple iterations and communication with domain experts. It is more art than science. 
+2. **Define an Objective Function**  
+   We then formulate a metric to measure how close we are to achieving our goal. If the goal is to minimize cost or error, we could write $\min_x f(x)$. For example, we might minimize
+   $$
+   f(x) = (x_1 - 100)^2 + (x_2 - 50)^2
+   $$
+   to keep the budgets near some target values.
 
-The application areas of this course mostly have preexisting mathematical formulations that you can start from. 
+3. **Identify Relevant Constraints**  
+   Finally, we specify any bounds or conditions that our choices must satisfy, such as $x_1 + x_2 \leq 150$ to keep total spending below 150, or $x_1, x_2 \ge 0$ to ensure the budgets are nonnegative.
 
-In this course, we will focus on three application areas: 
-1. Data science (e.g., statistical estimation, inverse problems)
-2. Machine learning (e.g., predictive modeling, generative modeling)
-3. Sequential decision-making (e.g., control, bandits, reinforcement learning)
+This process—called *optimization modeling*—often involves creativity and iteration. Real-world complexity requires you to rethink which objectives and constraints really matter, and you might consult domain experts to confirm whether your formulation makes sense.
+
+---
+
+## Application Areas and Their Optimization Goals
+
+Here, we'll look at three major application areas: Data Science, Machine Learning, and Sequential Decision-Making. Although each area uses optimization in a slightly different way, they all rely on choosing "best" parameters under certain objectives and constraints.
+
+### 1. Data Science (e.g., Statistical Estimation, Inverse Problems)
+
+Here the key idea is to estimate unknown parameters from noisy or incomplete data. For example, imagine a doctor reconstructing a 3D image from 2D X-ray slices. The main optimization formulation here tries to balance how well the model fits the observed data (such as a least-squares term) with various physical or regularization constraints (like smoothness or nonnegativity). The constraints we enforce often reflect real-world conditions, such as parameter ranges or physical laws that must be respected.
+
+### 2. Machine Learning (Predictive and Generative Modeling)
+
+Here the key idea is to learn a function or distribution from data. For a predictive model (like a classifier), the main objective is usually to minimize some loss function, such as classification error. For a generative model (like a Large Language Model), we aim to maximize the likelihood of observed data—for instance, by predicting the next token in a sequence. The constraints we enforce might include regularization or structural limits on the model architecture, ensuring it generalizes and remains computationally manageable.
+
+### 3. Sequential Decision-Making (e.g., Control, Bandits, Reinforcement Learning)
+
+Here the key idea is to make a series of decisions over time, where each action influences future states and rewards. A classic example is a robot learning to walk by maximizing cumulative reward (distance walked without falling), subject to torque limits and physical laws. The main optimization formulation here tries to account for long-term consequences, often requiring techniques like dynamic programming or policy gradients. The constraints we enforce can involve real-time performance, safety boundaries, or resource limitations.
+
+---
+
+Despite their differences, these application areas all involve finding "best" parameters—whether "best" means most accurate predictions, most coherent outputs, or most effective long-term strategies. The art is in how you formulate your goals and constraints so that an algorithm can meaningfully address the problem.
 
 
 <!-- 
