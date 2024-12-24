@@ -42,12 +42,11 @@ By the end of this course, you will become an intelligent consumer of numerical 
 
 ## Deliverable: a Final Project Due on Week 2
 
-which you then iterate on throughout the semester.
+...which you then iterate on throughout the semester.
 
 **Why this approach?**  
 Final projects often become a single rushed deliverable. We’ll break the project into regular drafts and feedback cycles so your team can iterate, improve, and build something more substantial and refined. You’ll have multiple checkpoints, each with opportunities for critique and revision. By the end, you’ll have a polished piece of work you can showcase—something worthy of your portfolio or internship applications.
 
----
 
 ### Timeline and Milestones
 
@@ -64,7 +63,7 @@ Final projects often become a single rushed deliverable. We’ll break the proje
 4. **Final Presentation (End of Semester)**  
    - Deliver a polished talk showcasing your findings, experiments, and lessons learned.
 
----
+
 
 ### Deliverable Format
 
@@ -79,7 +78,6 @@ Final projects often become a single rushed deliverable. We’ll break the proje
    - By default, structure it like a short conference-style paper (e.g., 8 pages + supplementary).  
    - If you have a more creative format in mind, just run it by me first.
 
----
 
 ### Feedback Loop
 
@@ -90,7 +88,6 @@ Final projects often become a single rushed deliverable. We’ll break the proje
 
 - Additional questions are welcome anytime.
 
----
 
 ### Rules
 
