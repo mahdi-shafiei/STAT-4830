@@ -67,10 +67,8 @@ In this course, we will study the mathematical foundations of optimization while
      These problems often involve constraints or regularization to account for noise or missing data, and they can be framed in a variety of convex or nonconvex ways.
 
    - **Prediction Problems**  
-     In machine learning, we often aim to *minimize a loss function* or *maximize the likelihood* of observed data. We will explore how models, loss functions, and regularizers come together to prevent overfitting and leverage prior information. A key distinction is between:
-     - **Population Problems**: Where the goal is to do well on the true data-generating process (often unknown).  
-     - **Empirical Problems**: Where the objective is computed on a finite sample.  
-     We will see how ideas of convexity, smoothness, and stochasticity influence which algorithms and analyses are most appropriate.
+     In machine learning, we often aim to *minimize a loss function* or *maximize the likelihood* of observed data. We will explore how models, loss functions, and regularizers come together to prevent overfitting and leverage prior information. 
+
 
    - **Sequential Decision Making**  
      Sometimes we need to plan multiple steps ahead, where each decision affects future options. We will look at:
@@ -82,7 +80,7 @@ In this course, we will study the mathematical foundations of optimization while
    - **Classical Convex Formulations and Software Tools**  
      Throughout these examples, we will see that many subproblems fit classical templates like Linear Programs (LP), Quadratic Programs (QP), or Semidefinite Programs (SDP). We will use software tools like [CVXPY](https://www.cvxpy.org) and [Google’s Math Opt](https://developers.google.com/optimization/math_opt) to solve these formulations directly, gaining insight into both their theory and their practical performance.
 
-    By examining these diverse examples, we will discover common threads—such as the importance of convexity and the challenges of dealing with nonconvex or noisy objectives—and develop a systematic way of approaching optimization in modern data science and machine learning pipelines.
+    By examining these diverse examples, we will discover common threads—such as the importance of convexity and the challenges of dealing with nonconvex or noisy objectives—and develop a systematic way of approaching optimization in modern data science and machine learning.
 
 3. **How to Think About Calculus**  
    We will review gradients, Hessians, and Taylor expansions, and see how they are used guide optimization algorithms. We will introduce relevant linear algebra will include inner products, matrix decompositions, and norms—essential mathematical background when dealing with high-dimensional spaces.
