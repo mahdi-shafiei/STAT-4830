@@ -20,7 +20,7 @@ AKA:
 ## Table of Contents
 - [Overview](#overview)
 - [Pre-requisites](#pre-requisites)
-- [Grading](#deliverable-a-final-project-due-on-week-2)
+- [Grading: a final project due on Week 2](#deliverable-a-final-project-due-on-week-2)
 - [Course project details](#course-project-details)
 - [Large language models policy](#large-language-models-policy)
 - [Textbooks, readings and software libraries](#textbooks-readings-and-software-libraries)
@@ -40,7 +40,7 @@ By the end of this course, you will become an intelligent consumer of numerical 
 * Basic Probability (Stat 4300)
 * Programming experience in a scripting language such as Python. Basic comfort in iteration and functions. 
 
-## Deliverable: a Final Project Due on Week 2
+## Deliverable: a final project due on week 2
 
 ...which you then iterate on throughout the semester.
 
@@ -48,38 +48,38 @@ By the end of this course, you will become an intelligent consumer of numerical 
 Final projects often become a single rushed deliverable. We’ll break the project into regular drafts and feedback cycles so your team can iterate, improve, and build something more substantial and refined. You’ll have multiple checkpoints, each with opportunities for critique and revision. By the end, you’ll have a polished piece of work you can showcase—something worthy of your portfolio or internship applications.
 
 
-### Timeline and Milestones
+### Timeline and milestones
 
-1. **First Draft (Week 2)**  
+1. **First draft (Week 2)**  
    - Submit an initial write-up of your project idea and early exploration. The goal is to get feedback fast and clarify your scope.
 
-2. **Regular Drafts and Critiques (Every Two Weeks)**  
+2. **Regular drafts and critiques (every two weeks)**  
    - You will submit an updated draft of the report **plus** a brief critique of your previous version.  
    - On alternating weeks, submit a draft of your final presentation slides. This keeps your written and visual materials aligned as the project evolves.
 
-3. **Midterm Presentation (Midpoint of Semester)**  
+3. **Midterm presentation (midpoint of semester)**  
    - Prepare a *lightning* presentation of your project so far. You’ll get early audience feedback on your approach and results to date.
 
-4. **Final Presentation (End of Semester)**  
+4. **Final presentation (end of semester)**  
    - Deliver a polished talk showcasing your findings, experiments, and lessons learned.
 
 
 
-### Deliverable Format
+### Deliverable format
 
-1. **GitHub Repository**  
+1. **GitHub repository**  
    - Centralize all materials: your written report, code, and presentation slides.  
    - Be sure to include a clear README with instructions for reproducing results.
 
-2. **Executable Demo**  
+2. **Executable demo**  
    - Provide a runnable demonstration in Google Colab. If your overall code is extensive, create a minimal Colab notebook that shows core functionality or key results.
 
-3. **Written Report**  
+3. **Written report**  
    - By default, structure it like a short conference-style paper (e.g., 8 pages + supplementary).  
    - If you have a more creative format in mind, just run it by me first.
 
 
-### Feedback Loop
+### Feedback loop
 
 - I will meet with each group about three times:
   1. **Week 3**: Check project scope and direction.
@@ -91,8 +91,8 @@ Final projects often become a single rushed deliverable. We’ll break the proje
 
 ### Rules
 
-- **Group Size**: 3–4 students. This fosters collaboration while keeping the workload balanced.  
-- **LLM Usage**: You should use large language models in your work to help with writing, brainstorming, and coding. But verify outputs critically—don’t rely on them blindly.
+- **Group size**: 3–4 students. This fosters collaboration while keeping the workload balanced.  
+- **LLM usage**: You should use large language models in your work to help with writing, brainstorming, and coding. But verify outputs critically—don’t rely on them blindly.
 
 By developing your projects in iterative steps, you will receive feedback multiple times and have a better chance of creating something valuable. This also help me shape the course content based on your areas of interest, ensuring that lectures and assignments align well with your goals.
 
@@ -121,7 +121,7 @@ This course material will be self-contained outside of the prerequisites, but th
 
 ### Optimization
 
-#### General Background
+#### General background
 
 1. Beck, A. (2014). Introduction to nonlinear optimization: Theory, algorithms, and applications with MATLAB. Society for Industrial and Applied Mathematics.
 
@@ -151,12 +151,12 @@ This course material will be self-contained outside of the prerequisites, but th
 
 ### Software and tutorials
 
-#### Convex Optimization in Python: CVXPY
+#### Convex optimization in Python: CVXPY
 
 CVXPY: Convex optimization, for everyone.
 [https://www.cvxpy.org/](https://www.cvxpy.org/)
 
-#### PyTorch, Jax, and Auto differentiation
+#### PyTorch, Jax, and auto differentiation
 
 1. PyTorch (The full library): [https://pytorch.org/](https://pytorch.org/)
 
@@ -173,7 +173,7 @@ CVXPY: Convex optimization, for everyone.
 CoLA: a framework for scalable linear algebra that exploits structure often found in machine learning problems.
 [https://github.com/wilson-labs/cola](https://github.com/wilson-labs/cola)
 
-#### Transformers and Diffusion Models
+#### Transformers and diffusion models
 
 1. MinGPT: A PyTorch re-implementation of GPT
    [https://github.com/karpathy/minGPT](https://github.com/karpathy/minGPT)
@@ -189,7 +189,7 @@ CoLA: a framework for scalable linear algebra that exploits structure often foun
 GitHub Docs: Hello World
 [https://docs.github.com/en/get-started/start-your-journey/hello-world](https://docs.github.com/en/get-started/start-your-journey/hello-world)
 
-#### Training Visualization
+#### Training visualization
 
 Weights and Biases
 [https://wandb.ai/site](https://wandb.ai/site)
