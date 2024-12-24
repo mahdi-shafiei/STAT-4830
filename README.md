@@ -40,17 +40,73 @@ By the end of this course, you will become an intelligent consumer of numerical 
 * Basic Probability (Stat 4300)
 * Programming experience in a scripting language such as Python. Basic comfort in iteration and functions. 
 
-## Grading
-Tentative breakdown:
+## Deliverable: a Final Project Due on Week 2
 
-* **Homework (20%)**. There will be approximately two homework assignments on which you will demonstrate your understanding of the theory and programming components of the course. Gradescope will be used for homework submission and grading.
+which you then iterate on throughout the semester.
+
+**Why this approach?**  
+Final projects often become a single rushed deliverable. We’ll break the project into regular drafts and feedback cycles so your team can iterate, improve, and build something more substantial and refined. You’ll have multiple checkpoints, each with opportunities for critique and revision. By the end, you’ll have a polished piece of work you can showcase—something worthy of your portfolio or internship applications.
+
+---
+
+### Timeline and Milestones
+
+1. **First Draft (Week 2)**  
+   - Submit an initial write-up of your project idea and early exploration. The goal is to get feedback fast and clarify your scope.
+
+2. **Regular Drafts and Critiques (Every Two Weeks)**  
+   - You will submit an updated draft of the report **plus** a brief critique of your previous version.  
+   - On alternating weeks, submit a draft of your final presentation slides. This keeps your written and visual materials aligned as the project evolves.
+
+3. **Midterm Presentation (Midpoint of Semester)**  
+   - Prepare a *lightning* presentation of your project so far. You’ll get early audience feedback on your approach and results to date.
+
+4. **Final Presentation (End of Semester)**  
+   - Deliver a polished talk showcasing your findings, experiments, and lessons learned.
+
+---
+
+### Deliverable Format
+
+1. **GitHub Repository**  
+   - Centralize all materials: your written report, code, and presentation slides.  
+   - Be sure to include a clear README with instructions for reproducing results.
+
+2. **Executable Demo**  
+   - Provide a runnable demonstration in Google Colab. If your overall code is extensive, create a minimal Colab notebook that shows core functionality or key results.
+
+3. **Written Report**  
+   - By default, structure it like a short conference-style paper (e.g., 8 pages + supplementary).  
+   - If you have a more creative format in mind, just run it by me first.
+
+---
+
+### Feedback Loop
+
+- I will meet with each group about three times:
+  1. **Week 3**: Check project scope and direction.
+  2. **Mid-Semester**: Reflect on progress and address challenges.
+  3. **Late-Semester**: Final check-in before presentations.
+
+- Additional questions are welcome anytime.
+
+---
+
+### Rules
+
+- **Group Size**: 3–4 students. This fosters collaboration while keeping the workload balanced.  
+- **LLM Usage**: You should use large language models in your work to help with writing, brainstorming, and coding. But verify outputs critically—don’t rely on them blindly.
+
+By developing your projects in iterative steps, you will receive feedback multiple times and have a better chance of creating something valuable. This also help me shape the course content based on your areas of interest, ensuring that lectures and assignments align well with your goals.
+
+<!-- * **Homework (20%)**. There will be approximately two homework assignments on which you will demonstrate your understanding of the theory and programming components of the course. Gradescope will be used for homework submission and grading.
 * **Quizzes (20%)**. Regular quizzes will be administered throughout the course. 
 * **Course project (60%)**. Students will work together in groups of 3-5 students. The size of the team will be taken into account when assigning grades. Larger teams must have more substantial projects. Project teams will be formed in the first four weeks of the semester. There are a series of milestones. 
   * (10%) Initial project proposal.
   * (10%) Midterm project presentation. 
-  * (40%) Final project report, presentation, and software deliverable (details below).
+  * (40%) Final project report, presentation, and software deliverable (details below). -->
 
-### Course project details
+### Course project ideas
 In the course project, you will apply the optimization skills you learned in the course. For example, your final project could include: 
 * Training/fine-tuning a model: A detailed write-up of your strategy for training or fine-tuning a model (e.g., language, code, math, or vision model). Describe failures, successes, and rabbit holes. Illustrate the use of the final model. Use GPUs to scale up. Compare multiple optimization methods and choose one with the "best" performance.
 * Reproducibility: A detailed write-up of your attempt to reproduce, falsify, or improve numerical results from the optimization literature. 
@@ -62,9 +118,6 @@ In the course project, you will apply the optimization skills you learned in the
 * AutoOPT tools: Combined with an LLM, automatically formulate and tune optimization methods for a given task.
 
 I will post more project ideas adapted to student interests in the course's first weeks. Each project must include a Google Colab (or equivalent) walkthrough of your results and claims. I must approve the scope of the project.
-
-### Large language models policy
-You can use large language models in all your coursework unless I explicitly forbid them. This includes models from OpenAI, Anthropic, Google, and others. However, I recommend that you do not fully trust their output.
 
 ## Textbooks, readings, and software libraries
 This course material will be self-contained outside of the prerequisites, but there will be no official textbook. Some material will draw on recent research published in academic conferences and journals. Some will draw on software libraries that are mature or in development. Below, I have instead listed several resources that we may draw – more will be added throughout the course:
