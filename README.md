@@ -8,6 +8,10 @@ AKA:
 
 *See a rough outline of the course [here](rough_outline.md).* 
 
+Lectures:
+
+[Lecture 0: Introduction](lectures/lecture_0.md)
+
 ## High-level thoughts on the course
 
 * **Why am I excited about this course?** Optimization works! Everything you learn about solving optimization problems numerically will be useful in your career, whether you're a data scientist, AI researcher, or an engineer of any kind. Understanding how optimization methods work and how to use them will actually help you solve *real* problems. 
