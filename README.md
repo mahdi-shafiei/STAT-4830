@@ -20,7 +20,7 @@ AKA:
 ## Table of Contents
 - [Overview](#overview)
 - [Pre-requisites](#pre-requisites)
-- [Grading](#grading)
+- [Grading](#deliverable-a-final-project-due-on-week-2)
 - [Course project details](#course-project-details)
 - [Large language models policy](#large-language-models-policy)
 - [Textbooks, readings and software libraries](#textbooks-readings-and-software-libraries)
