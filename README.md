@@ -8,9 +8,9 @@ AKA:
 
 *See a rough outline of the course [here](rough_outline.md).* 
 
-Lectures:
+Lectures notes:
 
-[Lecture 0: Introduction](lectures/lecture_0.md)
+[Lecture 0: Introduction](Lectures/Lecture0_notes.md)
 
 ## High-level thoughts on the course
 
