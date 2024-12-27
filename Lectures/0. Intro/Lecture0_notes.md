@@ -19,11 +19,7 @@
      - Advanced topics
      - Modern practice in deep learning
 5. [Expectations and learning outcomes](#expectations-and-learning-outcomes)
-
-**Outline**  
-- Syllabus and key points  
-- Some histlo
-- Expectations and learning outcomes  
+6. [Closing thoughts](#closing-thoughts)
 
 ## Course Syllabus and key points
 Welcome to STAT 4830: Numerical optimization for data science and machine learning. This course teaches you how to formulate optimization problems, select and implement algorithms, and use frameworks like PyTorch to build and train models. Below are some highlights of the syllabus to get you oriented:
@@ -405,19 +401,26 @@ The details of this outline shift based on class interests. By the end of the co
 When you finish, you’ll be equipped to handle the optimization component of modern data science and machine learning projects, appreciating both the theoretical and practical dimensions.
 
 
-## Closing thoughts
+## Closing Thoughts
 
-### Next Steps
+Optimization provides the mathematical foundation for modern machine learning and data science. The methods we'll study translate directly into practical skills for building and training models, analyzing data, and solving real-world problems.
 
-- We will quickly review some core math (calculus, linear algebra) as needed.
-- In Lecture 1, we begin exploring a simple problem—linear regression—and see how iterative optimization emerges in large-data contexts.
-- Keep in mind the final project timeline. Start thinking about potential topics and talk to your group members soon.
+Our course progresses from fundamental concepts to advanced applications:
 
-### Why This Matters
+1. We begin next lecture with linear regression and gradient descent, establishing core principles that extend to more complex problems.
 
-Beyond the classroom, optimization is everywhere. It underlies everything from designing neural networks to planning shipping routes. A solid grounding in numerical optimization methods, combined with practical software expertise, is a powerful asset in any data-centric career.
+2. You'll gain hands-on experience implementing these methods in PyTorch, learning to handle both theoretical and practical challenges.
 
-Feel free to ask questions or suggest areas you’d like to explore. I look forward to seeing where this course—and your projects—take us.
+3. The course project gives you freedom to explore applications that interest you - from training language models to solving inverse problems in scientific computing.
+
+The skills you develop here will serve you whether you pursue research, industry work, or further study. Modern machine learning frameworks abstract away many optimization details, but understanding the underlying principles helps you:
+
+- Debug models that aren't learning properly
+- Choose appropriate algorithms for different problems
+- Tune hyperparameters effectively
+- Implement custom optimization methods when needed
+
+Please come to office hours with questions about course material or project ideas. I'm here to help you succeed.
 
 <!-- 
 > This course will teach you how to formulate these problems mathematically, choose appropriate algorithms to solve them, and implement and tune the algorithms in PyTorch. Tentative topics include:
