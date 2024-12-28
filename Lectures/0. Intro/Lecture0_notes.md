@@ -304,9 +304,9 @@ While optimization may feel modern—especially in the context of machine learni
 
 In this course, we will appreciate both sides: solver-based approaches for classical, well-structured problems (via CVXPY) and more flexible, high-powered frameworks (via PyTorch) for data-driven, nonconvex tasks.
 
-# Tentative Course Structure
+## Tentative Course Structure
 
-## Core Application Areas
+<!-- ## Core Application Areas
 
 Three key areas where optimization drives modern computing:
 
@@ -317,15 +317,29 @@ Reconstruct signals from indirect observations - as in the reconstruction of the
 Train models that learn patterns from data, whether for prediction (spam detection) or generation (language models).
 
 ### Sequential Decision Making
-Make decisions in sequence where each choice reshapes future possibilities - from chess strategies to spacecraft navigation.
+Make decisions in sequence where each choice reshapes future possibilities - from chess strategies to spacecraft navigation. -->
 
-## Technical Foundations and Methods
+<!-- ## Technical Foundations and Methods -->
 
 ### 1. Linear Algebra, Regression, and Direct Methods
 We begin with the essential tools: norms, inner products, and matrix decompositions. Linear regression serves as our first optimization problem, solvable through direct methods like LU factorization and Gaussian elimination. These methods work well for moderate problem sizes but struggle with large datasets, motivating our transition to iterative methods.
 
 ### 2. Problem Formulations and Classical Software
-Many subproblems in our core applications fit classical templates: Linear Programs (LP), Quadratic Programs (QP), or Semidefinite Programs (SDP). Software tools like CVXPY and Google's Math Opt solve these formulations directly. This section bridges theory and practice, revealing common patterns across applications.
+
+This section introduces optimization formulations in several core application areas, and classical formulations that are solveable by existing software tools.
+
+First, we explore problem formulations in three core application areas:
+
+**Statistical Estimation and Inverse Problems**
+Reconstruct signals from indirect observations - as in the reconstruction of the first black hole image from radio telescope data.
+
+**Machine Learning Models**
+Train models that learn patterns from data, whether for prediction (spam detection) or generation (language models).
+
+**Sequential Decision Making**
+Make decisions in sequence where each choice reshapes future possibilities - from chess strategies to spacecraft navigation.
+
+Second, we study classical **convex formulations**, such as Linear Programs (LP), Quadratic Programs (QP), and Semidefinite Programs (SDP). These formulations have well-understood properties and moderately sized problem can be solved efficiently by existing software tools, such as CVXPY and others (e.g., [Google's MathOpt](https://developers.google.com/optimization/math_opt)). While our core applications often involve more complex optimization problems, recognizing when parts of them fit into these classical templates allows us to leverage powerful, ready-made solvers.
 
 ### 3. Calculus for Optimization
 Gradients, Hessians, and Taylor expansions provide the mathematical foundation for optimization algorithms. This section explains how these tools guide algorithm design and implementation.
