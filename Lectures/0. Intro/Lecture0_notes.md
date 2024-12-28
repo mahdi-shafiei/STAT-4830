@@ -5,15 +5,14 @@
 2. [Preview: Solving spam classification with optimization](#preview-solving-spam-classification-with-optimization)
 3. [Brief historical perspective on optimization](#brief-historical-perspective-on-optimization)
 4. [Tentative course structure](#tentative-course-structure)
-   - [Technical foundations and methods](#technical-foundations-and-methods)
-     - Linear algebra, regression, and direct methods
-     - Problem formulations and classical software
-     - Calculus for optimization
-     - Automatic differentiation and PyTorch
-     - First-order methods
-     - Second-order methods
-     - Advanced topics
-     - Modern practice in deep learning
+    - Linear algebra, regression, and direct methods
+    - Problem formulations and classical software
+    - Calculus for optimization
+    - Automatic differentiation and PyTorch
+    - First-order methods
+    - Second-order methods
+    - Advanced topics
+    - Modern practice in deep learning
 5. [Expectations and learning outcomes](#expectations-and-learning-outcomes)
 6. [Closing thoughts](#closing-thoughts)
 
