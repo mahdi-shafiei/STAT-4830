@@ -281,13 +281,12 @@ Our spam filter illustrates the key ideas you'll master:
 1. Converting real problems into optimization problems
 2. Choosing appropriate optimization methods
 3. Implementing solutions in PyTorch
-4. Recognizing and fixing common pitfalls
 
-Moving from raw data to optimal decisions needs both mathematical insight and practical coding skills. You'll develop both through hands-on experience with:
+<!-- Moving from raw data to optimal decisions needs both mathematical insight and practical coding skills. You'll develop both through hands-on experience with:
 - Different types of optimization problems
 - Various optimization algorithms
 - Modern software tools
-- Real-world applications
+- Real-world applications -->
 
 ## Brief Historical Perspective on Optimization
 While optimization may feel modern—especially in the context of machine learning—it actually has deep mathematical roots:
