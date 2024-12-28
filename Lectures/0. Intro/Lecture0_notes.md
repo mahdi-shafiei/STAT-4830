@@ -308,41 +308,16 @@ In this course, we will appreciate both sides: solver-based approaches for class
 
 ## Core Application Areas
 
-Optimization serves as the foundation for three key areas in modern computing, each driving distinct algorithmic approaches:
+Three key areas where optimization drives modern computing:
 
 ### Statistical Estimation and Inverse Problems
-Statistical estimation recovers unknown parameters from noisy or incomplete observations. Medical imaging exemplifies this challenge: reconstructing 3D images from 2D X-rays requires solving an inverse problem. Phase retrieval extends this by recovering signals from magnitude-only measurements, while compressive sensing shows how structural assumptions enable reconstruction from surprisingly few measurements.
-
-These problems share key elements:
-- Balancing data fidelity against regularization
-- Handling measurement noise and missing data
-- Incorporating physical constraints and prior knowledge
+Reconstruct signals from indirect observations - as in the reconstruction of the first black hole image from radio telescope data.
 
 ### Machine Learning Models
-Machine learning encompasses two optimization paradigms:
-
-Predictive Models minimize loss functions on labeled data, as in image classification or spam detection. The optimization process finds model parameters that generalize to unseen examples while avoiding overfitting.
-
-Generative Models learn to produce new data by modeling underlying distributions. Large language models optimize their ability to predict the next token in a sequence, while diffusion models learn to denoise random patterns into coherent images.
-
-Both approaches must address:
-- Managing massive datasets and model parameters
-- Balancing computational efficiency with model capacity
-- Incorporating domain knowledge via architecture design
+Train models that learn patterns from data, whether for prediction (spam detection) or generation (language models).
 
 ### Sequential Decision Making
-Sequential problems optimize actions over time, balancing immediate rewards against future opportunities:
-
-Control Problems like robotic navigation require rapid, continuous decision-making under physical constraints. Linear Quadratic Regulators (LQR) provide a mathematically tractable starting point.
-
-Multi-Armed Bandits abstract the exploration-exploitation dilemma: when to try new options versus exploit known good ones. This framework extends to recommendation systems and clinical trials.
-
-Reinforcement Learning handles general environments where actions affect both immediate rewards and future states, crucial for game playing and autonomous systems.
-
-These problems must address:
-- Delayed feedback between actions and outcomes
-- Safety constraints and risk management
-- Real-time computation requirements
+Make decisions in sequence where each choice reshapes future possibilities - from chess strategies to spacecraft navigation.
 
 ## Technical Foundations and Methods
 
@@ -380,7 +355,6 @@ We conclude with practical strategies for large-scale optimization:
 
 The details of this outline shift based on class interests. By the end of the course, you will have a toolbox of optimization methods, an understanding of their theoretical underpinnings, and practical experience in applying them to real problems.
 
-
 ## Expectations and Learning Outcomes
 
 1. **Modeling and Formulation**  
@@ -392,35 +366,16 @@ The details of this outline shift based on class interests. By the end of the co
 3. **Software Proficiency**  
    We will use modern libraries like PyTorch (possibly Jax) to implement and experiment with these algorithms. You will gain experience with auto differentiation and learn best practices for tuning and debugging iterative solvers.
 
-4. **Practical Sensibility**  
+4. **Optimization in Practice**  
    Although we’ll cover fundamental optimization theory (convexity, convergence rates, saddle points, etc.), the focus is on practical usage. You will learn which methods to try first and how to iterate quickly when working with large datasets and complicated models.
 
-5. **Research-Oriented Thinking**  
+5. **Research Methods**  
    This course also prepares you for research or advanced development tasks. You’ll see how to benchmark optimization methods, reproduce existing studies, and innovate ways to handle constraints like privacy and distributed data.
 
 When you finish, you’ll be equipped to handle the optimization component of modern data science and machine learning projects, appreciating both the theoretical and practical dimensions.
 
 
-## Closing Thoughts
 
-Optimization provides the mathematical foundation for modern machine learning and data science. The methods we'll study translate directly into practical skills for building and training models, analyzing data, and solving real-world problems.
-
-Our course progresses from fundamental concepts to advanced applications:
-
-1. We begin next lecture with linear regression and gradient descent, establishing core principles that extend to more complex problems.
-
-2. You'll gain hands-on experience implementing these methods in PyTorch, learning to handle both theoretical and practical challenges.
-
-3. The course project gives you freedom to explore applications that interest you - from training language models to solving inverse problems in scientific computing.
-
-The skills you develop here will serve you whether you pursue research, industry work, or further study. Modern machine learning frameworks abstract away many optimization details, but understanding the underlying principles helps you:
-
-- Debug models that aren't learning properly
-- Choose appropriate algorithms for different problems
-- Tune hyperparameters effectively
-- Implement custom optimization methods when needed
-
-Please come to office hours with questions about course material or project ideas. I'm here to help you succeed.
 
 <!-- 
 > This course will teach you how to formulate these problems mathematically, choose appropriate algorithms to solve them, and implement and tune the algorithms in PyTorch. Tentative topics include:
