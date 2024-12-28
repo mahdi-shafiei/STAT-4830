@@ -35,7 +35,6 @@ Welcome to STAT 4830: Numerical optimization for data science and machine learni
 
 - This is primarily a lecture-based course with weekly programming exercises.
 - We will introduce theory (convexity, gradient-based methods, constraints, etc.) and then apply it in Python notebooks using PyTorch (and occasionally other libraries like CVXPY).
-- Lecture 0 (today) is slated for 1.5 hours; we might finish early and move on to Lecture 1 if time permits.
 
 ### Deliverables
 
