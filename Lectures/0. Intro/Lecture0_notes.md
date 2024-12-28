@@ -5,10 +5,6 @@
 2. [Preview: Solving spam classification with optimization](#preview-solving-spam-classification-with-optimization)
 3. [Brief historical perspective on optimization](#brief-historical-perspective-on-optimization)
 4. [Tentative course structure](#tentative-course-structure)
-   - [Core application areas](#core-application-areas)
-     - Statistical estimation and inverse problems
-     - Machine learning models
-     - Sequential decision making
    - [Technical foundations and methods](#technical-foundations-and-methods)
      - Linear algebra, regression, and direct methods
      - Problem formulations and classical software
