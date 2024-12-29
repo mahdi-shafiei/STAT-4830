@@ -1,4 +1,4 @@
-# STAT 4830: Numerical optimization for data science and machine learning 
+# Stat 4830: Numerical optimization for data science and machine learning 
 
 AKA: Optimization in PyTorch
 
@@ -13,9 +13,8 @@ For lecture notes see [table of contents](toc.md).
 - [Overview](#overview)
 - [Pre-requisites](#pre-requisites)
 - [Deliverable: a final project due on week 2](#deliverable-a-final-project-due-on-week-2)
-- [Course project ideas](#course-project-ideas)
 - [Textbooks, readings, and software libraries](#textbooks-readings-and-software-libraries)
-- [Brief Historical Perspective on Optimization](#brief-historical-perspective-on-optimization)
+- [Brief historical perspective on optimization](#brief-historical-perspective-on-optimization)
 
 ## High-level thoughts on the course
 
@@ -207,7 +206,7 @@ Sasha Rush's has luckily made a series of open source puzzles for helping you un
 
 3. Autodiff Puzzles: https://github.com/srush/Autodiff-Puzzles/
 
-# Brief Historical Perspective on Optimization
+# Brief historical perspective on optimization
 
 It's useful to appreciate how optimization evolved as an algorithmic discipline over the last center:
 
