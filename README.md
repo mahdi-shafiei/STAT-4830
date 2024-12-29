@@ -6,11 +6,9 @@ AKA:
 
 > I'm currently developing this course for Spring 2025. I am literally pushing my thoughts to this public repo as soon as I have them. Be prepared for the course to look rough until the semester starts.
 
-*See a rough outline of the course [here](rough_outline.md).* 
+*See a rough outline of the course [here](Lecture0#tentative-course-structure).* 
 
-Lectures notes:
-
-[Lecture 0: Introduction](Lecture0.md)
+For lecture notes see [Table of contents](toc.md)
 
 ## High-level thoughts on the course
 
