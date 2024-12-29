@@ -8,7 +8,7 @@ AKA: Optimization in PyTorch
 
 For lecture notes see [table of contents](toc.md).
 
-## Contents
+## Table of contents
 - [High-level thoughts on the course](#high-level-thoughts-on-the-course)
 - [Overview](#overview)
 - [Pre-requisites](#pre-requisites)
