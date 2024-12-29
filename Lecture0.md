@@ -2,22 +2,8 @@
 
 ## Table of Contents
 1. [Course syllabus and key points](#course-syllabus-and-key-points)
-   - Prerequisites
-   - Schedule and format
-   - Deliverables
-   - Why PyTorch?
-   - Who is this course for?
-   - What you'll learn
 2. [Preview: Solving spam classification with optimization](#preview-solving-spam-classification-with-optimization)
 3. [Tentative course structure](#tentative-course-structure)
-   - Linear algebra, regression, and direct methods
-   - Problem formulations and classical software
-   - Calculus for optimization
-   - Automatic differentiation and PyTorch
-   - First-order methods
-   - Second-order methods
-   - Advanced topics
-   - Modern practice in deep learning
 4. [Brief historical perspective on optimization](#brief-historical-perspective-on-optimization)
 5. [Expectations and learning outcomes](#expectations-and-learning-outcomes)
 
