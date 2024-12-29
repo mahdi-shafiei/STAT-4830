@@ -8,6 +8,15 @@ AKA: Optimization in PyTorch
 
 For lecture notes see [table of contents](toc.md).
 
+## Contents
+- [High-level thoughts on the course](#high-level-thoughts-on-the-course)
+- [Overview](#overview)
+- [Pre-requisites](#pre-requisites)
+- [Deliverable: a final project due on week 2](#deliverable-a-final-project-due-on-week-2)
+- [Course project ideas](#course-project-ideas)
+- [Textbooks, readings, and software libraries](#textbooks-readings-and-software-libraries)
+- [Brief Historical Perspective on Optimization](#brief-historical-perspective-on-optimization)
+
 ## High-level thoughts on the course
 
 * **Why am I excited about this course?** Optimization works! Everything you learn about solving optimization problems numerically will be useful in your career, whether you're a data scientist, AI researcher, or an engineer of any kind. Understanding how optimization methods work and how to use them will actually help you solve *real* problems. 
@@ -20,15 +29,6 @@ For lecture notes see [table of contents](toc.md).
 * **Production vs. Research-level code?** We will mainly be coding Python notebooks developing research-level code that focuses on the intricacies of optimization methods. Taking research-level code to production is a separate skill that we will not focus on in this course. 
 * **Are there similar courses at Penn or other universities?** Not that I am aware of—if you find some, let me know! I will develop this course from scratch and adapt it to student interests as we go.
 * **Which IDE should I use?** For local development, use [Cursor](https://www.cursor.com/). For remote development, use [Google Colab](https://colab.research.google.com/). 
-
-## Table of Contents
-- [Overview](#overview)
-- [Pre-requisites](#pre-requisites)
-- [Grading: a final project due on Week 2](#deliverable-a-final-project-due-on-week-2)
-- [Course project details](#course-project-details)
-- [Large language models policy](#large-language-models-policy)
-- [Textbooks, readings and software libraries](#textbooks-readings-and-software-libraries)
-
 
 ## Overview 
 Optimization is the modeling language in which modern data science, machine learning, and sequential decision-making problems are formulated and solved numerically. This course will teach you how to formulate these problems mathematically, choose appropriate algorithms to solve them, and implement and tune the algorithms in PyTorch. Tentative topics include:
@@ -206,3 +206,14 @@ Sasha Rush's has luckily made a series of open source puzzles for helping you un
 2. GPU Puzzles: https://github.com/srush/GPU-Puzzles 
 
 3. Autodiff Puzzles: https://github.com/srush/Autodiff-Puzzles/
+
+# Brief Historical Perspective on Optimization
+
+It's useful to appreciate how optimization evolved as an algorithmic discipline over the last center:
+
+- Mid-20th Century: Linear Programming emerged as a critical tool in operations research, fueled by George Dantzig’s simplex method. This was pivotal for industrial logistics, military planning, and resource allocation.
+- 1960s–1990s: Convex optimization grew more important, driven by work on gradient-based methods, interior-point methods, and software that could solve large-scale linear and convex problems.
+- 2000s: Tools like CVX (MATLAB-based) made formulating and solving standard convex problems more accessible to a broad audience—i.e., “specify your problem in a solver-friendly language, and let the solver handle it.”
+- Modern Era: Deep learning frameworks (e.g., PyTorch, TensorFlow, Jax) have shifted the emphasis to a “build and iterate” approach. Instead of specifying problems in a polished convex form, we often “get our hands dirty” with nonconvex models, direct gradient-based methods, and custom loss functions. This iterative exploration is precisely what enabled the explosion of large language models (LLMs) and other powerful neural architectures.
+
+In this course, we will appreciate both sides: solver-based approaches for classical, well-structured problems (via CVXPY) and more flexible, high-powered frameworks (via PyTorch) for data-driven, nonconvex tasks.
