@@ -10,56 +10,56 @@ data/FashionMNIST/raw/train-images-idx3-ubyte
 data/FashionMNIST/raw/train-images-idx3-ubyte.gz
 data/FashionMNIST/raw/train-labels-idx1-ubyte
 data/FashionMNIST/raw/train-labels-idx1-ubyte.gz
-Lectures/0. Intro/Claude_spam.md
-Lectures/0. Intro/lecture0_notebook.ipynb
-Lectures/0. Intro/optimization_demo.ipynb
-Lectures/0. Intro/optimization_demo.md
-Lectures/0. Intro/pre_notebook.py
-Lectures/0. Intro/data/FashionMNIST/raw/t10k-images-idx3-ubyte
-Lectures/0. Intro/data/FashionMNIST/raw/t10k-images-idx3-ubyte.gz
-Lectures/0. Intro/data/FashionMNIST/raw/t10k-labels-idx1-ubyte
-Lectures/0. Intro/data/FashionMNIST/raw/t10k-labels-idx1-ubyte.gz
-Lectures/0. Intro/data/FashionMNIST/raw/train-images-idx3-ubyte
-Lectures/0. Intro/data/FashionMNIST/raw/train-images-idx3-ubyte.gz
-Lectures/0. Intro/data/FashionMNIST/raw/train-labels-idx1-ubyte
-Lectures/0. Intro/data/FashionMNIST/raw/train-labels-idx1-ubyte.gz
-Lectures/0. Intro/data/MNIST/raw/t10k-images-idx3-ubyte
-Lectures/0. Intro/data/MNIST/raw/t10k-images-idx3-ubyte.gz
-Lectures/0. Intro/data/MNIST/raw/t10k-labels-idx1-ubyte
-Lectures/0. Intro/data/MNIST/raw/t10k-labels-idx1-ubyte.gz
-Lectures/0. Intro/data/MNIST/raw/train-images-idx3-ubyte
-Lectures/0. Intro/data/MNIST/raw/train-images-idx3-ubyte.gz
-Lectures/0. Intro/data/MNIST/raw/train-labels-idx1-ubyte
-Lectures/0. Intro/data/MNIST/raw/train-labels-idx1-ubyte.gz
-Lectures/0. Intro/tikz/convert_pdfs.sh
-Lectures/0. Intro/tikz/cross_entropy.aux
-Lectures/0. Intro/tikz/cross_entropy.fdb_latexmk
-Lectures/0. Intro/tikz/cross_entropy.fls
-Lectures/0. Intro/tikz/cross_entropy.log
-Lectures/0. Intro/tikz/cross_entropy.pdf
-Lectures/0. Intro/tikz/cross_entropy.synctex.gz
-Lectures/0. Intro/tikz/cross_entropy.tex
-Lectures/0. Intro/tikz/gradient_descent_contourtmp0.dat
-Lectures/0. Intro/tikz/gradient_descent_contourtmp0.script
-Lectures/0. Intro/tikz/gradient_descent.fdb_latexmk
-Lectures/0. Intro/tikz/gradient_descent.fls
-Lectures/0. Intro/tikz/gradient_descent.pdf
-Lectures/0. Intro/tikz/gradient_descent.tex
-Lectures/0. Intro/tikz/sigmoid.aux
-Lectures/0. Intro/tikz/sigmoid.fdb_latexmk
-Lectures/0. Intro/tikz/sigmoid.fls
-Lectures/0. Intro/tikz/sigmoid.log
-Lectures/0. Intro/tikz/sigmoid.pdf
-Lectures/0. Intro/tikz/sigmoid.synctex.gz
-Lectures/0. Intro/tikz/sigmoid.tex
-Lectures/0. Intro/tikz/spam_classification_process.aux
-Lectures/0. Intro/tikz/spam_classification_process.fdb_latexmk
-Lectures/0. Intro/tikz/spam_classification_process.fls
-Lectures/0. Intro/tikz/spam_classification_process.log
-Lectures/0. Intro/tikz/spam_classification_process.pdf
-Lectures/0. Intro/tikz/spam_classification_process.synctex.gz
-Lectures/0. Intro/tikz/spam_classification_process.tex
+Lecture resources/Lecture 0/Claude_spam.md
+Lecture resources/Lecture 0/lecture0_notebook.ipynb
+Lecture resources/Lecture 0/optimization_demo.ipynb
+Lecture resources/Lecture 0/optimization_demo.md
+Lecture resources/Lecture 0/pre_notebook.py
+Lecture resources/Lecture 0/data/FashionMNIST/raw/t10k-images-idx3-ubyte
+Lecture resources/Lecture 0/data/FashionMNIST/raw/t10k-images-idx3-ubyte.gz
+Lecture resources/Lecture 0/data/FashionMNIST/raw/t10k-labels-idx1-ubyte
+Lecture resources/Lecture 0/data/FashionMNIST/raw/t10k-labels-idx1-ubyte.gz
+Lecture resources/Lecture 0/data/FashionMNIST/raw/train-images-idx3-ubyte
+Lecture resources/Lecture 0/data/FashionMNIST/raw/train-images-idx3-ubyte.gz
+Lecture resources/Lecture 0/data/FashionMNIST/raw/train-labels-idx1-ubyte
+Lecture resources/Lecture 0/data/FashionMNIST/raw/train-labels-idx1-ubyte.gz
+Lecture resources/Lecture 0/data/MNIST/raw/t10k-images-idx3-ubyte
+Lecture resources/Lecture 0/data/MNIST/raw/t10k-images-idx3-ubyte.gz
+Lecture resources/Lecture 0/data/MNIST/raw/t10k-labels-idx1-ubyte
+Lecture resources/Lecture 0/data/MNIST/raw/t10k-labels-idx1-ubyte.gz
+Lecture resources/Lecture 0/data/MNIST/raw/train-images-idx3-ubyte
+Lecture resources/Lecture 0/data/MNIST/raw/train-images-idx3-ubyte.gz
+Lecture resources/Lecture 0/data/MNIST/raw/train-labels-idx1-ubyte
+Lecture resources/Lecture 0/data/MNIST/raw/train-labels-idx1-ubyte.gz
+Lecture resources/Lecture 0/tikz/convert_pdfs.sh
+Lecture resources/Lecture 0/tikz/cross_entropy.aux
+Lecture resources/Lecture 0/tikz/cross_entropy.fdb_latexmk
+Lecture resources/Lecture 0/tikz/cross_entropy.fls
+Lecture resources/Lecture 0/tikz/cross_entropy.log
+Lecture resources/Lecture 0/tikz/cross_entropy.pdf
+Lecture resources/Lecture 0/tikz/cross_entropy.synctex.gz
+Lecture resources/Lecture 0/tikz/cross_entropy.tex
+Lecture resources/Lecture 0/tikz/gradient_descent_contourtmp0.dat
+Lecture resources/Lecture 0/tikz/gradient_descent_contourtmp0.script
+Lecture resources/Lecture 0/tikz/gradient_descent.fdb_latexmk
+Lecture resources/Lecture 0/tikz/gradient_descent.fls
+Lecture resources/Lecture 0/tikz/gradient_descent.pdf
+Lecture resources/Lecture 0/tikz/gradient_descent.tex
+Lecture resources/Lecture 0/tikz/sigmoid.aux
+Lecture resources/Lecture 0/tikz/sigmoid.fdb_latexmk
+Lecture resources/Lecture 0/tikz/sigmoid.fls
+Lecture resources/Lecture 0/tikz/sigmoid.log
+Lecture resources/Lecture 0/tikz/sigmoid.pdf
+Lecture resources/Lecture 0/tikz/sigmoid.synctex.gz
+Lecture resources/Lecture 0/tikz/sigmoid.tex
+Lecture resources/Lecture 0/tikz/spam_classification_process.aux
+Lecture resources/Lecture 0/tikz/spam_classification_process.fdb_latexmk
+Lecture resources/Lecture 0/tikz/spam_classification_process.fls
+Lecture resources/Lecture 0/tikz/spam_classification_process.log
+Lecture resources/Lecture 0/tikz/spam_classification_process.pdf
+Lecture resources/Lecture 0/tikz/spam_classification_process.synctex.gz
+Lecture resources/Lecture 0/tikz/spam_classification_process.tex
 Material from other courses/Lewis_and_shmoys.pdf
-Lectures/0. Intro/tikz/gradient_descent.aux
-Lectures/0. Intro/tikz/gradient_descent.log
-Lectures/0. Intro/tikz/gradient_descent.synctex.gz
+Lecture resources/Lecture 0/tikz/gradient_descent.aux
+Lecture resources/Lecture 0/tikz/gradient_descent.log
+Lecture resources/Lecture 0/tikz/gradient_descent.synctex.gz
