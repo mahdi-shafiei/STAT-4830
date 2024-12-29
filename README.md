@@ -10,7 +10,7 @@ AKA:
 
 Lectures notes:
 
-[Lecture 0: Introduction](Lectures/0.%20Intro/Lecture0_notes.md)
+[Lecture 0: Introduction](Lecture0.md)
 
 ## High-level thoughts on the course
 
