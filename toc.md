@@ -1,3 +1,3 @@
 # Lectures
 
-- [Lecture 0](Lectures/Lecture0.md)
+- [Lecture 0: Introduction](Lectures/Lecture0.md)
