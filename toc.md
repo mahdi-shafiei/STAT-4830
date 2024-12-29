@@ -1,3 +1,3 @@
 # Lectures
 
-[Lecture 0: Introduction](lectures?n=0)
+[Lecture 0: Introduction](Lecture0.md)

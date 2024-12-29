@@ -8,7 +8,7 @@ AKA:
 
 *See a rough outline of the course [here](Lecture0.md#tentative-course-structure).* 
 
-For lecture notes see [table of contents](toc.md)
+For lecture notes see [table of contents](toc.md).
 
 ## High-level thoughts on the course
 
