@@ -13,6 +13,10 @@ For lecture notes see [table of contents](toc.md).
 ## High-level thoughts on the course
 
 * **Why am I excited about this course?** Optimization works! Everything you learn about solving optimization problems numerically will be useful in your career, whether you're a data scientist, AI researcher, or an engineer of any kind. Understanding how optimization methods work and how to use them will actually help you solve *real* problems. 
+
+   To quote [Joshua Achiam](https://x.com/jachiam0/status/1872849427653902744) (OpenAI):
+   > If you want to know something deep, fundamental, and maximally portable between virtually every field: study mathematical optimization.
+
 * **Who is this course meant for?** This is an experimental undergraduate course meant for students who are (roughly) in their junior or senior year. The course should also be beneficial to PhD students who wish to apply optimization techniques in their research.
 * **What is the goal of the course?** By the end of the course, my goal is for you to be able to *intelligently apply numerical optimization techniques* in a research project in machine learning, data science, or related fields. We will discuss optimization theory in the course, but that will not be the focus.
 * **Production vs. Research-level code?** We will mainly be coding Python notebooks developing research-level code that focuses on the intricacies of optimization methods. Taking research-level code to production is a separate skill that we will not focus on in this course. 
