@@ -1,8 +1,6 @@
 # STAT 4830: Numerical optimization for data science and machine learning 
 
-AKA: 
-1. How to train your model
-2. Optimization in PyTorch
+AKA: Optimization in PyTorch
 
 > I'm currently developing this course for Spring 2025. I am literally pushing my thoughts to this public repo as soon as I have them. Be prepared for the course to look rough until the semester starts.
 
