@@ -254,7 +254,6 @@ The optimization process continues until it takes 1000 steps in the gradient dir
 
 ### Why PyTorch?
 
-
 PyTorch makes this optimization painless by automating the most challenging part - computing gradients. As calculations flow through our code, PyTorch builds a record of operations (a computational graph). When we call `backward()`, this graph enables automatic calculation of all required derivatives.
 
 The framework achieves this automation through tensors - its fundamental building blocks that store numbers in grid structures representing single values, lists, tables, or higher-dimensional arrays. PyTorch uses tensors because they track operation history for automatic gradients and enable parallel computation. This design lets code run efficiently on both CPUs and GPUs with minimal changes.
@@ -268,28 +267,8 @@ Our spam filter illustrates the key ideas you'll master:
 2. Choosing appropriate optimization methods
 3. Implementing solutions in PyTorch
 
-<!-- Moving from raw data to optimal decisions needs both mathematical insight and practical coding skills. You'll develop both through hands-on experience with:
-- Different types of optimization problems
-- Various optimization algorithms
-- Modern software tools
-- Real-world applications -->
 
 ## Tentative Course Structure
-
-<!-- ## Core Application Areas
-
-Three key areas where optimization drives modern computing:
-
-### Statistical Estimation and Inverse Problems
-Reconstruct signals from indirect observations - as in the reconstruction of the first black hole image from radio telescope data.
-
-### Machine Learning Models
-Train models that learn patterns from data, whether for prediction (spam detection) or generation (language models).
-
-### Sequential Decision Making
-Make decisions in sequence where each choice reshapes future possibilities - from chess strategies to spacecraft navigation. -->
-
-<!-- ## Technical Foundations and Methods -->
 
 ### 1. Linear Algebra, Regression, and Direct Methods
 We begin with the essential tools: norms, inner products, and matrix decompositions. Linear regression serves as our first optimization problem, solvable through direct methods like LU factorization and Gaussian elimination. These methods work well for moderate problem sizes but struggle with large datasets, motivating our transition to iterative methods.
