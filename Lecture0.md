@@ -145,9 +145,9 @@ $$
 
 Where:
 - $w$ are the weights we're trying to find (a vector with 5 entries)
-- $x_i$ are the features of email i (another vector with 5 entries)
+- $x_i$ are the features of email $i$ (another vector with 5 entries)
 - $x_i^\top w$ is the dot product of $x_i$ and $w$ (a scalar)
-- $y_i$ is 1 if email i is spam, 0 if not
+- $y_i$ is $1$ if email $i$ is spam, $0$ if not
 - $\sigma$ is the sigmoid function 
 - $n$ is the number of training emails
 
