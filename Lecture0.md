@@ -68,7 +68,7 @@ def extract_features(email):
     features = {
         'exclamation_count': email.count('!'),
         'urgent_words': len(['urgent', 'act now', 'prize'] & set(email.lower().split())),
-        'suspicious_links': len([link for link in email.split() if 'www' in link]),
+        'suspicious_links': len([link for link in email.split() if 'www' in link]), # Any link is suspicious imo
         'time_sent': email.timestamp.hour,  # Spam often sent at odd hours
         'length': len(email)
     }
@@ -77,7 +77,7 @@ def extract_features(email):
 # Our spam email gets turned into numbers
 spam_features = extract_features(email1)
 print(spam_features)
-# {'exclamation_count': 5,
+# {'exclamation_count': 8,
 #  'urgent_words': 3,
 #  'suspicious_links': 1,
 #  'time_sent': 3,
