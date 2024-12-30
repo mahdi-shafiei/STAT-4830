@@ -8,6 +8,8 @@ AKA: Optimization in PyTorch
 
 For lecture notes see [table of contents](toc.md).
 
+**Discord server:** I'll invite you to the course's Discord server once the course starts. If you join late and do not have an invite, email me from your Penn email and I'll add you.
+
 ## Table of contents
 - [High-level thoughts on the course](#high-level-thoughts-on-the-course)
 - [Overview](#overview)
