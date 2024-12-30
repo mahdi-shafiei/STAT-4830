@@ -1,7 +1,7 @@
 # Lecture 0: Introduction
 
 ## Notebooks and Slides
-- [Lecture slides](lecture0-slides.pdf)
+- [Lecture slides](Lecture0-slides.pdf)
 - [Colab notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/Lecture0.ipynb)
 
 ## Table of contents
