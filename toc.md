@@ -1,4 +1,4 @@
 # Lectures
 
-[Lecture 0: Introduction](Lecture0.md)
-   > Course content, a deliverable, and spam classificaiton in PyTorch.
+[Lecture 0 notes: Introduction](Lecture0.md) | [Colab notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/Lecture0.ipynb)
+   > Course content, a deliverable, and spam classification in PyTorch.
