@@ -248,7 +248,7 @@ for _ in range(1000):
         weights.grad.zero_()
 ```
 
-More formally, each iteration measures how well our current weights classify *all* of our training emails, calculates a *gradient* of the loss function with respect the weights $w$ that points in the direction of error reduction, and updates all weights by taking a small step in this error-reducing direction. The learning rate (0.01) controls these steps - smaller values move more reliably toward better weights but take longer, while larger values move faster but risk overshooting good solutions.
+More formally, each iteration measures how well our current weights classify *all* of our training emails, calculates a *gradient* of the loss function with respect the weights $w$ (an "error-reducing" direction), and updates all weights by taking a small step in this error-reducing direction. The learning rate (0.01) controls these steps - smaller values move more reliably toward better weights but take longer, while larger values move faster but risk overshooting good solutions.
 
 The optimization process continues until it takes 1000 steps in the gradient direction. This is just one way to stop the algorithm; others exist. For example, we could instead halt when the loss plateaus (stops decreasing significantly) or reaches a target threshold. Each approach balances computation time against solution quality.
 
