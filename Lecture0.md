@@ -140,7 +140,7 @@ The sigmoid function provides crucial properties:
 Our spam filter needs to find weights that correctly classify emails. We can write this as an optimization problem:
 
 $$
-\min_{w} \frac{1}{n} \sum_{i=1}^n \left[ -y_i \log(\sigma(x_i^T w)) - (1-y_i) \log(1-\sigma(x_i^T w)) \right]
+\min_{w} \frac{1}{n} \sum_{i=1}^n \left[ -y_i \log(\sigma(x_i^\top w)) - (1-y_i) \log(1-\sigma(x_i^\top w)) \right]
 $$
 
 Where:
