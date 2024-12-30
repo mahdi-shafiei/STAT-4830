@@ -1,0 +1,7 @@
+{
+    "markdown.marp.themes": [
+        "./theme.css"
+    ],
+    "markdown.marp.enableHtml": true,
+    "markdown.marp.highlightTheme": "github-light"
+} 
