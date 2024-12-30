@@ -6,6 +6,10 @@
 3. [Tentative course structure](#tentative-course-structure)
 4. [Expectations and learning outcomes](#expectations-and-learning-outcomes)
 
+### Notebooks
+
+[Colab notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/Lecture0.ipynb) for the spam filter example.
+
 ## Course Syllabus and key points
 Welcome to STAT 4830: Numerical optimization for data science and machine learning. This course teaches you how to formulate optimization problems, select and implement algorithms, and use frameworks like PyTorch to build and train models. Below are some highlights of the syllabus to get you oriented:
 
