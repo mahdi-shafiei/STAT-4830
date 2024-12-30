@@ -252,25 +252,14 @@ More formally, each iteration measures how well our current weights classify *al
 
 The optimization process continues until it takes 1000 steps in the gradient direction. This is just one way to stop the algorithm; others exist. For example, we could instead halt when the loss plateaus (stops decreasing significantly) or reaches a target threshold. Each approach balances computation time against solution quality.
 
+### Why PyTorch?
+
+
 PyTorch makes this optimization painless by automating the most challenging part - computing gradients. As calculations flow through our code, PyTorch builds a record of operations (a computational graph). When we call `backward()`, this graph enables automatic calculation of all required derivatives.
 
 The framework achieves this automation through tensors - its fundamental building blocks that store numbers in grid structures representing single values, lists, tables, or higher-dimensional arrays. PyTorch uses tensors because they track operation history for automatic gradients and enable parallel computation. This design lets code run efficiently on both CPUs and GPUs with minimal changes.
 
 While our spam filter demonstrates these concepts simply, the same pattern powers most machine learning: predict outputs, measure errors, compute gradients, adjust parameters. Different problems require different loss functions or model architectures, but this optimization loop remains central.
-
-### Why PyTorch?
-
-PyTorch excels at optimization because it:
-1. Automatically tracks how weights affect predictions
-2. Efficiently updates weights to reduce mistakes
-3. Runs on GPUs for processing millions of emails quickly
-4. Handles complex models beyond simple spam filters
-
-This same pattern – features, weights, optimization – appears throughout machine learning:
-- Detecting objects in images
-- Translating languages
-- Recommending products
-- Forecasting weather
 
 ### What you'll learn in this course
 
