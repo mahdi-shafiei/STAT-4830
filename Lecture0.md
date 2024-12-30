@@ -157,7 +157,7 @@ Where:
 
 This formula measures our mistakes (called "cross-entropy loss").
 
-## Why cross-entropy loss works
+### Why cross-entropy loss works
 
 The cross-entropy loss teaches our model to make confident, correct predictions while severely punishing mistakes. Let's see how it works by examining the two curves in our plot, which show how we penalize predictions for spam and non-spam emails.
 
@@ -256,7 +256,7 @@ More formally, each iteration measures how well our current weights classify *al
 
 The optimization process continues until it takes 1000 steps in the gradient direction. This is just one way to stop the algorithm; others exist. For example, we could instead halt when the loss plateaus (stops decreasing significantly) or reaches a target threshold. Each approach balances computation time against solution quality.
 
-## Numerical results
+### Numerical results
 When you checkout the [notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/Lecture0.ipynb) for this lecture, this is what you'll see as you run the training loop: 
 ![Loss curves](Lecture%20resources/Lecture%200/figures/training_run.png)
 The first plot shows the value of the cross-entropy loss as we train the model. This and the "training accuracy" (shown in the second plot) are both metrics that measure how well our model performs on the training data. They are are diagnostic plots -- they say at least the optimization part of the code is working. 
