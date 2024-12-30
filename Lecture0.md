@@ -1,6 +1,6 @@
-# Lecture 0: Intro to the Course
+# Lecture 0: Intro to the course
 
-## Table of Contents
+## Table of contents
 1. [Course syllabus and key points](#course-syllabus-and-key-points)
 2. [Preview: Solving spam classification with optimization](#preview-solving-spam-classification-with-optimization)
 3. [Tentative course structure](#tentative-course-structure)
@@ -10,7 +10,7 @@
 
 [Colab notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/Lecture0.ipynb) for the spam filter example.
 
-## Course Syllabus and key points
+## Course syllabus and key points
 Welcome to STAT 4830: Numerical optimization for data science and machine learning. This course teaches you how to formulate optimization problems, select and implement algorithms, and use frameworks like PyTorch to build and train models. Below are some highlights of the syllabus to get you oriented:
 
 ### Prerequisites
@@ -20,7 +20,7 @@ Welcome to STAT 4830: Numerical optimization for data science and machine learni
 - Familiarity with Python programming.
 - You do not need a background in advanced optimization or machine learning research. We’ll cover the fundamentals together.
 
-### Schedule and Format
+### Schedule and format
 
 - This is primarily a lecture-based course with weekly programming exercises.
 - We will introduce theory (convexity, gradient-based methods, constraints, etc.) and then apply it in Python notebooks using PyTorch (and occasionally other libraries like CVXPY).
@@ -36,7 +36,7 @@ Welcome to STAT 4830: Numerical optimization for data science and machine learni
 - We are focusing on PyTorch because deep learning’s success has been driven in part by modern auto-differentiation frameworks.
 - These frameworks allow for rapid experimentation with new model architectures and optimization algorithms—something that older solver-based tools (like CVX or early MATLAB packages) did not fully accommodate.
 
-### Who Is This Course For?
+### Who is this course for?
 
 - Targeted at junior/senior undergrads, but also valuable for PhD students wanting to incorporate numerical optimization into their research. Students who have met the prerequisites are welcome to join.
 - If you already have a research project that involves model fitting or data analysis, this course may deepen your toolkit and sharpen your understanding of optimization.
@@ -282,14 +282,14 @@ Our spam filter illustrates the key ideas you'll learn in this course:
 2. Choosing appropriate optimization methods
 3. Implementing solutions in PyTorch
 
-## Tentative Course Structure
+## Tentative course structure
 
 So what will we cover in this course?
 
-### 1. Linear Algebra, Regression, and Direct Methods
+### 1. Linear algebra, regression, and direct methods
 We begin with the essential tools: norms, inner products, and matrix decompositions. Linear regression serves as our first optimization problem, solvable through direct methods like LU factorization and Gaussian elimination. These methods work well for moderate problem sizes but struggle with large datasets, motivating our transition to iterative methods.
 
-### 2. Problem Formulations and Classical Software
+### 2. Problem formulations and classical software
 
 This section introduces optimization formulations in several core application areas, and classical formulations that are solveable by existing software tools.
 
@@ -306,26 +306,26 @@ Make decisions in sequence where each choice reshapes future possibilities - fro
 
 Second, we study classical **convex formulations**, such as Linear Programs (LP), Quadratic Programs (QP), and Semidefinite Programs (SDP). These formulations have well-understood properties and moderately sized problem can be solved efficiently by existing software tools, such as CVXPY and others (e.g., [Google's MathOpt](https://developers.google.com/optimization/math_opt)). While our core applications often involve more complex optimization problems, recognizing when parts of them fit into these classical templates allows us to leverage powerful, ready-made solvers.
 
-### 3. Calculus for Optimization
+### 3. Calculus for optimization
 Gradients, Hessians, and Taylor expansions provide the mathematical foundation for optimization algorithms. This section explains how these tools guide algorithm design and implementation.
 
-### 4. Automatic Differentiation and PyTorch
+### 4. Automatic differentiation and PyTorch
 Automatic differentiation (AD) powers modern deep learning frameworks. We examine how AD works, starting with a minimal implementation (Micrograd) before moving to PyTorch. This progression reveals how frameworks handle derivatives automatically, enabling rapid iteration on complex models.
 
-### 5. First-Order Methods: (Stochastic) Gradient Descent
+### 5. First-order methods: (Stochastic) gradient descent
 Large datasets make computing exact gradients impractical. Stochastic and mini-batch variants of gradient descent offer a solution by sampling data subsets. We examine theoretical guarantees (global minima for convex problems, critical points for nonconvex ones) and practical modifications like Adam, momentum, and learning rate schedules.
 
-### 6. Second-Order Methods
+### 6. Second-order methods
 Some optimization landscapes require more than gradient information. Newton, Gauss-Newton, and quasi-Newton methods reshape the optimization landscape for faster convergence. Linear solvers (Conjugate Gradient, CoLA) make these approaches practical for large problems.
 
-### 7. Advanced Topics
+### 7. Advanced topics
 Based on class interests, we may cover:
 - Zeroth-order methods for settings without gradients
 - Constrained optimization via projections and proximal operators
 - Distributed optimization for data across multiple machines
 - Privacy-preserving methods using differential privacy
 
-### 8. Modern Practice in Deep Learning
+### 8. Modern practice in deep learning
 We conclude with practical strategies for large-scale optimization:
 - Scaling laws and performance prediction (Mu_p)
 - Implementation strategies from Google's Deep Learning Tuning Playbook
@@ -334,7 +334,7 @@ We conclude with practical strategies for large-scale optimization:
 
 The details of this outline shift based on class interests. By the end of the course, you will have a toolbox of optimization methods, an understanding of their theoretical underpinnings, and practical experience in applying them to real problems.
 
-## Expectations and Learning Outcomes
+## Expectations and learning outcomes
 
 What will you learn by the end of this course?
 
