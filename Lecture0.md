@@ -34,7 +34,7 @@ Welcome to STAT 4830: Numerical optimization for data science and machine learni
 
 ### Who Is This Course For?
 
-- Targeted at junior/senior undergrads, but also valuable for PhD students wanting to incorporate numerical optimization into their research.
+- Targeted at junior/senior undergrads, but also valuable for PhD students wanting to incorporate numerical optimization into their research. Students who have met the prerequisites are welcome to join.
 - If you already have a research project that involves model fitting or data analysis, this course may deepen your toolkit and sharpen your understanding of optimization.
 - We will keep refining the course content based on your interests. If you have a particular topic, domain, or application you’d like to see, let me know.
 
