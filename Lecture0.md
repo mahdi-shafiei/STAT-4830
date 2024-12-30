@@ -223,18 +223,15 @@ This is exactly how the most well-known algorithm for optimization--called gradi
 
 We can implement the gradient descent algorithm in PyTorch. Here's how each step or iteration works:
 
+1. Measure how each weight affects our mistakes
+2. Adjust weights to reduce future mistakes
+3. Get closer to weights that separate spam from legitimate email
 
-1. Measures how each weight affects our mistakes
-2. Adjusts weights to reduce future mistakes
-3. Gets closer to weights that separate spam from legitimate email
-
-The process repeats until the mistakes can't be reduced further:
+The process repeats until the mistakes can't be reduced further: 
 
 ```python
 # Start with random weights
 weights = torch.randn(5, requires_grad=True)
-
-# Learning rate controls "step size"
 learning_rate = 0.01
 
 for _ in range(1000):
@@ -250,6 +247,16 @@ for _ in range(1000):
         weights -= learning_rate * weights.grad
         weights.grad.zero_()
 ```
+
+More formally, each iteration measures how well our current weights classify *all* of our training emails, calculates a *gradient* of the loss function with respect the weights $w$ that points in the direction of error reduction, and updates all weights by taking a small step in this error-reducing direction. The learning rate (0.01) controls these steps - smaller values move more reliably toward better weights but take longer, while larger values move faster but risk overshooting good solutions.
+
+The optimization process continues until it takes 1000 steps in the gradient direction. This is just one way to stop the algorithm; others exist. For example, we could instead halt when the loss plateaus (stops decreasing significantly) or reaches a target threshold. Each approach balances computation time against solution quality.
+
+PyTorch makes this optimization painless by automating the most challenging part - computing gradients. As calculations flow through our code, PyTorch builds a record of operations (a computational graph). When we call `backward()`, this graph enables automatic calculation of all required derivatives.
+
+The framework achieves this automation through tensors - its fundamental building blocks that store numbers in grid structures representing single values, lists, tables, or higher-dimensional arrays. PyTorch uses tensors because they track operation history for automatic gradients and enable parallel computation. This design lets code run efficiently on both CPUs and GPUs with minimal changes.
+
+While our spam filter demonstrates these concepts simply, the same pattern powers most machine learning: predict outputs, measure errors, compute gradients, adjust parameters. Different problems require different loss functions or model architectures, but this optimization loop remains central.
 
 ### Why PyTorch?
 
