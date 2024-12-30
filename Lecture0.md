@@ -168,12 +168,12 @@ confident_wrong = 0.8       # "Probably spam (80% chance)"
 confident_right = 0.1       # "Probably not spam (10% chance)"
 ```
 
-The red curve ("Wrong: Not Spam") shows how we penalize mistakes on legitimate emails:
+The green curve ("Wrong: Not Spam") shows how we penalize mistakes on legitimate emails:
 - An uncertain wrong prediction (0.3) receives a moderate penalty
 - A confident wrong prediction (0.8) triggers a severe penalty
 - The penalty approaches infinity as the prediction approaches 1.0
 
-The green curve ("Right: Spam") works similarly but for actual spam emails. Together, the curves create a powerful learning dynamic:
+The red curve ("Right: Spam") works similarly but for actual spam emails. Together, the curves create a powerful learning dynamic:
 
 1. **Uncertainty gets corrected**: The point "Uncertain & Wrong" shows a prediction hovering around 0.3 - not catastrophically wrong, but penalized enough to encourage learning.
 
