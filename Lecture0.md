@@ -106,7 +106,7 @@ w = torch.tensor(list(weights.values()), requires_grad=True)
 
 ### The classification process
 
-![Spam Classification Process](Lecture%20resources/Lecture%200/tikz/spam_classification_process.png)
+![Spam Classification Process](Lecture%20resources/Lecture%200/figures/spam_classification_process.png)
 
 Features flow through a sequence of transformations:
 1. Extract numeric features from raw text
@@ -118,7 +118,7 @@ Features flow through a sequence of transformations:
 
 We combine features and weights to get a "spam score". But how do we turn this score into a yes/no decision? We use a function called sigmoid that turns any number into a "probability" between 0 and 1:
 
-![Sigmoid Function](Lecture%20resources/Lecture%200/tikz/sigmoid.png)
+![Sigmoid Function](Lecture%20resources/Lecture%200/figures/sigmoid.png)
 
 ```python
 def sigmoid(x):
@@ -157,7 +157,7 @@ This formula measures our mistakes (called "cross-entropy loss").
 
 The cross-entropy loss teaches our model to make confident, correct predictions while severely punishing mistakes. Let's see how it works by examining the two curves in our plot, which show how we penalize predictions for spam and non-spam emails.
 
-![Cross-Entropy Loss](Lecture%20resources/Lecture%200/tikz/cross_entropy.png)
+![Cross-Entropy Loss](Lecture%20resources/Lecture%200/figures/cross_entropy.png)
 <!-- [Figure: Cross-Entropy Loss - See cross_entropy.tex] -->
 
 Consider a legitimate email (not spam, label = 0). Our model assigns it a probability of being spam:
@@ -216,7 +216,7 @@ Imagine you're hiking in a valley and want to reach the lowest point. A natural 
 2. Take a step in the steepest downhill direction
 3. Repeat until you can't go lower
 
-![Gradient descent visualization showing path from high point to minimum](Lecture%20resources/Lecture%200/tikz/gradient_descent.png)
+![Gradient descent visualization showing path from high point to minimum](Lecture%20resources/Lecture%200/figures/gradient_descent.png)
 This is exactly how the most well-known algorithm for optimization--called gradient descent--works. 
 
 ### Finding the weights with PyTorch
@@ -252,23 +252,35 @@ More formally, each iteration measures how well our current weights classify *al
 
 The optimization process continues until it takes 1000 steps in the gradient direction. This is just one way to stop the algorithm; others exist. For example, we could instead halt when the loss plateaus (stops decreasing significantly) or reaches a target threshold. Each approach balances computation time against solution quality.
 
-### Why PyTorch?
+## Numerical results
+When you checkout the [notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/Lecture0.ipynb) for this lecture, this is what you'll see as you run the training loop: 
+![Loss curves](Lecture%20resources/Lecture%200/figures/training_run.png)
+The first plot shows the value of the cross-entropy loss as we train the model. This and the "training accuracy" (shown in the second plot) are both metrics that measure how well our model performs on the training data. They are are diagnostic plots -- they say at least the optimization part of the code is working. 
 
-PyTorch makes this optimization painless by automating the most challenging part - computing gradients. As calculations flow through our code, PyTorch builds a record of operations (a computational graph). When we call `backward()`, this graph enables automatic calculation of all required derivatives.
+The third plot is far more important. It shows the performance of the model on a test set of emails that were not used to train the model.  A gap between training and test accuracy would signal overfitting, but here both metrics converge and stay stable, indicating the model generalizes well to new examples.
+
+Together, these plots confirm our model learns a robust set of rules for distinguishing spam from legitimate email. The rapid initial progress followed by stability suggests the feature set captures the essential patterns in our data.
+
+### The what, how, and why of PyTorch
+
+PyTorch makes this optimization process painless by automating the most challenging part - computing gradients. As calculations flow through our code, PyTorch builds a record of operations (a computational graph). When we call `backward()`, this graph enables automatic calculation of all required derivatives.
 
 The framework achieves this automation through tensors - its fundamental building blocks that store numbers in grid structures representing single values, lists, tables, or higher-dimensional arrays. PyTorch uses tensors because they track operation history for automatic gradients and enable parallel computation. This design lets code run efficiently on both CPUs and GPUs with minimal changes.
 
-While our spam filter demonstrates these concepts simply, the same pattern powers most machine learning: predict outputs, measure errors, compute gradients, adjust parameters. Different problems require different loss functions or model architectures, but this optimization loop remains central.
+We'll talk more about these intricacies as the course progresses.
 
 ### What you'll learn in this course
 
-Our spam filter illustrates the key ideas you'll master:
+While our spam filter demonstrates these concepts simply, the same pattern powers most machine learning: predict outputs, measure errors, compute gradients, adjust parameters. Different problems require different loss functions or model architectures, but this optimization loop remains central and is the focus of this course.
+
+Our spam filter illustrates the key ideas you'll learn in this course:
 1. Converting real problems into optimization problems
 2. Choosing appropriate optimization methods
 3. Implementing solutions in PyTorch
 
-
 ## Tentative Course Structure
+
+So what will we cover in this course?
 
 ### 1. Linear Algebra, Regression, and Direct Methods
 We begin with the essential tools: norms, inner products, and matrix decompositions. Linear regression serves as our first optimization problem, solvable through direct methods like LU factorization and Gaussian elimination. These methods work well for moderate problem sizes but struggle with large datasets, motivating our transition to iterative methods.
@@ -319,6 +331,8 @@ We conclude with practical strategies for large-scale optimization:
 The details of this outline shift based on class interests. By the end of the course, you will have a toolbox of optimization methods, an understanding of their theoretical underpinnings, and practical experience in applying them to real problems.
 
 ## Expectations and Learning Outcomes
+
+What will you learn by the end of this course?
 
 1. **Modeling and Formulation**  
    By the end of this course, you should be able to take a real-world problem (in data science, machine learning, or sequential decision-making) and translate it into a formal optimization problem with well-defined objectives and constraints.
