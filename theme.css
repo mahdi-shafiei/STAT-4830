@@ -331,6 +331,6 @@ section > h1:first-child {
 /* Special sizing for specific diagrams */
 .rows img[src*="spam_classification_process"],
 .rows img[src*="cross_entropy"] {
-  max-width: 57%;
-  max-height: 57%;
+  max-width: 75%;
+  max-height: 75%;
 } 

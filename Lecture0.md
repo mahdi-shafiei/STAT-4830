@@ -1,4 +1,8 @@
-# Lecture 0: Intro to the course
+# Lecture 0: Introduction
+
+## Notebooks and Slides
+- [Lecture slides](lecture0-slides.pdf)
+- [Colab notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/Lecture0.ipynb)
 
 ## Table of contents
 1. [Course syllabus and key points](#course-syllabus-and-key-points)
