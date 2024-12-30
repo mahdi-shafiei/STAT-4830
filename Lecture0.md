@@ -177,7 +177,7 @@ The red curve ("Right: Spam") works similarly but for actual spam emails. Togeth
 
 1. **Uncertainty gets corrected**: The point "Uncertain & Wrong" shows a prediction hovering around 0.3 - not catastrophically wrong, but penalized enough to encourage learning.
 
-2. **Confidence gets rewarded**: The point "Confident & Right" shows a prediction around 0.8, receiving minimal penalty. This reinforces correct, confident predictions.
+2. **Confidence gets rewarded**: The point "Confident & Right" shows a prediction around 0.1, receiving minimal penalty. This reinforces correct, confident predictions.
 
 3. **Catastrophic mistakes get prevented**: Both curves shoot upward at their edges, creating enormous penalties for high-confidence mistakes. This prevents the model from becoming overly confident in the wrong direction.
 
