@@ -3,5 +3,8 @@
         "./theme.css"
     ],
     "markdown.marp.enableHtml": true,
-    "markdown.marp.highlightTheme": "github-light"
+    "markdown.marp.highlightTheme": "github-light",
+    "markdown.marp.workspace.path": "${workspaceFolder}",
+    "markdown.validate.enabled": true,
+    "markdown.validate.fileLinks.enabled": "warning"
 } 

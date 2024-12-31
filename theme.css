@@ -1,4 +1,11 @@
 /* @theme custom */
+@import-theme 'default';
+
+/* Define size preset */
+@size 16:9 {
+  width: 1920px;
+  height: 1080px;
+}
 
 :root {
   --base-background-color: #ffffff;
@@ -18,11 +25,16 @@ section {
   font-weight: 300;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  padding: 0.3em 4% 2em 4%;
+  padding: 4em 4% 2em 4%;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 1080px;
+  width: 1920px;
+  box-sizing: border-box;
+  position: relative;
+  page-break-after: always;
   overflow: hidden;
+  margin: 0;
 }
 
 /* Slide number styling */
@@ -40,10 +52,14 @@ section::after {
 /* Title positioning */
 h1 {
   font-size: 2em;
-  margin-top: 0;
-  padding-top: 0;
-  margin-bottom: 1em;
+  margin: 0;
+  padding: 0;
   color: var(--accent-color-dark);
+  position: absolute;
+  top: 0.3em;
+  left: 4%;
+  width: 92%;
+  z-index: 1;
 }
 
 h2 {
@@ -243,7 +259,7 @@ p {
 
 /* Make sure content fits on slides */
 section {
-  padding: 0.3em 4% 2em 4%;
+  padding: 4em 4% 2em 4%;
   overflow: hidden;
 }
 
@@ -252,7 +268,8 @@ section {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 2em;
-  margin-top: 1em;
+  margin-top: 0;
+  height: calc(100% - 3em);
 }
 
 .left {
@@ -273,7 +290,7 @@ section {
 section {
   display: flex;
   flex-direction: column;
-  padding: 0.3em 4% 2em 4%;
+  padding: 4em 4% 2em 4%;
 }
 
 /* Title stays at top */
@@ -286,7 +303,8 @@ section > h1:first-child {
   display: flex;
   flex-direction: column;
   gap: 0.3em;
-  height: 100%;
+  height: calc(100% - 3em);
+  margin-top: -4em;
   padding-top: 0;
 }
 
@@ -324,8 +342,8 @@ section > h1:first-child {
 
 /* Special sizing for classification process diagram */
 .rows img[src*="spam_classification_process"] {
-  max-width: 75%;  /* Reduced from 90% */
-  max-height: 75%;  /* Reduced from 90% */
+  max-width: 65%;
+  max-height: 65%;
 }
 
 /* Special sizing for specific diagrams */
@@ -333,4 +351,23 @@ section > h1:first-child {
 .rows img[src*="cross_entropy"] {
   max-width: 75%;
   max-height: 75%;
+}
+
+/* Smaller size for cross entropy diagram */
+.rows img[src*="cross_entropy"] {
+  max-width: 57%;
+  max-height: 57%;
+}
+
+/* Ensure content is properly contained */
+section > * {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
+/* Ensure the page itself is landscape */
+@page {
+  size: 1920px 1080px;
+  margin: 0;
 } 

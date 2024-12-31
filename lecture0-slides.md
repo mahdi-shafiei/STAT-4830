@@ -3,6 +3,7 @@ marp: true
 theme: custom
 paginate: true
 math: katex
+size: 16:9
 ---
 
 <br><br> <br><br> 
@@ -325,6 +326,6 @@ By course end, you'll be able to:
 
 - Course website: [https://damek.github.io/STAT-4830/](https://damek.github.io/STAT-4830/)
 - Office hours: Listed on the course website
-- Email: [damek@wharton.upenn.edu](damek@wharton.upenn.edu) 
+- Email: [damek@wharton.upenn.edu](mailto:damek@wharton.upenn.edu) 
 - Discord: Check email for invite.
 
