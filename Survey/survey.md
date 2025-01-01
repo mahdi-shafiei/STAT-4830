@@ -1,4 +1,4 @@
-const markdown = `# STAT 4830: Student Background Survey
+# STAT 4830: Student Background Survey
 
 ## Basic Information
 1. Full Name: [Short answer]
@@ -160,4 +160,4 @@ const markdown = `# STAT 4830: Student Background Survey
 ## Additional Information
 27. What concerns do you have about the course? [Paragraph answer]
 
-28. Any other relevant background or information you'd like to share? [Paragraph answer]`;
+28. Any other relevant background or information you'd like to share? [Paragraph answer]
