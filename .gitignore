@@ -95,3 +95,6 @@ section/0/figures/spam_classification_process.log
 section/0/figures/spam_classification_process.pdf
 section/0/figures/spam_classification_process.synctex.gz
 section/0/figures/spam_classification_process.tex
+
+# Jekyll build directory
+_site/

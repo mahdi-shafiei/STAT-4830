@@ -1,3 +1,8 @@
+---
+layout: course_page
+title: Table of Contents
+---
+
 # 0. Introduction
 
 ## Notebooks and Slides

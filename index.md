@@ -1,3 +1,8 @@
+---
+layout: course_page
+title: Course Overview
+---
+
 # Stat 4830: Numerical optimization for data science and machine learning 
 
 AKA: Optimization in PyTorch

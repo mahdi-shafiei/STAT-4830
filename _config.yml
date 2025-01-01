@@ -1,0 +1,11 @@
+title: "STAT 4830: Numerical Optimization for Data Science and Machine Learning"
+description: Course materials for STAT 4830
+baseurl: "/STAT-4830"
+url: "https://damek.github.io"
+github_username: damek
+
+# Build settings
+markdown: kramdown
+theme: jekyll-theme-minimal
+plugins:
+  - jekyll-seo-tag
