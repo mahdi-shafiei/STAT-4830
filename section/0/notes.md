@@ -1,8 +1,8 @@
 # 0. Introduction
 
 ## Notebooks and Slides
-- [Lecture slides](Lecture0-slides.pdf)
-- [Colab notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/Lecture0.ipynb)
+- [Lecture slides](slides.pdf)
+- [Colab notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/0/notebook.ipynb)
 
 ## Table of contents
 1. [Course syllabus and key points](#course-syllabus-and-key-points)
@@ -110,7 +110,7 @@ w = torch.tensor(list(weights.values()), requires_grad=True)
 
 ### The classification process
 
-![Spam Classification Process](Lecture%20resources/Lecture%200/figures/spam_classification_process.png)
+![Spam Classification Process](figures/spam_classification_process.png)
 
 Features flow through a sequence of transformations:
 1. Extract numeric features from raw text
@@ -122,7 +122,7 @@ Features flow through a sequence of transformations:
 
 We combine features and weights to get a "spam score". But how do we turn this score into a yes/no decision? We use a function called sigmoid that turns any number into a "probability" between 0 and 1:
 
-![Sigmoid Function](Lecture%20resources/Lecture%200/figures/sigmoid.png)
+![Sigmoid Function](figures/sigmoid.png)
 
 ```python
 def sigmoid(x):
@@ -161,7 +161,7 @@ This formula measures our mistakes (called "cross-entropy loss").
 
 The cross-entropy loss teaches our model to make confident, correct predictions while severely punishing mistakes. Let's see how it works by examining the two curves in our plot, which show how we penalize predictions for spam and non-spam emails.
 
-![Cross-Entropy Loss](Lecture%20resources/Lecture%200/figures/cross_entropy.png)
+![Cross-Entropy Loss](figures/cross_entropy.png)
 <!-- [Figure: Cross-Entropy Loss - See cross_entropy.tex] -->
 
 Consider a legitimate email (not spam, label = 0). Our model assigns it a probability of being spam:
@@ -220,7 +220,7 @@ Imagine you're hiking in a valley and want to reach the lowest point. A natural 
 2. Take a step in the steepest downhill direction
 3. Repeat until you can't go lower
 
-![Gradient descent visualization showing path from high point to minimum](Lecture%20resources/Lecture%200/figures/gradient_descent.png)
+![Gradient descent visualization showing path from high point to minimum](figures/gradient_descent.png)
 This is exactly how the most well-known algorithm for optimization--called gradient descent--works. 
 
 ### Finding the weights with PyTorch
@@ -257,8 +257,8 @@ More formally, each iteration measures how well our current weights classify *al
 The optimization process continues until it takes 1000 steps in the gradient direction. This is just one way to stop the algorithm; others exist. For example, we could instead halt when the loss plateaus (stops decreasing significantly) or reaches a target threshold. Each approach balances computation time against solution quality.
 
 ### Numerical results
-When you checkout the [notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/Lecture0.ipynb) for this lecture, this is what you'll see as you run the training loop: 
-![Loss curves](Lecture%20resources/Lecture%200/figures/training_run.png)
+When you checkout the [notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/0/notebook.ipynb) for this lecture, this is what you'll see as you run the training loop: 
+![Loss curves](figures/training_run.png)
 The first plot shows the value of the cross-entropy loss as we train the model. This and the "training accuracy" (shown in the second plot) are both metrics that measure how well our model performs on the training data. They are are diagnostic plots -- they say at least the optimization part of the code is working. 
 
 The third plot is far more important. It shows the performance of the model on a test set of emails that were not used to train the model.  A gap between training and test accuracy would signal overfitting, but here both metrics converge and stay stable, indicating the model generalizes well to new examples.

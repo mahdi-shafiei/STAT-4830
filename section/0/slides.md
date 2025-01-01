@@ -92,7 +92,7 @@ def extract_features(email):
 <div class="rows">
 <div class="top">
 
-![](Lecture%20resources/Lecture%200/figures/spam_classification_process.png)
+![](figures/spam_classification_process.png)
 
 </div>
 <div class="bottom">
@@ -122,7 +122,7 @@ def sigmoid(x):
 </div>
 <div class="right">
 
-![](Lecture%20resources/Lecture%200/figures/sigmoid.png)
+![](figures/sigmoid.png)
 
 </div>
 </div>
@@ -150,7 +150,7 @@ Where:
 <div class="rows">
 <div class="top">
 
-![](Lecture%20resources/Lecture%200/figures/cross_entropy.png)
+![](figures/cross_entropy.png)
 
 </div>
 <div class="bottom">
@@ -180,7 +180,7 @@ The optimization process works like hiking:
 </div>
 <div class="right">
 
-![](./Lecture%20resources/Lecture%200/figures/gradient_descent.png)
+![](figures/gradient_descent.png)
 
 </div>
 </div>
@@ -259,7 +259,7 @@ for _ in range(1000):
 
 # Try it yourself!
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/damek/STAT-4830/blob/main/Lecture0.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/0/notebook.ipynb)
 
 - Complete implementation in the notebook
 - Experiment with different learning rates
@@ -273,7 +273,7 @@ for _ in range(1000):
 <div class="rows">
 <div class="top">
 
-![](Lecture%20resources/Lecture%200/figures/training_run.png)
+![](figures/training_run.png)
 
 </div>
 <div class="bottom">
@@ -317,7 +317,7 @@ By course end, you'll be able to:
 
 - Review the syllabus
 - Set up Python environment
-- Try the [Colab notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/Lecture0.ipynb)
+- Try the [Colab notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/0/notebook.ipynb)
 - Start thinking about project ideas
 
 ---

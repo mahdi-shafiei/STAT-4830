@@ -4,7 +4,7 @@ AKA: Optimization in PyTorch
 
 > I'm currently developing this course for Spring 2025. I am literally pushing my thoughts to this public repo as soon as I have them. Be prepared for the course to look rough until the semester starts.
 
-*See a rough outline of the course [here](Lecture0.md#tentative-course-structure).* 
+*See a rough outline of the course [here](section/0/notes.md#tentative-course-structure).* 
 
 For lecture notes see [table of contents](toc.md).
 
