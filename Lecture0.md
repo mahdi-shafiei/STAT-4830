@@ -1,4 +1,4 @@
-# Lecture 0: Introduction
+# 0. Introduction
 
 ## Notebooks and Slides
 - [Lecture slides](Lecture0-slides.pdf)
