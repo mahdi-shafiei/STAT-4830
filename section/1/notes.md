@@ -299,6 +299,8 @@ This multiplication reveals key properties:
 2. Each output combines exactly one value from each input
 3. Simple inputs can produce complex outputs
 
+![Matrix multiplication showing how vertical and horizontal patterns combine](figures/matrix_multiplication.png)
+
 Let's use these properties to analyze our sunset image.
 
 ## Decomposing Complex Images 
@@ -365,8 +367,10 @@ The relative error measures how well our factorization approximates the original
 2. The total squared magnitude of the original:
    $\sum_{i,j} A_{ij}^2$
 
-Their ratio tells us the fractional error: 
-$\text{relative error} = \frac{\sum_{i,j} (A_{ij} - \hat{A}_{ij})^2}{\sum_{i,j} A_{ij}^2}$
+Their ratio tells us the relative error: 
+
+$$
+\text{relative error} = \frac{\sum_{i,j} (A_{ij} - \hat{A}_{ij})^2}{\sum_{i,j} A_{ij}^2}$$
 
 This ratio remains meaningful regardless of image size or brightness scale. A 10% relative error means our reconstruction captures 90% of the image's structure.
 
@@ -491,7 +495,7 @@ stripes = torch.tensor([
 
 Matrix factorizations represent images through simpler components. The relative error measures their accuracy:
 
-$\text{relative error} = \frac{\sum_{i,j} (A_{ij} - \hat{A}_{ij})^2}{\sum_{i,j} A_{ij}^2}$
+$$\text{relative error} = \frac{\sum_{i,j} (A_{ij} - \hat{A}_{ij})^2}{\sum_{i,j} A_{ij}^2}$$
 
 But which factors minimize this error? Consider our sunset image:
 
@@ -640,9 +644,6 @@ The SVD finds patterns that:
 
 Let's examine each property through compression examples.
 
-## Error Minimization: Finding Optimal Components
-
-You're right. Let me revise those sections to be more precise about the mathematics while maintaining accessibility:
 
 ## Error Minimization: Finding Optimal Components
 
