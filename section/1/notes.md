@@ -3,7 +3,7 @@ layout: course_page
 title: Table of Contents
 ---
 
-# 1. Linear Algebra in PyTorch
+# 1. Basic Linear Algebra in PyTorch
 
 ## Notebooks and Slides
 - [Lecture slides](slides.pdf)
