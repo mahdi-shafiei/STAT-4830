@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
 {% seo %}
-    <link rel="stylesheet" href="{{ "/assets/css/style.css?v=" | append: site.github.build_revision | relative_url }}">
+    <link rel="stylesheet" href="{{ "/assets/css/style.css?v=" | append: site.time | date: '%s' | relative_url }}">
     <!--[if lt IE 9]>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
     <![endif]-->
@@ -39,21 +39,31 @@
 
     /* Image and text wrapper */
   .image-text-wrapper {
-    display: flex;
-    align-items: flex-start;
+    display: block;
     margin-bottom: 1.5em;
+    max-width: 100%;
   }
 
   .image-text-wrapper img {
-    float: left; /* Float the image to the left */
-    width: 110px;
+    float: left;
+    max-width: 100%;
+    width: auto;
     height: auto;
-    border-radius: 0%;
-    margin-right: 20px; /* Create space between image and text */
+    margin-right: 20px;
+    margin-bottom: 10px;
   }
 
   .image-text-wrapper div {
+    overflow: auto;
     text-align: justify;
+  }
+
+  /* Handle images that aren't in text wrappers */
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1.15em auto;
   }
 
   /* Style for the wrapper to center the content */
@@ -193,14 +203,14 @@
   }
 
   .course-content p {
-    margin: 0.8em 0;
-    line-height: 1.5;
+    margin: 1.15em 0;
+    line-height: 1.55;
   }
 
   .course-content ul,
   .course-content ol {
-    margin: 0;
-    padding-left: 1.5em;
+    margin: 1.15em 0;
+    padding-left: 1.75em;
     list-style-position: outside;
   }
 
@@ -318,18 +328,18 @@
     display: none;
   }
 
-  /* Code block styles - minimal padding */
+  /* Code block styles - GitHub style */
   pre {
     margin: 1em 0;
-    padding: 2px;
-    background-color: #f3f3f3;
-    border: none;
+    padding: 16px;
+    background-color: #f6f8fa;
+    border: 1px solid #d0d7de;
     border-radius: 0;
     font-size: 85%;
     line-height: 1.45;
     overflow: auto;
-    word-wrap: break-word;
-    white-space: pre-wrap;
+    word-wrap: normal;
+    white-space: pre;
   }
 
   pre code {
@@ -339,9 +349,15 @@
     font-family: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
     font-size: inherit;
     line-height: inherit;
-    word-wrap: break-word;
-    white-space: pre-wrap;
-    background-color: #f3f3f3;
+    word-wrap: normal;
+    white-space: pre;
+    background-color: transparent;
+  }
+
+  /* Override highlight.js GitHub theme colors to match exactly */
+  .hljs {
+    background: #f6f8fa;
+    color: #24292e;
   }
 
   /* Code block styles */
@@ -353,19 +369,19 @@
   /* Copy button styles - centered icons and compact box */
   .copy-button {
     position: absolute;
-    top: 2px;
-    right: 2px;
-    padding: 2px;  /* Reduced from 4px */
+    top: 8px;
+    right: 8px;
+    padding: 2px;
     border: none;
-    border-radius: 4px;
+    border-radius: 0;
     cursor: pointer;
     background: transparent;
     transition: background-color 0.2s;
-    display: flex;  /* Enable flexbox for centering */
-    align-items: center;  /* Center vertically */
-    justify-content: center;  /* Center horizontally */
-    width: 24px;  /* Fixed width */
-    height: 24px;  /* Fixed height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
   }
 
   .copy-button:hover {
@@ -374,7 +390,7 @@
 
   /* Copy icon styles - centered */
   .copy-button svg {
-    width: 14px;  /* Slightly smaller icons */
+    width: 14px;
     height: 14px;
     fill: #57606a;
   }
@@ -402,12 +418,11 @@
     background: none;
     padding: 0;
     margin: 0;
-    border: none;
   }
 
   /* Add scroll margin to headings to account for fixed header */
   h1, h2, h3, h4, h5, h6 {
-    scroll-margin-top: 100px;  /* Enough space to clear the header */
+    scroll-margin-top: 100px;
   }
 
   /* Update blockquote styles to match GitHub with accent color */
@@ -415,7 +430,7 @@
     margin: 1em 0;
     padding: 0 1em;
     color: #656d76;
-    border-left: 0.25em solid #DD4C4F;  /* Match your accent color */
+    border-left: 0.25em solid #DD4C4F;
   }
 
   blockquote > :first-child {
@@ -438,28 +453,21 @@
 
   /* Ensure proper spacing in blockquotes */
   blockquote p {
-    margin: 0.5em 0;
-  }
-
-  /* Override any theme-specific borders */
-  .highlight pre, 
-  .highlight code,
-  pre, 
-  code {
-    border: none !important;
-    background-color: #f3f3f3 !important;
+    margin: 0.75em 0;
   }
 
   /* Ensure proper paragraph spacing outside lists */
   .course-content p {
-    margin: 0.8em 0;
+    margin: 1.15em 0;
+    line-height: 1.55;
   }
 
   /* Tighter list spacing */
   .course-content ul,
   .course-content ol {
-    margin: 0;
-    padding-left: 2em;
+    margin: 1.15em 0;
+    padding-left: 1.75em;
+    list-style-position: outside;
   }
 
   .course-content li {
@@ -477,12 +485,64 @@
   /* Keep spacing between lists and other elements */
   .course-content ul + p,
   .course-content ol + p {
-    margin-top: 0.8em;
+    margin-top: 1.15em;
   }
 
   p + .course-content ul,
   p + .course-content ol {
-    margin-top: 0.8em;
+    margin-top: 1.15em;
+  }
+
+  /* Update base paragraph and text spacing */
+  p {
+    margin: 1.15em 0;
+    line-height: 1.55;
+  }
+
+  /* Course content spacing */
+  .course-content p {
+    margin: 1.15em 0;
+    line-height: 1.55;
+  }
+
+  /* List spacing */
+  .course-content ul,
+  .course-content ol {
+    margin: 1.15em 0;
+    padding-left: 1.75em;
+    list-style-position: outside;
+  }
+
+  /* Spacing between lists and paragraphs */
+  .course-content ul + p,
+  .course-content ol + p,
+  p + .course-content ul,
+  p + .course-content ol {
+    margin-top: 1.15em;
+  }
+
+  /* Blockquote spacing */
+  blockquote p {
+    margin: 0.75em 0;
+  }
+
+  /* Block element spacing */
+  p, h1, h2, h3, h4, h5, h6, ul, ol, blockquote, pre {
+    margin-top: 1.15em;
+    margin-bottom: 1.15em;
+  }
+
+  /* Responsive adjustments for smaller screens */
+  @media screen and (max-width: 480px) {
+    .image-text-wrapper {
+      flex-direction: column;
+    }
+    
+    .image-text-wrapper img {
+      max-width: 100%;
+      margin-right: 0;
+      margin-bottom: 1em;
+    }
   }
 </style>
 
@@ -729,5 +789,51 @@
       </script>
     </div>
     <script src="{{ "/assets/js/scale.fix.js" | relative_url }}"></script>
+    <script>
+      // Initialize highlight.js and add copy buttons
+      document.addEventListener('DOMContentLoaded', (event) => {
+        document.querySelectorAll('pre code').forEach((block) => {
+          // Highlight the code
+          hljs.highlightBlock(block);
+          
+          // Create wrapper if not exists
+          const pre = block.parentNode;
+          let wrapper = pre.parentNode;
+          if (!wrapper.classList.contains('code-wrapper')) {
+            wrapper = document.createElement('div');
+            wrapper.className = 'code-wrapper';
+            pre.parentNode.insertBefore(wrapper, pre);
+            wrapper.appendChild(pre);
+          }
+          
+          // Add copy button if not exists
+          if (!wrapper.querySelector('.copy-button')) {
+            const button = document.createElement('button');
+            button.className = 'copy-button';
+            button.setAttribute('aria-label', 'Copy code');
+            button.innerHTML = `
+              <svg class="copy-icon" aria-hidden="true" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25v-7.5zM5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25v-7.5zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25h-7.5z"></path>
+              </svg>
+              <svg class="check-icon" aria-hidden="true" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z"></path>
+              </svg>`;
+            
+            button.onclick = async () => {
+              try {
+                await navigator.clipboard.writeText(block.textContent);
+                button.classList.add('copied');
+                setTimeout(() => {
+                  button.classList.remove('copied');
+                }, 2000);
+              } catch (err) {
+                console.error('Failed to copy:', err);
+              }
+            };
+            wrapper.appendChild(button);
+          }
+        });
+      });
+    </script>
   </body>
 </html>

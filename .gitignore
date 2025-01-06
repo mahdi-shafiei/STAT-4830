@@ -98,3 +98,12 @@ section/0/figures/spam_classification_process.tex
 
 # Jekyll build directory
 _site/
+section/plan.md
+section/1/figures/memory_matrix.aux
+section/1/figures/memory_matrix.fdb_latexmk
+section/1/figures/memory_matrix.fls
+section/1/figures/memory_matrix.log
+section/1/figures/memory_matrix.pdf
+section/1/figures/memory_matrix.synctex.gz
+section/1/figures/memory_matrix.tex
+section/1/drafts/
