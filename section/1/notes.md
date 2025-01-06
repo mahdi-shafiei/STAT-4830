@@ -3,11 +3,23 @@ layout: course_page
 title: Table of Contents
 ---
 
-# 1. Linear Algebra for Pattern Discovery
+# 1. Linear Algebra in PyTorch
 
 ## Notebooks and Slides
 - [Lecture slides](slides.pdf)
 - [Colab notebook](https://colab.research.google.com/...)
+
+## Table of contents
+1. [Introduction](#introduction)
+2. [Tensors as Building Blocks](#tensors-as-building-blocks)
+3. [Matrix Multiplication: Combining Simple Components](#matrix-multiplication-combining-simple-components)
+4. [The Singular Value Decomposition](#the-singular-value-decomposition)
+5. [Compression Applications](#compression-applications)
+6. [PyTorch and Linear Algebra: Command Reference](#pytorch-and-linear-algebra-command-reference)
+
+## Introduction
+
+> In this section, we introduce a few of the basic PyTorch commands you need to know to do linear algebra -- a key building block in optimization methods. We do this in the context of "image compression" to keep the discussion motivated. If you're just interested in the commands you can jump to the [final section](#pytorch-and-linear-algebra-command-reference) of this document.
 
 In our previous lecture, we classified emails by converting text into numbers. A spam email's telltale signs - excessive punctuation, urgent language, suspicious links - became a list of measurements. Matrix multiplication combined these measurements with weights, revealing which emails needed attention.
 
