@@ -52,26 +52,27 @@ Linear algebra provides tools to analyze this numerical structure systematically
 2. Separate essential features from minor variations
 3. Represent images compactly without sacrificing quality
 
-This lecture develops three critical components:
-
-### 1. Tensors as Building Blocks (20 minutes)
-- How PyTorch organizes numbers in memory
-- Operations that preserve image structure
-- Efficient handling of large datasets
-
-### 2. Matrix Operations for Structure Analysis (40 minutes)  
-- Combining features through multiplication
-- Discovering structure through iteration
-- Mathematical properties ensuring uniqueness
-
-### 3. The Singular Value Decomposition (40 minutes)
-- Complete mathematical descriptions of structure
-- Ranking features by importance  
-- Fast computation for large images
 
 These principles extend beyond image analysis. Whether training neural networks, processing sensor data, or analyzing text, success depends on extracting and manipulating meaningful structure from raw numbers. Linear algebra provides the mathematical foundation for this fundamental task.
 
-Each section builds from concrete examples toward general principles. The accompanying notebook lets you experiment with these ideas directly, while carefully chosen puzzles test your understanding. Let's begin with tensors - PyTorch's fundamental tool for organizing and manipulating numerical data.
+The section is organized into three main sections:
+
+### 1. Tensors as Building Blocks 
+- How PyTorch organizes and manipulates numerical data
+- Memory layout and efficient computation
+- Basic operations and their properties
+
+### 2. Matrix Operations and Pattern Analysis
+- Combining patterns through matrix multiplication
+- Understanding rank-1 matrices and their approximation power
+- Building complex patterns from simple components
+
+### 3. The Singular Value Decomposition
+- Finding "optimal" patterns in data
+- Compressing images by keeping important components
+- Practical implementation and optimization
+
+Each section builds from concrete examples toward general principles. The accompanying notebook lets you experiment with these ideas directly, while puzzles test your understanding. Let's begin with tensors - PyTorch's fundamental tool for organizing and manipulating numerical data.
 
 # Tensors as Building Blocks
 
@@ -255,7 +256,6 @@ Try these exercises to strengthen your grasp of tensors:
 
 These fundamentals - grid organization, memory layout, and efficient operations - prepare us for matrix multiplication, where we'll discover how simple patterns combine to represent complex images. The next section builds on these ideas to find and manipulate the patterns hidden in our numbers.
 
-I'll draft the Matrix Multiplication section following this approach, keeping the style clear and engaging while building from concrete examples toward key concepts.
 
 # Matrix Multiplication: Combining Simple Components
 
@@ -669,8 +669,6 @@ for k in range(1, 5):
 ```
 
 A remarkable mathematical theorem states that SVD components minimize this error: no other choice of k components can achieve a smaller error than the first k SVD components. This optimality isn't just empirical - mathematicians have proven it rigorously through the Eckart-Young-Mirsky theorem.
-
-[Should I continue with the rest of the revisions?]
 
 ## Pattern Importance: The Role of Singular Values
 
