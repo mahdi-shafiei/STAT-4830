@@ -390,7 +390,9 @@ This dominant pattern shows:
 To quantify how well these patterns represent our data, we need a way to measure matrix size. The Frobenius norm extends our vector norm concept:
 
 For vectors: $\|x\| = \sqrt{\sum_i x_i^2}$ measures total magnitude
-For matrices: $\|A\|_F = \sqrt{\sum_{i,j} |a_{ij}|^2}$ measures total variation
+For matrices: 
+$$\|A\|_F = \sqrt{\sum_{i,j} |a_{ij}|^2}$$
+measures total variation
 
 This norm is natural because:
 1. It treats matrices as vectors in $\mathbb{R}^{mn}$
