@@ -1,6 +1,6 @@
 ---
 layout: course_page
-title: Table of Contents
+title: Introduction
 ---
 
 # 0. Introduction
