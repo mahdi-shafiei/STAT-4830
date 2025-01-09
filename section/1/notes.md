@@ -1,1205 +1,552 @@
 ---
 layout: course_page
-title: Table of Contents
+title: Basic Linear Algebra in PyTorch
 ---
 
 # 1. Basic Linear Algebra in PyTorch
 
-## Notebooks and Slides
-- [Lecture slides](slides.pdf)
-- [Colab notebook](https://colab.research.google.com/...)
+In Lecture 0, we classified spam using word frequencies as vectors. Each email became a point in high-dimensional space, where dimensions represented word counts. Linear algebra revealed the underlying geometry - similar emails clustered together, and a linear boundary separated spam from non-spam.
 
-## Table of contents
-1. [Introduction](#introduction)
-2. [Tensors as Building Blocks](#tensors-as-building-blocks)
-3. [Matrix Multiplication: Combining Simple Components](#matrix-multiplication-combining-simple-components)
-4. [The Singular Value Decomposition](#the-singular-value-decomposition)
-5. [Compression Applications](#compression-applications)
-6. [PyTorch and Linear Algebra: Command Reference](#pytorch-and-linear-algebra-command-reference)
+Now we'll explore how PyTorch implements these operations efficiently. Three key ideas emerge:
 
-## Introduction
+1. Tensors extend vectors and matrices to arbitrary dimensions, enabling us to process thousands of emails simultaneously
+2. Memory layout and broadcasting determine computational efficiency - critical when processing large datasets
+3. SVD reveals structure in data, like discovering which word combinations best distinguish spam
 
-> In this section, we introduce a few of the basic PyTorch commands you need to know to do linear algebra -- a key building block in optimization methods. We do this in the context of "image compression" to keep the discussion motivated. If you're just interested in the commands you can jump to the [final section](#pytorch-and-linear-algebra-command-reference) of this document.
+Let's start with vectors and their computational counterpart, tensors.
 
-In our previous lecture, we classified emails by converting text into numbers. A spam email's telltale signs - excessive punctuation, urgent language, suspicious links - became a list of measurements. Matrix multiplication combined these measurements with weights, revealing which emails needed attention.
+## Vectors and Tensors: The Foundation
 
-This transformation from raw content to numerical features shapes how computers understand images. Consider this digital sunset:
+Vectors form the building blocks of data representation. In the spam example, each dimension measured a word's frequency. Here, we'll use temperature readings to build intuition:
 
 ```python
-import torch
-import matplotlib.pyplot as plt
-
-# Create a simple sunset gradient
-def create_sunset(height=32, width=48):
-    sunset = torch.zeros((height, width))
-    
-    # Bright sky fading to horizon
-    for i in range(height):
-        base = 220 - (i * 5)  # Gradual darkening
-        sunset[i, :] = base + torch.linspace(-10, 10, width)
-    
-    return sunset
-
-plt.imshow(create_sunset(), cmap='gray')
-plt.title('Digital Sunset: Numbers Capturing Light')
-plt.colorbar(label='Brightness (0-255)')
+# Temperature readings (Celsius)
+readings = torch.tensor([22.5, 23.1, 21.8])  # Morning, noon, night
+print(readings)  # tensor([22.5000, 23.1000, 21.8000])
 ```
 
-Each point in this image - each pixel - stores a brightness value between 0 (black) and 255 (white). The numbers reveal clear structure: the bright sky fades smoothly toward the horizon, while subtle variations create depth. A typical 12-megapixel photograph contains millions of such values, organizing them in grids that preserve spatial relationships.
-
-Linear algebra provides tools to analyze this numerical structure systematically:
-1. Identify the underlying mathematical regularities
-2. Separate essential features from minor variations
-3. Represent images compactly without sacrificing quality
-
-
-These principles extend beyond image analysis. Whether training neural networks, processing sensor data, or analyzing text, success depends on extracting and manipulating meaningful structure from raw numbers. Linear algebra provides the mathematical foundation for this fundamental task.
-
-The section is organized into three main sections:
-
-### 1. Tensors as Building Blocks 
-- How PyTorch organizes and manipulates numerical data
-- Memory layout and efficient computation
-- Basic operations and their properties
-
-### 2. Matrix Operations and Pattern Analysis
-- Combining patterns through matrix multiplication
-- Understanding rank-1 matrices and their approximation power
-- Building complex patterns from simple components
-
-### 3. The Singular Value Decomposition
-- Finding "optimal" patterns in data
-- Compressing images by keeping important components
-- Practical implementation and optimization
-
-Each section builds from concrete examples toward general principles. The accompanying notebook lets you experiment with these ideas directly, while puzzles test your understanding. Let's begin with tensors - PyTorch's fundamental tool for organizing and manipulating numerical data.
-
-# Tensors as Building Blocks
-
-Our sunset image stored brightness values in a grid, with each value between 0 (black) and 255 (white). This simple example uncovers a key principle: computers understand images through numbers arranged in regular patterns. PyTorch calls these arrangements tensors.
-
-Let's start with a small grid of numbers representing a simple gradient:
+PyTorch implements vectors as tensors, optimizing the underlying memory and computation:
 
 ```python
-import torch
+# Compare two days
+morning = torch.tensor([22.5, 23.1, 21.8])  # Yesterday
+evening = torch.tensor([21.0, 22.5, 20.9])  # Today
+alpha = 0.5  # Averaging weight
 
-gradient = torch.tensor([
-    [200, 180, 160, 140],  # Top row: bright to medium
-    [180, 160, 140, 120],
-    [160, 140, 120, 100],
-    [140, 120, 100,  80]   # Bottom row: medium to dark
+# Vector addition: component-wise operation
+total = morning + evening  # Parallel computation
+print(total)  # tensor([43.5000, 45.6000, 42.7000])
+
+# Scalar multiplication: uniform scaling
+weighted = alpha * morning  # Efficient broadcast
+print(weighted)  # tensor([11.2500, 11.5500, 10.9000])
+```
+
+### Creating Tensors
+PyTorch generalizes vectors to n-dimensional arrays. The shape property defines the array structure and guides computation:
+
+```python
+# Vector creation methods
+temps = torch.tensor([22.5, 23.1, 21.8])     # From data
+print(f"Vector shape: {temps.shape}")         # torch.Size([3])
+
+zeros = torch.zeros(3)                        # Initialized
+print(f"Zeros shape: {zeros.shape}")          # torch.Size([3])
+
+# Matrix: week of readings
+weekly = torch.randn(7, 3)                    # Random normal
+print(f"Matrix shape: {weekly.shape}")        # torch.Size([7, 3])
+```
+
+### Quick Check 1: Understanding Shapes
+```python
+morning = torch.tensor([22.5, 23.1, 21.8])
+evening = torch.zeros_like(morning)           # Same shape as morning
+combined = morning + evening
+print(combined.shape, combined)               # Shape preserved in operations
+```
+
+### Vector Operations
+PyTorch implements these operations:
+
+- Addition: $x + y = [x_1+y_1, x_2+y_2, \ldots, x_n+y_n]$
+- Scalar multiplication: $\alpha x = [\alpha x_1, \alpha x_2, \ldots, \alpha x_n]$
+- Dot product: $x \cdot y = \sum_{i=1}^n x_iy_i$ measures alignment between vectors
+- Vector norm: $\|x\| = \sqrt{x \cdot x} = \sqrt{\sum_{i=1}^n x_i^2}$ measures magnitude
+
+The dot product reveals relationships between vectors. For temperature data, it shows if two days follow similar patterns - high values indicate similar temperature variations. The norm quantifies the overall magnitude of temperature fluctuations.
+
+```python
+# Combining sensor readings
+day1 = torch.tensor([22.5, 23.1, 21.8])  # Warmer day
+day2 = torch.tensor([21.0, 22.5, 20.9])  # Cooler day
+
+# Average readings
+avg = (day1 + day2) / 2
+print(avg)  # tensor([21.75, 22.80, 21.35])
+
+# Dot product reveals pattern similarity
+similarity = torch.dot(day1, day2)
+print(f"Similarity: {similarity:.1f}")  # 1447.9: high similarity
+print(f"Day 1 magnitude: {torch.norm(day1):.1f}")  # 38.9
+print(f"Day 2 magnitude: {torch.norm(day2):.1f}")  # 37.2
+```
+
+These numbers reveal the temperature patterns:
+1. High dot product (1447.9) shows days follow similar patterns
+2. Day 1's larger magnitude (38.9 vs 37.2) confirms it was warmer
+3. Small magnitude difference (4.6%) indicates mild temperature variation
+
+The angle between vectors, computed as $\cos(\theta) = \frac{x \cdot y}{\|x\|\|y\|}$, measures pattern similarity independent of magnitude. For these days:
+```python
+cos_theta = similarity / (torch.norm(day1) * torch.norm(day2))
+print(f"Pattern similarity: {cos_theta:.3f}")  # 0.999: nearly identical patterns
+```
+
+This near-1 cosine shows the temperature curves are almost identical shapes, just shifted slightly in magnitude.
+
+### Quick Check 2: Vector Norms
+```python
+# Computing average deviation from mean
+readings = torch.tensor([22.5, 23.1, 21.8])
+mean = readings.mean()
+deviations = readings - mean
+magnitude = torch.sqrt(torch.dot(deviations, deviations))
+print(f"Average deviation: {magnitude/3:.4f}")  # Average deviation: 0.3067
+```
+
+### Memory Layout
+Computers store tensors in physical memory as contiguous blocks. Row-major ordering means elements within a row are adjacent:
+
+![Memory Layout](figures/memory_layout.png)
+
+This layout affects performance:
+1. Row operations are fast - elements are contiguous in memory, maximizing cache usage
+2. Column operations are slower - elements are separated by row stride, causing cache misses
+3. Matrix multiplication performance depends on access patterns and memory hierarchy
+
+For temperature data:
+```python
+# Fast: accessing one day's readings (row)
+day_readings = week_temps[0]  # Contiguous memory access
+
+# Slower: accessing one time across days (column)
+morning_temps = week_temps[:, 0]  # Strided memory access
+
+# Matrix multiply organizes computation to maximize cache usage
+result = torch.mm(week_temps, weights.view(-1, 1))
+```
+
+Understanding memory layout helps choose efficient operations:
+- Prefer row operations when possible
+- Batch similar operations to maximize cache usage
+- Consider transposing matrices to align access patterns with memory layout
+
+### Puzzle: Vector Operations
+Given temperature readings from two days:
+```python
+day1 = torch.tensor([22.5, 23.1, 21.8])  # Morning, noon, night
+day2 = torch.tensor([21.0, 22.5, 20.9])  # Morning, noon, night
+```
+1. Compute their similarity (dot product)
+2. Find the angle between them: cos(θ) = (u·v)/(‖u‖‖v‖)
+3. Interpret: are the temperature patterns similar?
+
+## Matrix Operations
+
+Matrices help analyze multiple days of temperature readings at once:
+
+```python
+# One week of temperature readings (7 days × 3 times per day)
+week_temps = torch.tensor([
+    [22.5, 23.1, 21.8],  # Monday
+    [21.0, 22.5, 20.9],  # Tuesday
+    [23.1, 24.0, 22.8],  # Wednesday
+    [22.8, 23.5, 21.9],  # Thursday
+    [21.5, 22.8, 21.2],  # Friday
+    [20.9, 21.8, 20.5],  # Saturday
+    [21.2, 22.0, 20.8]   # Sunday
+])
+print(f"Shape: {week_temps.shape}")  # torch.Size([7, 3])
+```
+
+### Basic Matrix Operations
+For matrices $A$ and $B$ of the same size:
+
+- Addition: $(A + B)_{ij} = a_{ij} + b_{ij}$ combines corresponding elements
+- Scalar multiplication: $(\alpha A)_{ij} = \alpha a_{ij}$ scales all elements
+- Mean along dimension: $\text{mean}(A, \text{dim}=0)_j = \frac{1}{m}\sum_{i=1}^m a_{ij}$ collapses rows
+
+These operations preserve the structure of the data while revealing patterns:
+
+```python
+# Last week's temperatures
+last_week = torch.tensor([
+    [21.5, 22.1, 20.8],  # Morning, noon, night
+    [20.0, 21.5, 19.9],
+    [22.1, 23.0, 21.8]
 ])
 
-print("Gradient pattern:")
-print(gradient)
-```
-
-This 4×4 grid reveals three essential patterns:
-1. Values decrease from left to right (horizontal gradient)
-2. Values decrease from top to bottom (vertical gradient)
-3. Each cell relates systematically to its neighbors
-
-PyTorch tensors preserve these relationships while enabling efficient computation. Let's examine how.
-
-## Memory and Precision 
-
-A tensor needs memory for each number it stores. Different number types trade memory against precision:
-
-```python
-def show_storage_needs(tensor):
-    """Display memory requirements for a tensor."""
-    bytes_per_value = tensor.element_size()
-    total_bytes = tensor.numel() * bytes_per_value
-    
-    print(f"Values: {tensor.numel()}")
-    print(f"Bytes per value: {bytes_per_value}")
-    print(f"Total storage: {total_bytes} bytes")
-
-# Compare storage options
-print("8-bit integers (0 to 255):")
-show_storage_needs(gradient.to(torch.uint8))
-
-print("\n32-bit floats (decimal precision):")
-show_storage_needs(gradient.to(torch.float32))
-```
-
-Images typically store brightness in 8-bit integers (0-255). Mathematical operations need decimal precision, so we'll use 32-bit floats. The extra memory pays off through more accurate calculations.
-
-## Grid Organization 
-
-Tensors arrange numbers in a grid using indices:
-- First index: Row number (top to bottom)
-- Second index: Column number (left to right)
-
-```python
-# Access patterns
-print("First row:", gradient[0])         # Row 0 (top)
-print("Last column:", gradient[:, -1])   # Column 3 (right)
-print("Center value:", gradient[1, 1])   # Row 1, Column 1
-```
-
-Think of these indices as coordinates on a map. The pair [1, 1] means "go down 1 row, right 1 column." This organization preserves spatial relationships - neighboring indices mean neighboring pixels.
-
-## Basic Operations
-
-Tensors support arithmetic on entire grids at once. These operations maintain the grid structure:
-
-```python
-# Brighten the image
-brighter = gradient + 30
-
-# Increase contrast
-contrast = gradient * 1.5
-
-# Combine operations
-adjusted = (gradient - 128) * 1.2 + 128
-
-print("Original middle pixel:", gradient[1, 1])
-print("Brightened middle pixel:", brighter[1, 1])
-print("Contrasted middle pixel:", contrast[1, 1])
-print("Adjusted middle pixel:", adjusted[1, 1])
-```
-
-Each operation applies to every grid position:
-- Addition/subtraction shifts brightness
-- Multiplication/division changes contrast
-- Combined operations create more complex adjustments
-
-PyTorch computes these changes efficiently by processing many numbers simultaneously.
-
-## Shape and Size
-
-The `shape` property reveals a tensor's grid structure:
-
-```python
-print(f"Grid dimensions: {gradient.shape}")    # (4, 4)
-print(f"Total values: {gradient.numel()}")     # 16
-```
-
-This organization scales to large images. Our sunset uses more grid points but the same principles:
-
-```python
-sunset = create_sunset(height=32, width=48)
-print(f"Sunset dimensions: {sunset.shape}")     # (32, 48)
-print(f"Total pixels: {sunset.numel()}")        # 1,536
-```
-
-Real photographs need even more:
-```python
-megapixels = 12_000_000  # 12 MP camera
-height = 3000
-width = 4000
-
-print(f"Photo dimensions: ({height}, {width})")
-print(f"Total pixels: {height * width}")
-print(f"Storage needed (float32): {height * width * 4 / 1e6:.1f} MB")
-```
-
-## Memory Layout
-
-Tensors store grid values in a continuous block of memory. This organization affects computation speed:
-
-```python
-# Fast: Process rows (consecutive memory)
-def adjust_row(row): 
-    return (row - 128) * 1.2 + 128
-
-# Slower: Process columns (spaced memory)
-def adjust_column(col):
-    return (col - 128) * 1.2 + 128
-
-# Time both operations
-import time
-
-start = time.perf_counter()
-row_result = adjust_row(gradient[0])
-row_time = time.perf_counter() - start
-
-start = time.perf_counter()
-col_result = adjust_column(gradient[:, 0])
-col_time = time.perf_counter() - start
-
-print(f"Row processing: {row_time*1e6:.1f} microseconds")
-print(f"Column processing: {col_time*1e6:.1f} microseconds")
-```
-
-Row operations run faster because they access consecutive memory locations. Column operations jump between rows, slowing memory access. This insight helps organize computations efficiently.
-
-![Memory Matrix](figures/memory_matrix.png)
-
-## Understanding Through Puzzles
-
-Try these exercises to strengthen your grasp of tensors:
-
-```python
-# Puzzle 1: Grid Patterns
-# Create a 4x4 tensor that:
-# - Increases by 10 from left to right
-# - Decreases by 5 from top to bottom
-# - Starts with 100 in the top-left
-# Hint: Use torch.arange() for clean solutions
-
-# Puzzle 2: Memory Efficiency
-# Given a 5000x5000 image:
-# 1. Calculate storage needed for uint8 vs float32
-# 2. Estimate processing time for rows vs columns
-# 3. Suggest ways to reduce memory usage
-# Hint: Consider processing the image in smaller blocks
-
-# Puzzle 3: Image Operations
-# Write functions that:
-# 1. Clip brightness values to a given range
-# 2. Normalize values to [0, 1]
-# 3. Apply gamma correction: value^gamma
-# Test each function on the gradient tensor
-```
-
-These fundamentals - grid organization, memory layout, and efficient operations - prepare us for matrix multiplication, where we'll discover how simple patterns combine to represent complex images. The next section builds on these ideas to find and manipulate the patterns hidden in our numbers.
-
-
-# Matrix Multiplication: Combining Simple Components
-
-Our gradient image combined two simple changes: brightness decreased from top to bottom and left to right. Matrix multiplication transforms these separate changes into a single, coherent image.
-
-Let's start with the simplest case - multiplying a column vector by a row vector:
-
-```python
-import torch
-
-# Vertical change: brightness decreases down the image
-vertical = torch.tensor([[1.0],  # Top (full brightness)
-                        [0.8],   # |
-                        [0.6],   # |
-                        [0.4]])  # Bottom (darkest)
-
-# Horizontal change: baseline values decrease left to right
-horizontal = torch.tensor([[200, 180, 160, 140]])
-
-# Combine them using matrix multiplication
-result = vertical @ horizontal  # @ is PyTorch's matrix multiplication operator
-
-print("Result:")
-print(result)
-```
-
-The output matches the gradient we saw earlier - each position combines the vertical scaling with the horizontal base value. Matrix multiplication creates this combination systematically:
-
-```python
-# Same result, computed step by step
-result_manual = torch.zeros((4, 4))
-for i in range(4):
-    for j in range(4):
-        result_manual[i,j] = vertical[i,0] * horizontal[0,j]
-        
-print("Values match:", torch.all(result == result_manual))
-```
-
-This multiplication reveals key properties:
-1. Output size depends on input dimensions
-2. Each output combines exactly one value from each input
-3. Simple inputs can produce complex outputs
-
-![Matrix multiplication showing how vertical and horizontal patterns combine](figures/matrix_multiplication.png)
-
-Let's use these properties to analyze our sunset image.
-
-## Decomposing Complex Images 
-
-Sunset photographs show predictable structure:
-- Brightness changes smoothly from sky to ground
-- Colors shift gradually across the image
-- Local regions maintain similar values
-
-Matrix multiplication can capture these regularities:
-
-```python
-# Create simplified sunset from components
-sky_to_ground = torch.linspace(1.0, 0.2, 32).reshape(-1, 1)  # Vertical gradient
-base_values = torch.linspace(220, 180, 48).reshape(1, -1)    # Horizontal variation
-
-simple_sunset = sky_to_ground @ base_values
-```
-
-This factorization uses fewer numbers than the original: 32 + 48 values instead of 32 × 48. But real images contain more complexity. The question becomes: what's the best way to factor a given image?
-
-## Finding Good Factorizations
-
-Three properties make factorizations useful:
-1. Accuracy - How well they represent the original image
-2. Efficiency - How many numbers they require
-3. Computability - How easily we can find them
-
-Let's measure these properties:
-
-```python 
-def analyze_factorization(original, factors):
-    """Assess how well factors represent an image."""
-    v, h = factors
-    reconstruction = v @ h
-    
-    # The squared error (difference) at each pixel
-    diff = original - reconstruction
-    squared_diff = diff * diff   # Element-wise multiplication
-    total_squared_error = torch.sum(squared_diff)
-    
-    # Scale error relative to image size
-    squared_original = original * original
-    total_squared_original = torch.sum(squared_original)
-    relative_error = total_squared_error / total_squared_original
-    
-    # Count parameters needed
-    params = v.numel() + h.numel()
-    pixels = original.numel()
-    
-    print(f"Relative error: {relative_error:.1%}")
-    print(f"Parameters: {params} vs {pixels} pixels")
-    print(f"Compression ratio: {pixels/params:.1f}:1")
-    
-    return reconstruction
-```
-
-The relative error measures how well our factorization approximates the original image. Two numbers define this error:
-
-1. The total squared difference between images:
-   $\sum_{i,j} (A_{ij} - \hat{A}_{ij})^2$
-   where A is the original and Â is our reconstruction
-
-2. The total squared magnitude of the original:
-   $\sum_{i,j} A_{ij}^2$
-
-Their ratio tells us the relative error: 
-
-$$
-\text{relative error} = \frac{\sum_{i,j} (A_{ij} - \hat{A}_{ij})^2}{\sum_{i,j} A_{ij}^2}$$
-
-This ratio remains meaningful regardless of image size or brightness scale. A 10% relative error means our reconstruction captures 90% of the image's structure.
-
-Let me continue building from the mathematical foundation we established:
-
-# Comparing Image Reconstructions
-
-Matrix multiplication creates an approximation from simple components. The quality of this approximation matters. Let's examine three ways to understand reconstruction quality, from concrete to abstract:
-
-```python
-# Create a small test image
-test = torch.tensor([
-    [100, 90,  80],
-    [90,  81,  72],
-    [80,  72,  64]
+# This week's temperatures
+this_week = torch.tensor([
+    [22.5, 23.1, 21.8],
+    [21.0, 22.5, 20.9],
+    [23.1, 24.0, 22.8]
 ])
 
-# Attempt a factorization
-v = torch.tensor([[10], [9], [8]])
-h = torch.tensor([[10, 9, 8]])
-reconstruction = v @ h
+# Temperature change shows consistent warming
+temp_change = this_week - last_week
+print("Temperature changes:")
+print(temp_change)
+# tensor([[1., 1., 1.],  # Uniform 1°C increase
+#         [1., 1., 1.],  # across all times
+#         [1., 1., 1.]]) # and days
 
-# 1. Direct comparison
-print("Original:")
-print(test)
-print("\nReconstruction:")
-print(reconstruction)
+# Average temperatures reveal daily pattern
+daily_means = this_week.mean(dim=0)
+print("\nAverage temperatures:")
+print(daily_means)  # tensor([22.2000, 23.2000, 21.8333])
+#                     Morning   Noon     Night
 ```
 
-Pixel-by-pixel differences reveal local errors. The squared error measures their significance:
+The outputs reveal clear patterns:
+1. Consistent 1°C warming trend across all measurements
+2. Daily cycle: warmest at noon (23.2°C), coolest at night (21.8°C)
+3. Morning temperatures (22.2°C) between extremes
 
+### Quick Check: Matrix Operations
 ```python
-# 2. Squared error at each position
-diff = test - reconstruction
-squared_error = diff * diff
-
-print("\nSquared error at each position:")
-print(squared_error)
-print(f"Total squared error: {torch.sum(squared_error):.1f}")
+# What's the output shape and meaning?
+week_temps = torch.randn(7, 3)       # Week of readings
+day_weights = torch.ones(7) / 7      # Equal weights for each day
+weighted_means = ???
 ```
 
-The relative error normalizes this measure, enabling comparisons across images:
+### Matrix Multiplication
+Matrix multiplication combines information across dimensions. For matrices $A$ and $B$:
+$c_{ij} = \sum_{k=1}^n a_{ik}b_{kj}$
+
+For matrix-vector multiplication $(Ax = b)$:
+$b_i = \sum_{j=1}^n a_{ij}x_j$
+
+This operation is fundamental because:
+- Each output combines an entire row with a column
+- The operation preserves linear relationships
+- Computation parallelizes efficiently
+
+![Matrix Multiplication](figures/matrix_multiply.png)
 
 ```python
-# 3. Relative error computation
-squared_original = test * test
-relative_error = torch.sum(squared_error) / torch.sum(squared_original)
-print(f"\nRelative error: {relative_error:.1%}")
-```
-
-This error tells us how much image structure our factorization misses. A 25% error means we've captured 75% of the original variation.
-
-## Balancing Accuracy and Compression
-
-Every factorization trades accuracy against compression. More factors improve accuracy but reduce compression:
-
-```python
-def compare_factorizations(image):
-    """Test factorizations of different sizes."""
-    height, width = image.shape
-    
-    # One-factor attempt
-    v1 = torch.linspace(1.0, 0.0, height).reshape(-1, 1)
-    h1 = torch.linspace(200, 150, width).reshape(1, -1)
-    
-    # Two-factor attempt (adding diagonal variation)
-    v2 = torch.linspace(0.5, -0.5, height).reshape(-1, 1)
-    h2 = torch.linspace(-25, 25, width).reshape(1, -1)
-    
-    # Compare reconstructions
-    r1 = v1 @ h1
-    r2 = r1 + (v2 @ h2)  # Sum of two factors
-    
-    # Measure errors
-    def relative_error(orig, recon):
-        diff = orig - recon
-        return torch.sum(diff * diff) / torch.sum(orig * orig)
-    
-    e1 = relative_error(image, r1)
-    e2 = relative_error(image, r2)
-    
-    print(f"One factor:")
-    print(f"  Parameters: {height + width}")
-    print(f"  Error: {e1:.1%}")
-    
-    print(f"\nTwo factors:")
-    print(f"  Parameters: {2*(height + width)}")
-    print(f"  Error: {e2:.1%}")
-    
-    return r1, r2
-
-# Test on our sunset
-sunset = create_sunset()
-r1, r2 = compare_factorizations(sunset)
-```
-
-Each additional factor increases accuracy but requires more storage. The key questions become:
-1. How many factors does this image need?
-2. Which factors matter most?
-3. How do we find optimal factors?
-
-The Singular Value Decomposition answers these questions systematically. Its factors capture maximum variation with minimum complexity. But first, try this puzzle to build intuition:
-
-```python
-# Puzzle: Error Analysis
-stripes = torch.tensor([
-    [1, 1, 1, 1],
-    [0, 0, 0, 0],
-    [1, 1, 1, 1],
-    [0, 0, 0, 0]
+# Temperature readings and weights
+temps = torch.tensor([
+    [22.5, 23.1, 21.8],  # Day 1: morning, noon, night
+    [21.0, 22.5, 20.9],  # Day 2: morning, noon, night
+    [23.1, 24.0, 22.8]   # Day 3: morning, noon, night
 ])
 
-# Questions:
-# 1. What's the smallest possible relative error for a rank-1 approximation?
-# 2. Can you construct factors that achieve this error?
-# 3. How would adding a second factor help?
-# 
-# Hint: Consider what patterns a single v @ h product can create
+weights = torch.tensor([0.5, 0.3, 0.2])  # Recent days matter more
 ```
 
-# Finding Optimal Factors 
-
-Matrix factorizations represent images through simpler components. The relative error measures their accuracy:
-
-$$\text{relative error} = \frac{\sum_{i,j} (A_{ij} - \hat{A}_{ij})^2}{\sum_{i,j} A_{ij}^2}$$
-
-But which factors minimize this error? Consider our sunset image:
-
-```python
-sunset = create_sunset()
-
-# Try some reasonable guesses
-def make_guess(guess_number):
-    h, w = sunset.shape
-    if guess_number == 1:
-        # Vertical darkening
-        v = torch.linspace(1.0, 0.2, h).reshape(-1, 1)
-        h = torch.mean(sunset, dim=0).reshape(1, -1)
-    elif guess_number == 2:
-        # Horizontal variation
-        v = torch.mean(sunset, dim=1).reshape(-1, 1)
-        h = torch.linspace(1.0, 0.8, w).reshape(1, -1)
-    
-    return v @ h
-
-guess1 = make_guess(1)
-guess2 = make_guess(2)
-
-# Compute errors
-def relative_error(orig, approx):
-    diff = orig - approx
-    return torch.sum(diff * diff) / torch.sum(orig * orig)
-
-print(f"Guess 1 error: {relative_error(sunset, guess1):.1%}")
-print(f"Guess 2 error: {relative_error(sunset, guess2):.1%}")
+Matrix multiplication computes weighted combinations:
+```
+Day 1: [22.5, 23.1, 21.8] × 0.5 = [11.25, 11.55, 10.90]  # 50% influence
+Day 2: [21.0, 22.5, 20.9] × 0.3 = [ 6.30,  6.75,  6.27]  # 30% influence
+Day 3: [23.1, 24.0, 22.8] × 0.2 = [ 4.62,  4.80,  4.56]  # 20% influence
+                                  [22.17, 23.10, 21.73] Final averages
 ```
 
-Our guesses capture broad features but miss subtle details. Two key insights point toward better factors:
-
-1. The best rank-1 approximation minimizes the squared error
-2. PyTorch can find this approximation automatically
-
+PyTorch optimizes this computation:
 ```python
-# Let PyTorch find optimal factors
-U, S, V = torch.linalg.svd(sunset)
-
-# Build best rank-1 approximation
-best_v = U[:, 0:1] * S[0]  # Scale the first column of U
-best_h = V[0:1, :]         # First row of V
-best_approx = best_v @ best_h
-
-print(f"Optimal error: {relative_error(sunset, best_approx):.1%}")
+# Efficient matrix-vector multiply
+weighted_means = torch.mv(temps, weights)  # Uses BLAS
+print("Weighted averages per time:")
+print(weighted_means)  # tensor([22.5400, 21.4300, 23.3100])
+#                        Morning   Noon     Night
 ```
 
-The SVD finds factors that:
-- Minimize error for any given rank
-- Order components by importance
-- Generate orthogonal bases
+The weighted averages reveal:
+1. Morning temperatures stable around 22.5°C
+2. Noon shows most variation (21.4°C)
+3. Night temperatures highest recently (23.3°C)
 
-These properties make SVD the foundation for image compression. But first, verify your understanding:
+This analysis weights recent days more heavily, capturing current trends rather than long-term averages.
+
+### Broadcasting
+Broadcasting generalizes operations between tensors of different shapes. It extends the mathematical concept of scalar multiplication to more general shape-compatible operations. For a vector $v \in \mathbb{R}^n$ and matrix $A \in \mathbb{R}^{m \times n}$:
+
+$$(A * v)_{ij} = a_{ij} * v_j$$
+
+This operation implicitly replicates the vector across rows, but without copying memory. The computational advantages are significant:
+- Memory efficient: No need to materialize the replicated tensor
+- Cache friendly: Access pattern matches memory layout
+- Parallelizable: Each output element computed independently
 
 ```python
-# Puzzle: Optimal Approximations
-# Given this 3x3 matrix:
-A = torch.tensor([
-    [4.0, 2.0, 1.0],
-    [2.0, 3.0, 0.0],
-    [1.0, 0.0, 2.0]
+# Temperature readings across days
+day_temps = torch.tensor([
+    [22.5, 23.1, 21.8],  # Day 1: morning, noon, night
+    [21.0, 22.5, 20.9],  # Day 2
+    [23.1, 24.0, 22.8]   # Day 3
 ])
 
-# Questions:
-# 1. What's the relative error of v @ h where:
-#    v = [[2], [1], [0.5]]
-#    h = [[2, 1, 0.5]]
-#
-# 2. Use torch.linalg.svd to find the optimal rank-1
-#    approximation. How much better is it?
-#
-# 3. What fraction of the matrix's squared magnitude
-#    does the best rank-1 approximation capture?
+# Sensor calibration factors (per time of day)
+calibration = torch.tensor([1.02, 0.98, 1.01])
+
+# Broadcasting: each time slot gets its calibration
+calibrated = day_temps * calibration  # Shape [3,3] * [3] -> [3,3]
+print("Original vs Calibrated:")
+print(day_temps[0])      # Before calibration
+print(calibrated[0])     # After calibration
 ```
 
-The next section examines SVD's properties in detail, showing why it provides optimal factors and how to use them for compression.
+![Broadcasting figure](figures/broadcasting.png)
 
-# The Singular Value Decomposition: Finding Structure in Images
+Broadcasting rules follow mathematical intuition:
+1. Trailing dimensions must match exactly
+2. Missing dimensions are implicitly size 1
+3. Size 1 dimensions stretch to match larger dimensions
 
-Our gradient image revealed two key patterns - brightness changes from top to bottom and left to right. Matrix multiplication combined these patterns, creating a faithful reconstruction from minimal components:
-
+This enables concise, efficient code:
 ```python
-import torch
+# Temperature adjustments
+base = torch.tensor([[22.5, 23.1, 21.8],    # Base readings
+                    [21.0, 22.5, 20.9]])
+offset = torch.tensor([0.5, 0.0, -0.5])     # Per-time adjustments
+scale = torch.tensor([1.02, 0.98]).view(-1, 1)  # Per-day scaling
 
-# Vertical pattern (brightness scaling)
-v = torch.tensor([[1.0], [0.8], [0.6], [0.4]])
-
-# Horizontal pattern (base values)
-h = torch.tensor([[200, 180, 160, 140]])
-
-# Combine patterns
-reconstruction = v @ h
-
-print("Original gradient:")
-print(gradient)
-print("\nReconstruction from patterns:")
-print(reconstruction)
+# Multiple broadcasts in one expression
+adjusted = scale * (base + offset)  # Combines both adjustments
+print("Adjusted shape:", adjusted.shape)
 ```
 
-This simple factorization worked because our gradient followed an obvious structure. Most images contain subtler patterns. Consider this variation:
-
+### Quick Check: Broadcasting
 ```python
-# Add diagonal ripple to gradient
-variation = gradient + torch.tensor([
-    [10,  5,  0, -5],
-    [ 5,  0, -5, -10],
-    [ 0, -5, -10, -5],
-    [-5, -10, -5,  0]
+temps = torch.tensor([[22.5, 23.1, 21.8],
+                     [21.0, 22.5, 20.9]])
+offset = torch.tensor([0.5, 0.0, -0.5])
+
+adjusted = temps + offset  # What's the shape?
+```
+
+### Puzzle: Temperature Analysis
+Given a week of readings and calibrations:
+```python
+week_temps = torch.tensor([
+    [22.5, 23.1, 21.8],  # Each row: morning, noon, night
+    [21.0, 22.5, 20.9],
+    [23.1, 24.0, 22.8]
 ])
-
-print("Original vs Modified:")
-print(gradient)
-print("\nWith diagonal variation:")
-print(variation)
+calibration = torch.tensor([1.02, 0.98, 1.01])  # Per sensor
+importance = torch.tensor([0.5, 0.3, 0.2])      # Per day
 ```
 
-A single v @ h product cannot capture this diagonal pattern. We need additional components, but which ones? The Singular Value Decomposition (SVD) answers this question systematically:
+1. Apply sensor calibrations
+2. Compute weighted average for each time
+3. Find which time has most stable temperatures
+
+## Finding Patterns with SVD
+
+SVD (Singular Value Decomposition) reveals structure in data by factoring a matrix $A$ into orthogonal components: $A = U\Sigma V^T$. Let's see how this helps analyze our spam data:
 
 ```python
-# Let PyTorch find optimal components
-U, S, V = torch.linalg.svd(variation)
+# Feature matrix: 10 emails × 5 features
+# Features: exclamation_count, urgent_words, suspicious_links, caps_ratio, length
 
-# First component (strongest pattern)
-v1 = U[:, 0:1] * S[0]
-h1 = V[0:1, :]
-pattern1 = v1 @ h1
+U, S, V = torch.linalg.svd(X)
+print("Singular values:", S)
+# tensor([11.3077,  1.4219,  0.5334,  0.2697,  0.0496])
 
-# Second component (next strongest)
-v2 = U[:, 1:2] * S[1]
-h2 = V[1:2, :]
-pattern2 = v2 @ h2
-
-print("Pattern strengths:", S)
-print("\nFirst pattern:")
-print(pattern1)
-print("\nSecond pattern:")
-print(pattern2)
+print("Energy per pattern:", 100 * S**2 / torch.sum(S**2), "%")
+# tensor([98.17, 1.55, 0.22, 0.06, 0.00]) %
 ```
 
-The SVD finds patterns that:
-1. Minimize reconstruction error 
-2. Sort by importance (S values)
-3. Work independently (each captures unique structure)
+The decomposition reveals:
+1. Feature patterns: Which features occur together ($V^T$)
+2. Email patterns: How emails combine features ($U$)
+3. Pattern strengths: How important each pattern is ($\Sigma$)
 
-Let's examine each property through compression examples.
+Looking at the first pattern:
+```python
+print("Feature pattern:", V[0])
+# tensor([-0.9767, -0.0892, -0.1925, -0.0136, -0.0289])
 
+print("Email pattern:", U[:, 0])
+# tensor([-0.3710, -0.6300, -0.4493, -0.3630, -0.3630,
+#         -0.0004, -0.0004, -0.0004, -0.0082, -0.0004])
+```
 
-## Error Minimization: Finding Optimal Components
+This dominant pattern shows:
+1. Features: Exclamation marks (-0.98) and suspicious links (-0.19) cluster together
+2. Emails: Clear separation between spam (large negative values) and legitimate (near zero)
+3. Strength: First singular value (11.3) captures 98.17% of data variation
 
+### Measuring Pattern Quality
+To quantify how well these patterns represent our data, we need a way to measure matrix size. The Frobenius norm extends our vector norm concept:
 
-SVD's first key property guarantees minimal reconstruction error for any number of components. Let's define this error precisely.
+For vectors: $\|x\| = \sqrt{\sum_i x_i^2}$ measures total magnitude
+For matrices: $\|A\|_F = \sqrt{\sum_{i,j} |a_{ij}|^2}$ measures total variation
 
-For any matrix A and its approximation Â, the relative error measures their difference:
+This norm is natural because:
+1. It treats matrices as vectors in $\mathbb{R}^{mn}$
+2. It's rotationally invariant: $\|A\|_F = \|UAV^T\|_F$
+3. It decomposes via singular values: $\|A\|_F = \sqrt{\sum_i \sigma_i^2}$
 
-$$ \text{relative error} = \frac{\sum_{i,j} (A_{ij} - \hat{A}_{ij})^2}{\sum_{i,j} A_{ij}^2} $$
+For our spam features:
+```python
+# Three equivalent ways to measure total variation
+print(f"Element-wise: {torch.sqrt((X**2).sum()):.1f}")  # 11.4
+print(f"As vector:    {X.view(-1).norm():.1f}")        # 11.4
+print(f"From SVD:     {S.norm():.1f}")                 # 11.4
+```
 
-This ratio captures how much of the original structure our approximation misses. Let's measure it:
+### Building Low-Rank Approximations
+SVD expresses matrices as sums of rank-1 patterns:
+
+$A = \sum_{i=1}^n \sigma_i u_i v_i^T$
+
+Each term contributes:
+- Pattern: Outer product $u_iv_i^T$ (rank 1 matrix)
+- Strength: Singular value $\sigma_i$ (importance weight)
+- Structure: $u_i$ and $v_i$ are orthonormal (independent patterns)
+
+We can approximate $A$ using just the first $k$ terms:
+
+$A_k = \sum_{i=1}^k \sigma_i u_i v_i^T = U_k\Sigma_kV_k^T$
+
+For our spam data:
+```python
+def reconstruct(k):
+    return (U[:, :k] @ torch.diag(S[:k]) @ V[:k, :])
+
+# Compare reconstructions
+original = X[0]  # First email features
+rank1 = reconstruct(1)[0]  # Using only top pattern
+rank2 = reconstruct(2)[0]  # Using top two patterns
+
+print("Original:", original)
+print("Rank 1:", rank1)
+print("Rank 2:", rank2)
+```
+
+### The Eckart-Young-Mirsky Theorem
+This truncation isn't just simple - it's optimal. The theorem states that for any rank-$k$ matrix $B$:
+
+$$\|A - A_k\|_F \leq \|A - B\|_F$$
+
+Moreover, the error is exactly the discarded singular values:
+
+$$\|A - A_k\|_F^2 = \sum_{i=k+1}^n \sigma_i^2$$
+
+For our spam data:
+```python
+def approx_error(k):
+    """Compute relative error for rank-k approximation."""
+    truncated = S[k:].norm()**2  # Squared Frobenius norm of discarded values
+    total = S.norm()**2         # Total squared Frobenius norm
+    return torch.sqrt(truncated/total)
+
+# Show error decreases with rank
+for k in range(1, 4):
+    print(f"Rank {k} relative error: {approx_error(k):.2e}")
+# Rank 1: 1.35e-01  (13.5% error)
+# Rank 2: 5.03e-02  (5% error)
+# Rank 3: 2.75e-02  (2.75% error)
+```
+
+The rapid decay of singular values (11.3 → 1.4 → 0.5) explains why low-rank approximations work well.
+
+### Pattern Analysis Example: Checkerboard
+Some patterns require multiple components. Consider this checkerboard:
 
 ```python
-# Compare errors as we add components
-def relative_error(original, approximation):
-    diff = original - approximation
-    return torch.sum(diff * diff) / torch.sum(original * original)
+pattern_image = torch.tensor([
+    [200,  50,  200,  50],  # Alternating bright-dark
+    [50,  200,  50,  200],  # Opposite pattern
+    [200,  50,  200,  50],  # First pattern repeats
+    [50,  200,  50,  200]   # Second pattern repeats
+], dtype=torch.float)
 
-for k in range(1, 5):
-    approx = reconstruct(U, S, V, k)
-    error = relative_error(variation, approx)
-    print(f"{k} components: {error:.1%} relative error")
+U, S, V = torch.linalg.svd(pattern_image)
+print("Singular values:", S)
+# tensor([5.0000e+02, 3.0000e+02, 8.8238e-06, 2.4984e-06])
+
+print("Energy per pattern:", 100 * S**2 / torch.sum(S**2), "%")
+# tensor([7.3529e+01, 2.6471e+01, 2.2900e-14, 1.8359e-15]) %
 ```
 
-A remarkable mathematical theorem states that SVD components minimize this error: no other choice of k components can achieve a smaller error than the first k SVD components. This optimality isn't just empirical - mathematicians have proven it rigorously through the Eckart-Young-Mirsky theorem.
+The SVD reveals two essential patterns:
+1. First pattern (73.5%):
+   - $u_1$: Vertical pattern [-0.5, -0.5, -0.5, -0.5]
+   - $v_1$: Horizontal pattern [-0.5, -0.5, -0.5, -0.5]
+   - Product creates uniform intensity
 
-## Pattern Importance: The Role of Singular Values
+2. Second pattern (26.5%):
+   - $u_2$: Alternating vertical [0.5, -0.5, 0.5, -0.5]
+   - $v_2$: Alternating horizontal [0.5, -0.5, 0.5, -0.5]
+   - Product creates checkerboard
 
-The diagonal entries of S (singular values) quantify each pattern's importance:
+Both patterns are necessary because:
+1. First pattern sets overall intensity level
+2. Second pattern creates alternation
+3. Both patterns needed for reconstruction
+4. Remaining patterns are numerical noise (~10⁻¹⁴%)
 
+These principles extend to high-dimensional data:
+- Natural images: Rapidly decaying singular values enable compression
+- Text data: Word co-occurrence patterns reveal semantics
+- Time series: Temporal patterns emerge at different scales
+
+## Summary
+
+PyTorch implements linear algebra efficiently through three key mechanisms:
+
+1. Tensors: Flexible N-dimensional arrays
+   - Natural representation for data (temperature readings, images)
+   - Automatic differentiation for optimization (later)
+   - Hardware acceleration (CPU/GPU)
+
+2. Broadcasting: Implicit shape matching
+   - Eliminates explicit loops (sensor calibration)
+   - Memory efficient (no copies needed)
+   - Parallelizes naturally
+
+3. SVD: Pattern discovery and compression
+   - Optimal low-rank approximation (Eckart-Young-Mirsky)
+   - Separates signal from noise
+   - Reveals underlying structure
+
+### Essential Operations
 ```python
-# Show pattern contributions
-total_variance = torch.sum(S * S)
-for i, sigma in enumerate(S):
-    contribution = (sigma * sigma / total_variance).item()
-    print(f"Pattern {i+1}: {contribution:.1%} of variance")
+# Data representation
+x = torch.tensor([1, 2, 3])          # Vector (like temperature readings)
+y = torch.zeros_like(x)              # Initialize (like sensor baseline)
+z = torch.randn(3, 3)               # Random sampling
+A = z.float()                       # Type conversion for computation
+
+# Core computations
+b = x + 2                           # Broadcasting (calibration)
+c = torch.dot(x, x)                 # Inner product (pattern similarity)
+d = A @ x                           # Matrix multiply (weighted average)
+e = torch.mean(A, dim=0)            # Reduction (daily averages)
+
+# Structure manipulation
+f = A.t()                           # Transpose (change access pattern)
+g = A.view(-1)                      # Reshape (flatten for computation)
+h = A[:, :2]                        # Slice (select time window)
+
+# Pattern analysis
+U, S, V = torch.linalg.svd(A)       # Decomposition (find patterns)
+norm = torch.norm(x)                # Vector norm (measure magnitude)
 ```
 
-These values reveal the image's inherent dimensionality. A sharp drop between singular values signals that later patterns contribute little:
-
-```python
-# Visualize singular value decay
-rel_importance = S / S[0]  # Scale relative to largest
-print("Relative pattern strengths:")
-print(rel_importance)
-```
-
-## Independence: Orthogonal Components 
-
-SVD patterns work independently - each captures structure the others miss. This independence appears mathematically as orthogonality:
-
-```python
-# Check orthogonality of U columns
-U_products = U.T @ U
-print("U column dot products:")
-print(U_products)  # Should be identity matrix
-```
-
-The columns of U and V form orthonormal bases, ensuring:
-$$U^T U = I \quad \text{and} \quad V V^T = I$$
-
-This independence lets us write any matrix A as a sum of rank-one components:
-$$A = \sum_{i=1}^r \sigma_i u_i v_i^T$$
-
-where σᵢ comes from S, uᵢ from U's columns, and vᵢ from V's rows.
-
-Try this puzzle to strengthen your understanding:
-
-```python
-# Puzzle: Component Analysis
-A = torch.tensor([
-    [3.0, 1.0],
-    [1.0, 3.0]
-])
-
-# Questions:
-# 1. Without computing SVD, what patterns do you expect?
-# 2. Check your intuition using torch.linalg.svd
-# 3. What do the singular values tell you about A's structure?
-# 4. Verify that U's columns are orthogonal
-#
-# Bonus: Can you explain why A needs exactly two components?
-```
-
-# Compression Applications: From Components to Storage
-
-SVD components encode image structure efficiently. The number of components directly controls the tradeoff between storage and fidelity.
-
-```python
-# Load a larger test image
-sunset = create_sunset(height=64, width=96)
-U, S, V = torch.linalg.svd(sunset)
-
-def count_parameters(components):
-    """Calculate storage needed for k components."""
-    height, width = sunset.shape
-    return components * (height + width + 1)  # Add 1 for singular value
-
-def compress(components):
-    """Build approximation from k components."""
-    return reconstruct(U, S, V, components)
-
-# Compare storage requirements
-original_size = sunset.numel()
-for k in [5, 10, 20]:
-    compressed_size = count_parameters(k)
-    approx = compress(k)
-    error = relative_error(sunset, approx)
-    
-    print(f"\n{k} components:")
-    print(f"Storage: {compressed_size} vs {original_size} values")
-    print(f"Compression ratio: {original_size/compressed_size:.1f}:1")
-    print(f"Error: {error:.1%}")
-```
-
-Each additional component improves accuracy but increases storage. The singular values guide this tradeoff by measuring each component's contribution:
-
-```python
-def analyze_components(threshold=0.99):
-    """Find components needed for target accuracy."""
-    total = torch.sum(S * S)
-    cumulative = torch.cumsum(S * S, dim=0) / total
-    
-    needed = torch.sum(cumulative < threshold).item() + 1
-    storage = count_parameters(needed)
-    
-    print(f"Components for {threshold:.1%} accuracy: {needed}")
-    print(f"Compression ratio: {sunset.numel()/storage:.1f}:1")
-    return needed
-
-needed = analyze_components()
-```
-
-Three properties make SVD compression effective:
-1. Early components capture dominant structure
-2. Later components handle fine details
-3. You can truncate at any point, maintaining optimality
-
-Try this exercise to strengthen your understanding:
-
-```python
-# Exercise: Compression Analysis
-smooth = torch.ones(30, 40)         # Constant image
-edges = torch.eye(30, 40)           # Diagonal line
-noise = torch.randn(30, 40)         # Random values
-
-# Questions:
-# 1. Which image needs the fewest components? Why?
-# 2. Calculate compression ratios at 95% accuracy
-# 3. How do singular values reflect image structure?
-```
-
-# Putting It Together: A Complete Compression Pipeline
-
-SVD compression extends naturally to larger images. Real applications need three additional considerations:
-1. Handle numeric precision
-2. Process large images efficiently
-3. Store components compactly
-
-Let's build a complete compression system:
-
-```python
-def compress_image(image, target_accuracy=0.95):
-    """Compress image to specified accuracy."""
-    # Scale to prevent numeric issues
-    scale = torch.max(torch.abs(image))
-    scaled = image / scale
-    
-    # Find components
-    U, S, V = torch.linalg.svd(scaled)
-    
-    # Determine components needed
-    total = torch.sum(S * S)
-    cumulative = torch.cumsum(S * S, dim=0) / total
-    k = torch.sum(cumulative < target_accuracy).item() + 1
-    
-    # Store minimal components
-    components = {
-        'U': U[:, :k],
-        'S': S[:k],
-        'V': V[:k, :],
-        'scale': scale
-    }
-    
-    return components
-
-def decompress(components):
-    """Rebuild image from stored components."""
-    U = components['U']
-    S = components['S']
-    V = components['V']
-    scale = components['scale']
-    
-    return scale * (U * S) @ V
-```
-
-This implementation balances efficiency and accuracy. The scale factor prevents numeric overflow, while storing only necessary components reduces memory.
-
-Let's test it on a challenging image:
-
-```python
-# Create image with multiple scales of detail
-def create_test_image(size=64):
-    x = torch.linspace(-4, 4, size)
-    y = torch.linspace(-4, 4, size)
-    X, Y = torch.meshgrid(x, y)
-    
-    # Combine large and small scale features
-    Z = torch.sin(X) + torch.cos(Y) + torch.exp(-(X*X + Y*Y)/8)
-    return Z
-
-test = create_test_image()
-compressed = compress_image(test)
-reconstructed = decompress(compressed)
-
-# Analyze results
-storage_ratio = test.numel() / sum(v.numel() for v in compressed.values())
-error = relative_error(test, reconstructed)
-
-print(f"Compression ratio: {storage_ratio:.1f}:1")
-print(f"Relative error: {error:.1%}")
-```
-
-The compression ratio reveals how effectively SVD captures structure across scales. Each component contributes a specific level of detail.
-
-Try this final puzzle to cement your understanding:
-
-```python
-# Puzzle: Multi-Scale Compression
-# Consider two 100x100 images:
-# 1. checkerboard with 10x10 squares
-# 2. checkerboard with 2x2 squares
-#
-# Without computing:
-# - Which needs more components for 95% accuracy?
-# - What do you expect their singular values to look like?
-# - How would compression ratios compare?
-#
-# Then verify your predictions with code.
-```
-
-# Practical Considerations and Limitations
-
-SVD compression works best when images contain clear structure. Three factors limit its effectiveness in practice:
-
-## Computation and Memory
-
-Large images strain both computation and memory. A 3000×4000 image needs:
-- 48 million multiply-adds per matrix multiplication
-- Memory for full U and V matrices
-- Additional workspace during SVD computation
-
-```python
-def analyze_computation_needs(height=3000, width=4000):
-    """Estimate SVD computation requirements."""
-    flops_per_iteration = height * width * min(height, width)
-    memory_bytes = 4 * (height * width +  # Original matrix
-                       height * height +   # U matrix
-                       width * width)      # V matrix
-    
-    print(f"Multiply-adds: {flops_per_iteration:,}")
-    print(f"Memory needed: {memory_bytes/1e6:.1f} MB")
-
-analyze_computation_needs()
-```
-
-## Block Processing 
-
-Processing large images requires splitting them into blocks:
-
-```python
-def compress_by_blocks(image, block_size=500, accuracy=0.95):
-    """Process image in manageable chunks."""
-    height, width = image.shape
-    result = torch.zeros_like(image)
-    
-    for i in range(0, height, block_size):
-        for j in range(0, width, block_size):
-            # Extract and process block
-            h_end = min(i + block_size, height)
-            w_end = min(j + block_size, width)
-            block = image[i:h_end, j:w_end]
-            
-            compressed = compress_image(block, accuracy)
-            result[i:h_end, j:w_end] = decompress(compressed)
-    
-    return result
-```
-
-Block processing introduces tradeoffs:
-- Smaller blocks use less memory
-- Block boundaries may show artifacts
-- Patterns cannot cross block boundaries
-
-## Image Content Matters
-
-SVD compression excels on structured images but struggles with:
-- Random noise or texture
-- Sharp edges
-- Complex repeating patterns
-
-These limitations shape where SVD compression fits in practice:
-- Scientific data visualization
-- Background image compression
-- Feature extraction and analysis
-
-Modern image compression uses more sophisticated techniques, but SVD's core insights about finding and ranking patterns remain valuable.
-
-# PyTorch and Linear Algebra: A Command Reference
-
-Our image compression examples used PyTorch operations to implement linear algebra concepts. Let's map these connections explicitly, showing how PyTorch translates mathematical ideas into working code.
-
-## Creating and Analyzing Tensors
-
-Linear algebra represents images as matrices - grids of numbers with rows and columns. PyTorch implements these through tensors:
-
-```python
-# Create matrix from nested lists
-A = torch.tensor([
-    [200, 180, 160],
-    [180, 160, 140],
-    [160, 140, 120]
-])
-
-# Matrix dimensions
-print(f"Shape (rows, cols): {A.shape}")
-print(f"Total elements: {A.numel()}")
-
-# Access patterns - mathematical notation A[i,j]
-print(f"Element A[1,2]: {A[1,2]}")           # Single entry
-print(f"Row A[1,:]: {A[1,:]}")               # Row vector
-print(f"Column A[:,1]: {A[:,1]}")            # Column vector
-```
-
-These operations connect to linear algebra:
-- `torch.tensor([[...]])`: Creates matrix A from components aᵢⱼ
-- `A.shape`: Returns dimensions (m,n) of m×n matrix
-- `A[i,j]`: Accesses matrix entry aᵢⱼ
-- `A[i,:]`: Extracts row i as vector
-- `A[:,j]`: Extracts column j as vector
-
-## Basic Matrix Operations
-
-PyTorch implements standard matrix arithmetic:
-
-```python
-# Scalar operations
-scale = 2.0
-scaled = A * scale                    # Scale matrix: 2A
-shifted = A + 100                     # Add to all entries: A + 100I
-
-# Matrix addition and subtraction
-B = A + torch.ones_like(A) * 10      # Matrix sum: A + B
-C = A - torch.ones_like(A) * 10      # Matrix difference: A - B
-
-# Matrix multiplication
-v = torch.tensor([[1.0], [0.8], [0.6]])  # Column vector
-h = torch.tensor([[1.0, 0.8, 0.6]])      # Row vector
-product = v @ h                           # Outer product: vh^T
-```
-
-Mathematical equivalents:
-- `A * scale`: Scalar multiplication αA
-- `A + B`: Matrix addition A + B
-- `A @ B`: Matrix multiplication AB
-- `v @ h`: Outer product vh^T
-
-## Matrix Analysis
-
-PyTorch provides tools to analyze matrix properties:
-
-```python
-# Matrix norms measure size
-frobenius = torch.norm(A)            # Frobenius norm: ||A||_F
-max_abs = torch.max(torch.abs(A))    # Maximum absolute value
-
-# Compare matrices
-diff = A - B
-rel_error = torch.norm(diff) / torch.norm(A)  # Relative error
-
-# Find matrix properties
-U, S, V = torch.linalg.svd(A)        # Singular value decomposition
-rank = torch.sum(S > 1e-10)          # Numerical rank
-```
-
-Linear algebra connections:
-- `torch.norm(A)`: Frobenius norm $\sqrt{\sum_{i,j} a_{ij}^2}$
-- `torch.linalg.svd(A)`: Decomposition A = UΣV^T
-- Relative error: $\|A - B\|_F / \|A\|_F$
-
-## Matrix Construction
-
-PyTorch offers several ways to build matrices:
-
-```python
-# Common patterns
-n = 3
-eye = torch.eye(n)                   # Identity matrix I
-ones = torch.ones((n,n))             # Matrix of ones
-zeros = torch.zeros((n,n))           # Zero matrix
-
-# Sequences and ranges
-steps = torch.linspace(0, 1, n)      # Evenly spaced values
-counts = torch.arange(n*n).reshape(n,n)  # Counting pattern
-```
-
-Mathematical equivalents:
-- `torch.eye(n)`: Identity matrix I_n
-- `torch.ones((n,n))`: Matrix J of all ones
-- `torch.linspace(a,b,n)`: Values from [a,b] in n steps
-
-## Matrix Decomposition
-
-The SVD operation decomposes matrices into components:
-
-```python
-# Compute full SVD
-U, S, V = torch.linalg.svd(A)
-
-# Reconstruct from components
-k = 2                               # Use top k components
-trunc_U = U[:,:k]                   # First k columns of U
-trunc_S = S[:k]                     # First k singular values
-trunc_V = V[:k,:]                   # First k rows of V
-approx = (trunc_U * trunc_S) @ trunc_V  # Low-rank approximation
-```
-
-This implements the mathematics:
-- Full SVD: A = UΣV^T
-- Truncated SVD: A ≈ U_kΣ_kV_k^T
-- Reconstruction error: $\|A - U_k\Sigma_kV_k^T\|_F$
-
-## Memory Management
-
-PyTorch manages memory explicitly:
-
-```python
-# Check tensor properties
-print(f"Data type: {A.dtype}")        # Number representation
-print(f"Device: {A.device}")          # CPU/GPU location
-print(f"Memory: {A.element_size() * A.numel()} bytes")
-
-# Convert between types
-B = A.to(torch.float32)               # Change precision
-C = A.cpu()                           # Move to CPU
-```
-
-These operations affect numerical properties:
-- `float32`: Single precision (≈7 decimal digits)
-- `float64`: Double precision (≈16 decimal digits)
-- Memory use = size × precision × dimensions
-
-
-## Tensor Creation and Manipulation
-
-Beyond basic construction, PyTorch offers flexible ways to reshape and combine tensors:
-
-```python
-# Create tensors with specific patterns
-random_matrix = torch.randn(3, 4)          # Random normal values
-seq_matrix = torch.arange(12).reshape(3,4)  # Sequence in grid form
-
-# Reshape and combine
-v = torch.tensor([1.0, 0.8, 0.6])
-as_column = v.reshape(-1, 1)               # Convert to column vector
-as_row = v.reshape(1, -1)                  # Convert to row vector
-
-# Join tensors
-stacked = torch.stack([v, v])              # Stack vectors into matrix
-concat = torch.cat([v, v])                 # Concatenate into longer vector
-```
-
-Mathematical equivalents:
-- `reshape(-1, 1)`: Convert v to column vector v̄
-- `reshape(1, -1)`: Convert v to row vector v^T
-- `stack`: Build matrix from row or column vectors
-- `cat`: Combine vectors end-to-end
-
-## Statistical Operations
-
-PyTorch implements common statistical calculations:
-
-```python
-# Reduction operations
-row_means = torch.mean(A, dim=1)           # Average each row
-col_sums = torch.sum(A, dim=0)             # Sum each column
-matrix_max = torch.max(A)                  # Maximum value
-
-# Value counting and comparison
-positive = torch.sum(A > 0)                # Count positive elements
-mask = A > torch.mean(A)                   # Compare to mean
-```
-
-Mathematical connections:
-- `mean(A, dim=1)`: Row averages μᵢ = (1/n)Σⱼ aᵢⱼ
-- `sum(A, dim=0)`: Column sums sⱼ = Σᵢ aᵢⱼ
-- Boolean masks: Indicator matrices I(condition)
-
-## Numerical Stability
-
-PyTorch provides tools for stable computation:
-
-```python
-# Handle numerical issues
-stable_sum = torch.logaddexp(a, b)         # Stable log(exp(a) + exp(b))
-safe_div = torch.div(a, b + 1e-8)          # Avoid division by zero
-clipped = torch.clamp(A, min=0, max=255)   # Bound values
-
-# Check for problems
-has_nan = torch.isnan(A).any()             # Check for NaN values
-is_finite = torch.isfinite(A).all()        # Check for infinite values
-```
-
-These operations support stable numerical algorithms:
-- `logaddexp`: Avoid overflow in exponentials
-- `clamp`: Enforce value bounds [a,b]
-- Numerical checks prevent silent errors
-
-## Memory Layout and Efficiency
-
-PyTorch exposes memory details for performance:
-
-```python
-# Memory layout
-contiguous = A.contiguous()                # Ensure memory layout
-strided = A.stride()                       # Get memory step sizes
-shared = A.storage()                       # Access underlying storage
-
-# Memory efficiency
-no_grad = torch.no_grad()                  # Disable gradient tracking
-pin = A.pin_memory()                       # Optimize CPU-GPU transfer
-```
-
-These controls affect computation speed:
-- Contiguous memory enables faster operations
-- Proper strides optimize memory access
-- Memory pinning speeds GPU transfers
-
-Try this memory-focused puzzle:
-
-```python
-# Puzzle: Memory Layout
-# Create a 1000x1000 matrix A
-# Questions:
-# 1. Compare memory use of float32 vs float64
-# 2. Measure time to sum rows vs columns
-# 3. Effect of contiguous vs non-contiguous layout
-# 4. Impact of pinned memory for GPU transfer
-#
-# Write code to demonstrate each effect
-```
-
-These tools form a complete set for basic linear algebra tasks. Each operation translates a mathematical concept into concrete computation, supporting both analysis and implementation.
-For details beyond this reference, PyTorch's documentation provides:
-- Full API specifications
-- Implementation notes
-- Performance considerations
-- Advanced features
+These operations combine to solve real problems:
+1. Data processing: Broadcasting + reduction for sensor calibration
+2. Pattern matching: Dot products + norms for similarity detection
+3. Dimensionality reduction: SVD for compression and denoising
+4. Feature extraction: Singular vectors capture dominant patterns
+
+The key is choosing the right operation for each task:
+- Use broadcasting for element-wise operations
+- Use matrix multiply for weighted combinations
+- Use SVD for pattern discovery and compression
 
