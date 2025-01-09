@@ -8,7 +8,7 @@
 
 # Don't ignore specific files
 !section/*/notes.md
-!section/*/notes.ipynb
+!section/*/notebook.ipynb
 !section/*/slides.md
 
 # Don't ignore PNGs in figures directories

@@ -88,8 +88,8 @@ print(avg)  # tensor([21.75, 22.80, 21.35])
 # Dot product reveals pattern similarity
 similarity = torch.dot(day1, day2)
 print(f"Similarity: {similarity:.1f}")  # 1447.9: high similarity
-print(f"Day 1 magnitude: {torch.norm(day1):.1f}")  # 38.9
-print(f"Day 2 magnitude: {torch.norm(day2):.1f}")  # 37.2
+print(f"Day 1 magnitude: {torch.norm(day1, p=2):.1f}")  # 38.9
+print(f"Day 2 magnitude: {torch.norm(day2, p=2):.1f}")  # 37.2
 ```
 
 These numbers reveal the temperature patterns:
@@ -168,6 +168,7 @@ week_temps = torch.tensor([
     [21.2, 22.0, 20.8]   # Sunday
 ])
 print(f"Shape: {week_temps.shape}")  # torch.Size([7, 3])
+print(f"Total elements: {week_temps.numel()}")  # Number of elements
 ```
 
 ### Basic Matrix Operations
@@ -251,23 +252,11 @@ temps = torch.tensor([
 ])
 
 weights = torch.tensor([0.5, 0.3, 0.2])  # Recent days matter more
-```
 
-Matrix multiplication computes weighted combinations:
-```
-Day 1: [22.5, 23.1, 21.8] × 0.5 = [11.25, 11.55, 10.90]  # 50% influence
-Day 2: [21.0, 22.5, 20.9] × 0.3 = [ 6.30,  6.75,  6.27]  # 30% influence
-Day 3: [23.1, 24.0, 22.8] × 0.2 = [ 4.62,  4.80,  4.56]  # 20% influence
-                                  [22.17, 23.10, 21.73] Final averages
-```
-
-PyTorch optimizes this computation:
-```python
-# Efficient matrix-vector multiply
+# Matrix-vector multiply
 weighted_means = torch.mv(temps, weights)  # Uses BLAS
 print("Weighted averages per time:")
-print(weighted_means)  # tensor([22.5400, 21.4300, 23.3100])
-#                        Morning   Noon     Night
+print(weighted_means)
 ```
 
 The weighted averages reveal:
@@ -449,8 +438,8 @@ For our spam data:
 ```python
 def approx_error(k):
     """Compute relative error for rank-k approximation."""
-    truncated = S[k:].norm()**2  # Squared Frobenius norm of discarded values
-    total = S.norm()**2         # Total squared Frobenius norm
+    truncated = S[k:].norm(p=2)**2  # Squared Frobenius norm of discarded values
+    total = S.norm(p=2)**2          # Total squared Frobenius norm
     return torch.sqrt(truncated/total)
 
 # Show error decreases with rank
@@ -544,7 +533,7 @@ h = A[:, :2]                        # Slice (select time window)
 
 # Pattern analysis
 U, S, V = torch.linalg.svd(A)       # Decomposition (find patterns)
-norm = torch.norm(x)                # Vector norm (measure magnitude)
+norm = torch.norm(x, p=2)           # Vector norm (measure magnitude)
 ```
 
 These operations combine to solve real problems:
