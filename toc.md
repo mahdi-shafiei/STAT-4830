@@ -9,4 +9,4 @@ title: Table of Contents
    > Course content, a deliverable, and spam classification in PyTorch.
 
 [1. Basic linear Algebra in PyTorch](section/1/notes.md) | [Slides](section/1/slides.pdf) | [Notebook](https://colab.research.google.com/...)
-   > Basic linear algebra operations in PyTorch, demonstrated through image compression.
+   > Basic linear algebra operations in PyTorch.
