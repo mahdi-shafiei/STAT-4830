@@ -367,24 +367,27 @@ print("Energy per pattern:", 100 * S**2 / torch.sum(S**2), "%")
 ```
 
 The decomposition reveals:
-1. Feature patterns: Which features occur together ($V^T$)
-2. Email patterns: How emails combine features ($U$)
-3. Pattern strengths: How important each pattern is ($\Sigma$)
+1. Feature patterns (V): Which features occur together
+2. Email patterns (U): How emails combine features
+3. Pattern strengths (S): How important each pattern is
 
 Looking at the first pattern:
 ```python
-print("Feature pattern:", V[0])
-# tensor([-0.9767, -0.0892, -0.1925, -0.0136, -0.0289])
-
-print("Email pattern:", U[:, 0])
-# tensor([-0.3710, -0.6300, -0.4493, -0.3630, -0.3630,
-#         -0.0004, -0.0004, -0.0004, -0.0082, -0.0004])
+print("Feature pattern:", V[0])  # tensor([-0.0206, -0.0076, -0.0061, -0.0010, -0.9997])
+print("Email pattern:", U[:, 0]) # Similar weights around -0.3 for all emails
 ```
 
-This dominant pattern shows:
-1. Features: Exclamation marks (-0.98) and suspicious links (-0.19) cluster together
-2. Emails: Clear separation between spam (large negative values) and legitimate (near zero)
-3. Strength: First singular value (11.3) captures 98.17% of data variation
+This dominant pattern, with singular value 431.75 (99.95% of total variation), shows an important principle in data analysis: high variation doesn't always mean high discriminative power. The first singular vector is dominated by text length (-0.9997), with negligible contributions from other features. Despite capturing most of the data's variation, this direction doesn't help classify spam - both legitimate and spam emails can be long or short, as shown by the similar weights (around -0.3) for all emails in U[:, 0].
+
+Looking at the second pattern:
+```python
+print("Second feature pattern:", V[1])  # tensor([0.9283, 0.2724, 0.2503, 0.0304, -0.0227])
+print("Second email pattern:", U[:, 1]) # Positive for spam, negative for non-spam
+```
+
+The second singular vector, despite having a much smaller singular value (9.2474, only 0.046% of total variation), is far more informative for classification. It shows that exclamation marks (0.9283) and urgent words (0.2724) cluster together, and the corresponding email pattern clearly separates spam (positive values for first 5 emails) from non-spam (negative values for last 5 emails).
+
+This illustrates a key insight: the directions of highest variation in your data (found by SVD) may not be the most useful for your task. While text length accounts for most of the variation between emails, the more subtle patterns of exclamation marks and urgent language are what actually distinguish spam from legitimate messages.
 
 ### Measuring Pattern Quality
 To quantify how well these patterns represent our data, we need a way to measure matrix size. The Frobenius norm extends our vector norm concept:
