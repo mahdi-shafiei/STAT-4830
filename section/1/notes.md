@@ -173,9 +173,15 @@ print(f"Shape: {week_temps.shape}")  # torch.Size([7, 3])
 ### Basic Matrix Operations
 For matrices $A$ and $B$ of the same size:
 
-- Addition: $(A + B)_{ij} = a_{ij} + b_{ij}$ combines corresponding elements
-- Scalar multiplication: $(\alpha A)_{ij} = \alpha a_{ij}$ scales all elements
-- Mean along dimension: $\text{mean}(A, \text{dim}=0)_j = \frac{1}{m}\sum_{i=1}^m a_{ij}$ collapses rows
+- Addition: 
+$$(A + B)_{ij} = a_{ij} + b_{ij}$$ 
+combines corresponding elements
+- Scalar multiplication: 
+$$(\alpha A)_{ij} = \alpha a_{ij}$$
+scales all elements
+- Mean along dimension: 
+$$\text{mean}(A, \text{dim}=0)_j = \frac{1}{m}\sum_{i=1}^m a_{ij}$$
+collapses rows
 
 These operations preserve the structure of the data while revealing patterns:
 
