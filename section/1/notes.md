@@ -5,6 +5,17 @@ title: Basic Linear Algebra in PyTorch
 
 # 1. Basic Linear Algebra in PyTorch
 
+## Notebooks and Slides
+- [Lecture slides](slides.pdf)
+- [Colab notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/1/notebook.ipynb)
+
+## Table of contents
+1. [Vectors and Tensors: The Foundation](#vectors-and-tensors-the-foundation)
+2. [Matrix Operations](#matrix-operations)
+3. [Finding Patterns with SVD](#finding-patterns-with-svd)
+4. [Summary](#summary)
+
+## Introduction
 In Lecture 0, we classified spam using word frequencies as vectors. Each email became a point in high-dimensional space, where dimensions represented word counts. Linear algebra revealed the underlying geometry - similar emails clustered together, and a linear boundary separated spam from non-spam.
 
 Now we'll explore how PyTorch implements these operations efficiently. Three key ideas emerge:
