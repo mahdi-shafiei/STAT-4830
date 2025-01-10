@@ -37,20 +37,6 @@ Now we'll explore PyTorch's efficient implementation through temperature data:
 
 ---
 
-# Motivation: From Theory to Practice
-
-Key transitions from Lecture 0:
-1. From abstract vectors to efficient tensors
-2. From basic operations to optimized implementations
-3. From mathematical theory to practical pattern discovery
-
-Benefits:
-- Hardware acceleration
-- Memory efficiency
-- Scalable computation
-
----
-
 # Outline
 
 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1em;">
