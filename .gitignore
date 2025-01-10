@@ -10,6 +10,7 @@
 !section/*/notes.md
 !section/*/notebook.ipynb
 !section/*/slides.md
+!section/*/slides.pdf
 
 # Don't ignore PNGs in figures directories
 !section/*/figures/

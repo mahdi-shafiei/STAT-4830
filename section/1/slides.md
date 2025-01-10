@@ -172,27 +172,31 @@ small temperature variation
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
 <div>
 
-Cache hierarchy impact:
+This layout affects performance:
 ```python
-# L1 cache: ~4ns
-x = A[0:16, 0:16].sum()  # 256 elements
+# Fast: accessing one day's readings
+day_readings = week_temps[0]  # Row access
 
-# L2 cache: ~12ns
-y = A[0:64, 0:64].sum()  # 4096 elements
+# Slower: accessing one time across days
+morning_temps = week_temps[:, 0]  # Column
 
-# Memory: ~100ns
-z = A.sum()  # All elements
+# Matrix multiply optimizes for this
+result = torch.mm(week_temps, weights)
 ```
+
+Understanding memory layout:
+- Row operations are fast (contiguous)
+- Column operations are slower (strided)
+- Choose operations to match layout
 
 </div>
 <div style="text-align: center;">
 
 ![h:300](figures/memory_layout.png)
 
-Performance implications:
-- Row access: 2.1 GB/s
-- Column access: 198 MB/s
-- 10.6x speedup for aligned access
+Key insight:
+Process data by rows when possible
+(e.g., analyze one day at a time)
 
 </div>
 </div>
@@ -219,13 +223,30 @@ print(means)  # [22.2, 23.2, 21.8]
 
 # Matrix Operations: Mathematical View
 
-Key operations:
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1em;">
+<div style="font-size: 0.9em;">
+
+Mathematical form:
 - Addition: $(A + B)_{ij} = a_{ij} + b_{ij}$
 - Scaling: $(\alpha A)_{ij} = \alpha a_{ij}$
-- Mean: $\text{mean}(A, \text{dim}=0)_j = \frac{1}{m}\sum_{i=1}^m a_{ij}$
-- Matrix multiply: $(AB)_{ij} = \sum_{k=1}^n a_{ik}b_{kj}$
+- Mean: $\text{mean}(A)_j = \frac{1}{m}\sum_{i=1}^m a_{ij}$
+- Multiply: $(AB)_{ij} = \sum_{k} a_{ik}b_{kj}$
 
-Implementation benefits:
+</div>
+<div>
+
+```python
+# PyTorch equivalent
+C = A + B         # Addition
+C = alpha * A     # Scaling
+m = A.mean(dim=0) # Row mean
+C = A @ B         # Matrix multiply
+```
+
+</div>
+</div>
+
+Benefits:
 - BLAS optimization
 - Cache efficiency
 - Parallel execution
@@ -294,6 +315,82 @@ Key components:
 
 </div>
 </div>
+
+---
+
+# Truncated Matrices and Low-Rank Approximation
+
+For any rank $k \leq r$, we can truncate the SVD:
+
+$$A_k = \sum_{i=1}^k \sigma_i u_i v_i^T$$
+
+Properties:
+- $A_k$ has rank exactly $k$
+- Uses only first $k$ singular values/vectors
+- Best rank-$k$ approximation to $A$
+- Captures most important patterns
+
+---
+
+# Matrix Norms
+
+The Frobenius norm measures matrix size:
+
+$$\|A\|_F = \sqrt{\sum_{i,j} a_{ij}^2} = \sqrt{\sum_{i=1}^r \sigma_i^2}$$
+
+Properties:
+- Sum of squared entries
+- Natural extension of vector length
+- Computable from singular values
+- Measures total energy in matrix
+
+---
+
+# Computing Frobenius Norm
+
+Two equivalent implementations in PyTorch:
+```python
+# Method 1: As vector norm of flattened matrix
+A = torch.tensor([[200, 50], [50, 200]])
+norm1 = torch.norm(A.reshape(-1))  # Flatten to vector
+print(norm1)  # 289.8
+
+# Method 2: Using built-in Frobenius norm
+norm2 = torch.norm(A, p='fro')
+print(norm2)  # 289.8
+
+# Verify they're equal
+print(torch.allclose(norm1, norm2))  # True
+```
+
+---
+
+# Eckart-Young-Mirsky Theorem
+
+For any matrix $A$ and rank $k$:
+
+$$\min_{\text{rank}(B) \leq k} \|A - B\|_F = \|A - A_k\|_F = \sqrt{\sum_{i=k+1}^r \sigma_i^2}$$
+
+Key implications:
+1. Truncated SVD gives optimal approximation
+2. Error equals discarded singular values
+3. Measured in Frobenius norm
+
+---
+
+# Eckart-Young-Mirsky: Example
+
+For our checkerboard pattern:
+```python
+# Original singular values
+print(S)  # [500, 300, ~0, ~0]
+
+# Rank-1 approximation error
+error = torch.sqrt(S[1:]**2).sum() / S.norm()
+print(f"Error: {error:.1%}")  # 26.5%
+```
+
+The 26.5% error shows we need both components.
 
 ---
 
