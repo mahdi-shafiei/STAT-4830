@@ -22,16 +22,16 @@ The efficient matrix operations we studied last time aren't just theoretical - t
 
 ## Prediction with Multiple Features
 
-Consider predicting house prices, a problem that combines both practical importance and mathematical elegance. A house's price typically depends on multiple characteristics: its size, age, number of bedrooms, and location. The simplest model assumes each feature contributes linearly to the price:
+Consider predicting house price. A house's price typically depends on multiple characteristics: its size, age, number of bedrooms, and location. The simplest model assumes each feature contributes linearly to the price, plus some noise that captures factors our model doesn't account for:
 
-$$ \text{price} = w_1 \cdot \text{size} + w_2 \cdot \text{age} + w_3 \cdot \text{bedrooms} + w_4 \cdot \text{location} $$
+$$ \text{price} = w_1 \cdot \text{size} + w_2 \cdot \text{age} + w_3 \cdot \text{bedrooms} + w_4 \cdot \text{location} + \text{noise} $$
 
-This linear relationship, while simple, captures something profound: each weight has a clear interpretation. $w_1$ represents dollars per square foot, $w_2$ tells us how price changes with age, and so on. This interpretability makes linear models particularly valuable in fields like economics and policy analysis, where understanding the impact of each factor matters as much as the prediction itself.
+In this linear relationsihp, each weight has a clear interpretation. $w_1$ represents dollars per square foot, $w_2$ tells us how price changes with age, and so on. The noise term acknowledges that real estate prices are influenced by many factors beyond our simple features.
 
 We can write this more compactly using vector notation:
-$$ y = w^T x $$
+$$ y = w^T x + \epsilon $$
 
-where $y$ is the price, $w$ contains our weights, and $x$ holds the features:
+where $y$ is the price, $w$ contains our weights, $x$ holds the features, and $\epsilon$ represents the noise:
 
 ```python
 house = {
@@ -52,11 +52,11 @@ def predict_price(house, weights):
     )
 ```
 
-Real estate data reveals why this linear approach often works well. When we plot prices against individual features, we often see roughly linear relationships, especially within typical ranges:
+Real estate data reveals why this linear approach often works well. When we plot prices against individual features, we often see roughly linear relationships with some scatter, especially within typical ranges. The scatter around these trends represents the noise in our model - those unique factors that make each house sale slightly different from what we'd predict based on features alone:
 
 ![Feature Mapping](figures/feature_mapping.png)
 
-The challenge lies in finding the right weights. Even reasonable guesses can lead to significant errors, as we'll see by testing our model on actual house sales:
+The challenge lies in finding the right weights while accounting for this noise. Even reasonable guesses can lead to significant errors, as we'll see by testing our model on actual house sales:
 
 ```python
 # Data in PyTorch tensors
@@ -149,53 +149,25 @@ Notice what squaring does:
 2. Penalizes large errors more heavily (doubling an error quadruples its contribution)
 3. Creates a smooth optimization landscape we can analyze with calculus
 
-The question is: what weights $w$ make this error as small as possible? And how much better can we do than our reasonable guesses?
-
-## From Predictions to Optimization
-
-Our initial guesses gave 4-12% errors. Not terrible, but can we do better? Let's think about how:
-
-> **Why This Matters**
-> Imagine you're a real estate company. A 10% error on a 500,000 dollar house means being off by 50,000 dollars.
-> Even small improvements in accuracy could save millions across thousands of houses.
-
-To improve our predictions, we need to:
-1. Try different weight combinations
-2. Measure the error for each combination
-3. Find weights that give the smallest error
-
-Let's see what this means in practice:
-```python
-# Just changing price per square foot (w₁)
-w₁_values = [150, 175, 200, 225, 250]  # $/sqft
-base_weights = [200, -1000, 50000, 100000]
-
-for price_per_sqft in w₁_values:
-    weights = base_weights.copy()
-    weights[0] = price_per_sqft
-    # Need to compute predictions for ALL houses
-    # Need to compute error for ALL predictions
-    # Just trying 5 values for ONE weight!
-```
-
-Now imagine trying different values for ALL weights. With just 10 values per weight and 4 weights:
-- 10 × 10 × 10 × 10 = 10,000 combinations to try
-- Each combination needs predictions for all houses
-- With 1 million houses: 10 billion computations.
-
-We need a faster way to compute predictions.
+The question is: what weights $w$ make this error as small as possible? With 4 weights and millions of houses, trying different combinations manually would be impractical. Instead, we'll:
+1. Use matrix operations to compute predictions efficiently
+2. Apply calculus to find the optimal weights directly
+3. Solve the resulting equations using linear algebra
 
 ## Computing Predictions Efficiently
 
-With millions of predictions to compute, organization matters. Let's see why:
+Remember from last lecture how matrix multiplication can express many computations simultaneously? This is exactly what we need here. Instead of computing each prediction in a loop, we can organize our data to use the efficient matrix operations we studied:
 
 > **Why This Matters**
-> Even a small speedup (say 100ms → 10ms) becomes crucial when repeated billions of times.
-> 10,000 weight combinations × 1M houses: 10 billion computations.
+> - Matrix multiplication computes all predictions in one operation
+> - Modern hardware (CPU/GPU) is optimized for matrix operations
+> - The same pattern appears throughout machine learning
+> - Even a small speedup (say 100ms → 10ms) becomes crucial when repeated billions of times
+> - With 10,000 weight combinations × 1M houses: 10 billion computations
 
 ### From Loops to Matrices
 
-Look at what happens when we compute predictions one by one:
+Let's see how to convert our loop-based approach into matrix operations. Currently, we compute predictions one by one:
 ```python
 # One-by-one approach
 for house in houses:
@@ -207,12 +179,7 @@ for house in houses:
     # Then do it ALL AGAIN for next weight combination
 ```
 
-> **Think About It**
-> - What's being repeated in the inner loop?
-> - What data do we access for each prediction?
-> - Is there a pattern to these computations?
-
-We're doing the same operation (multiply features by weights and sum) over and over. Let's organize our data to match this pattern:
+Look familiar? Each prediction is a dot product - exactly what we studied last time! We can organize all our predictions into a single matrix multiplication:
 
 $$ \text{house}_1: [1500, 10, 3, 0.8] \cdot [w_1, w_2, w_3, w_4] = \text{prediction}_1 $$
 $$ \text{house}_2: [2100, 2, 4, 0.9] \cdot [w_1, w_2, w_3, w_4] = \text{prediction}_2 $$
@@ -274,12 +241,10 @@ In the next section, we'll see how this transformation works and why the resulti
 
 ## Finding Optimal Weights
 
-> **Why This Matters**
-> Remember our 10% error on house prices? Let's discover why calculus and linear algebra together give us a direct path to the best weights.
-
-Let's start simple: imagine we only have sizes and prices for two houses:
+Remember our 10% error on house prices? Let's discover why calculus and linear algebra together give us a direct path to the best weights. Let's start simple: imagine we only have sizes and prices for two houses:
 - House 1: 1000 sq ft → 300k dollars
 - House 2: 2000 sq ft → 600k dollars
+
 Notice that when size doubles (1000 → 2000), price doubles too (300k → 600k). This suggests a perfect linear relationship!
 
 Our error for a given weight $w$ (price per sq ft, in $k$) is:
@@ -317,15 +282,13 @@ When we organize these equations using matrix notation:
 
 $$ (X^TX)w = X^Ty $$
 
-This is a linear system we can solve directly! We'll explore different solution methods next, focusing on making them efficient for large datasets.
+This system, known as the **normal equations**, is one we can solve directly! The system is called the normal equations because the error vector $(Xw - y)$ becomes orthogonal (normal) to the column space of $X$ at the solution. They give us a direct path to the optimal weights through linear algebra, as discuss in the next section.
 
 ## Direct Solution Methods
 
-> **Why This Matters**
-> With millions of houses and multiple features, solving these equations efficiently becomes crucial.
-> Let's see why some methods are faster than others.
+Now we'll discuss three methods for solving the normal equations: Gaussian elimination, LU factorization, and QR factorization. We'll see how these methods scale with the size of our dataset and how they compare in terms of computational efficiency and numerical stability.
 
-Let's look at our house price example with three features:
+Let's first look at our house price example with three features:
 ```python
 X = torch.tensor([
     [1500, 10, 3],    # house 1: size, age, bedrooms
@@ -340,8 +303,7 @@ The normal equations $(X^TX)w = X^Ty$ give us a system $Aw = b$ where:
 - $A = X^TX$ is a square matrix with size (number of features × number of features)
 - $b = X^Ty$ combines features and prices through dot products
 
-> **Key Insight**: Even with four houses (or four thousand!), our system is just $3 \times 3$ because we have 3 features!
-> The matrix $X$ is $4 \times 3$, but $X^TX$ is always $p \times p$, matching the number of weights we need to find.
+Note that even with four houses (or four thousand!), our system is just $3 \times 3$ because we have 3 features! The matrix $X$ is $4 \times 3$, but $X^TX$ is always $p \times p$, matching the number of weights we need to find.
 
 When we multiply $X^TX$, each entry combines feature vectors across all houses:
 
@@ -375,25 +337,24 @@ a_{31} & a_{32} & a_{33}
 
 ### Solving the System: Back to Linear Algebra
 
-We've seen systems like this before in linear algebra. There are several ways to solve such systems. We'll consider three direct methods in this course: Gaussian elimination, LU factorization, and QR factorization. But how do we choose between them?
+We've seen systems like this before in linear algebra. There are several ways to solve such systems. We'll consider three so-called *direct methods* in this lecture: Gaussian elimination, LU factorization, and QR factorization. But how do we choose between them?
 
-> **Key Decision Point**
-> Two critical factors determine which method to use:
-> 1. Computational Efficiency
->    - Number of arithmetic operations
->    - Becomes critical with large systems
->    - Affects running time directly
-> 2. Numerical Stability
->    - How measurement errors get amplified
->    - Critical when features are correlated
->    - Can make fast methods unreliable
->
-> The tension between these factors - and why modern practice often favors stability over raw speed - will become clear as we explore each method.
+Two critical factors determine which method to use:
+1. Computational Efficiency
+   - Measured by number of arithmetic operations
+   - Becomes critical with large systems
+   - Affects running time directly
+2. Numerical Stability
+   - Determines how measurement errors get amplified
+   - Critical when features are correlated
+   - Can make fast methods unreliable
+
+The tension between these factors - and why practice often favors stability over raw speed - will become clear as we explore each method.
 
 To understand these methods and their trade-offs, let's:
 1. Work through each method on our 3×3 system
 2. See how both cost and stability scale with larger matrices
-3. Discover why forming X^TX (while tempting) can be dangerous
+3. Discover why forming $X^TX$ (while tempting) can be lead to poor numerical stability
 
 Let's start with Gaussian elimination:
 
@@ -494,14 +455,14 @@ Next, we'll explore $LU$ factorization - a clever way to reorganize Gaussian eli
 
 ### LU Factorization
 
-> **Why This Matters**
-> Imagine this scenario:
-> - You've just computed optimal weights for 1000 houses
-> - Then 100 new houses sell, with different prices
-> - Market conditions shift existing home values
-> - Seasonal patterns affect current listings
-> 
-> Each change means new optimal weights. Can we avoid redoing all our work?
+
+Imagine this scenario:
+- You've just computed optimal weights for 1000 houses
+- Then 100 new houses sell, with different prices
+- Market conditions shift existing home values
+- Seasonal patterns affect current listings
+ 
+Each change means new optimal weights. Can we avoid redoing all our work?
 
 #### From Elimination to Factorization: A Key Insight
 
@@ -559,16 +520,15 @@ a_{11} & a_{12} & a_{13} \\[0.7em]
 & & a_{33}''
 \end{bmatrix}}_{\text{U (eliminated system)}} $$
 
-> **Key Insight**
-> Each elimination step:
-> 1. Computes a multiplier $m$
-> 2. Creates a zero in $U$
-> 3. Records $m$ in $L$
-> 
-> $L$ captures HOW we eliminated (our steps)
-> $U$ shows WHAT we achieved (zeros below diagonal)
+Why does this work?
+Each elimination step:
+1. Computes a multiplier $m$
+2. Creates a zero in $U$
+3. Records $m$ in $L$
+ 
+$L$ captures HOW we eliminated (our steps). $U$ shows WHAT we achieved (zeros below diagonal)
 
-Why is this pattern so powerful? Because it splits our solution process into two parts:
+Why is this pattern useful? Because it splits our solution process into two parts:
 1. The elimination recipe ($L$): records exactly how we created each zero
 2. The eliminated system ($U$): shows the result of following that recipe
 
@@ -616,7 +576,7 @@ With daily updates over a year:
 - With $LU$: $4.3$ million operations
 - **$98\%$ reduction in computation!**
 
-This dramatic speedup shows why factorization is so powerful: by separating HOW we eliminate ($L$) from WHAT we achieve ($U$), we can reuse our work when only prices change. Let's see this in action with PyTorch:
+This dramatic speedup shows why factorization is useful: by separating HOW we eliminate ($L$) from WHAT we achieve ($U$), we can reuse our work when only prices change. Let's see this in action with PyTorch:
 
 ```python
 # Form A = X^TX for our house price example
@@ -645,98 +605,96 @@ print("\nU =\n", U)
 
 Before moving on, it's worth noting that when A has the special form X^TX, there's another factorization called Cholesky that's twice as fast as LU. While we won't explore it here, keep it in mind for future reference.
 
-## Beyond Speed: The Challenge of Accuracy
+## The effect of and remedy for numerical instability
 
-While LU factorization efficiently solves our equations, looking at the numbers reveals a hidden challenge. Let's see this concretely with our house data:
+The LU approach has a hidden weakness that becomes clear when we think geometrically about our features. When we plot two features against each other, we can see two very different situations:
+
+![Condition Number Visualization](figures/condition_number_viz.png)
+
+- Left: Independent features form a "round" cloud - changes in one feature don't tell us much about the other
+- Right: Nearly dependent features form a "skinny" cloud - knowing one feature almost completely determines the other
+
+This "skinniness" makes our problem ill-conditioned - small changes in the data can cause large changes in our solution. The condition number κ(X) measures exactly this:
+- It's the ratio of the largest to smallest "stretching" our data does in any direction
+- A condition number of 100 means the longest direction is 100 times the shortest
+- The larger this ratio, the more sensitive our solution becomes to small errors
+
+More precisely, the condition number κ(X) is computed as the ratio of the largest to smallest singular values of X (κ(X) = σ_max/σ_min). These singular values come from the SVD decomposition we mentioned at the end of the last lecture - they exactly measure the amount of stretching X does in each direction. We'll explore this connection in detail in later lectures, but the interested reader can consult the [mathematical foundations of SVD](https://en.wikipedia.org/wiki/Singular_value_decomposition) for a deeper understanding.
+
+For example, in our visualization:
+- Independent features have κ(X) ≈ 1.0 (nearly circular)
+- Nearly dependent features have κ(X) ≈ 201.2 (very elongated)
+
+Now comes the crucial issue: when we form X^TX in the normal equations, we're squaring this condition number:
+- Independent features: κ(X^TX) ≈ 1.1 (stays well-conditioned)
+- Nearly dependent features: κ(X^TX) ≈ 40,580.2 (becomes extremely ill-conditioned)
+
+This squaring effect explains why small measurement errors can lead to large errors in our weights. Let's see what happens when we add a tiny perturbation to our data:
 
 ```python
-# Generate synthetic house data
-torch.manual_seed(42)
-n_samples = 10000
+# Add a small perturbation (0.0001% noise)
+X_perturbed = X * (1 + torch.randn(*X.shape) * 1e-6)
 
-# Create base features with realistic scales
-sqft = torch.rand(n_samples) * 2000 + 1000  # Uniform between 1000-3000
-age = torch.rand(n_samples) * 30            # Uniform between 0-30
-bedrooms = torch.clamp(sqft/1000 + torch.randn(n_samples) * 0.5, 1, 5)
+# Solve both systems using normal equations
+def solve_normal_equations(X, y):
+    XtX = X.T @ X
+    Xty = X.T @ y
+    return torch.linalg.solve(XtX, Xty)
 
-# Stack features and add known weights
-X = torch.stack([sqft, age, bedrooms], dim=1)
-true_weights = torch.tensor([200.0, -1000.0, 50000.0])  # dollars/sqft, dollars/year, dollars/bedroom
-y = X @ true_weights + torch.randn(n_samples) * 100     # Add small noise
+# Create target that depends only on x1
+y = x1 + torch.randn(n) * 0.1
 
-# Add correlated feature
-X = torch.cat([X, X[:, 0:1] + torch.randn(n_samples, 1) * 10], dim=1)
+w1 = solve_normal_equations(X, y)
+w2 = solve_normal_equations(X_perturbed, y)
 
-# Compare condition numbers
-print(f"Condition number of X: {torch.linalg.cond(X):.1f}")
-print(f"Condition number of X^TX: {torch.linalg.cond(X.T @ X):.1f}")
-
-# Solve using LU (with normal equations)
-XtX = X.T @ X
-Xty = X.T @ y
-LU, pivots = torch.linalg.lu_factor(XtX)
-w_lu = torch.linalg.lu_solve(LU, pivots, Xty.unsqueeze(1)).squeeze(1)
-
-# Solve using QR
-Q, R = torch.linalg.qr(X)
-w_qr = torch.linalg.solve_triangular(R, Q.T @ y.unsqueeze(1), upper=True).squeeze(1)
-
-# Compare weight estimates and errors
-print("\nWeight estimates (first 3 features):")
-print(f"True weights: {true_weights}")
-print(f"LU weights:   {w_lu[:3]}")
-print(f"QR weights:   {w_qr[:3]}")
-
-# Compare prediction errors
-rmse_lu = torch.sqrt(torch.mean((X @ w_lu - y)**2))
-rmse_qr = torch.sqrt(torch.mean((X @ w_qr - y)**2))
-print(f"\nRMSE:")
-print(f"LU: {rmse_lu:.2f} dollars")
-print(f"QR: {rmse_qr:.2f} dollars")
+print("\nWeights with original data:", w1)
+print("Weights with perturbed data:", w2)
+print("\nRelative change in weights:", torch.abs((w2 - w1)/w1))
+print("But predictions change very little:", 
+      torch.norm(X@w2 - X@w1)/torch.norm(X@w1))
 ```
 
-Output:
-```
-Condition number of X: 6261.7
-Condition number of X^TX: 39208800.0
+The results are striking:
+- Original weights: [1.1, -0.1]
+- Perturbed weights: [1.8, -0.8]
+- Individual weights change by ~80%
+- But predictions barely change at all (<0.1%)
 
-Weight estimates (first 3 features):
-True weights: tensor([  200., -1000., 50000.])
-LU weights:   tensor([  209.2539, -1000.0673, 50001.0234])
-QR weights:   tensor([  199.9693, -1000.0654, 50000.3867])
+This reveals the core problem: when features are nearly dependent (creating a large condition number):
+1. Many different weight combinations give similar predictions
+2. Tiny data changes can cause large swings between these combinations
+3. Forming X^TX makes this instability much worse by squaring the condition number
 
-RMSE:
-LU: 138.04 dollars
-QR: 101.08 dollars
-```
+## QR Factorization: A More Stable Approach
 
-This example shows the key insights:
+The key to avoiding this numerical instability is to never form X^TX in the first place. QR factorization offers exactly this solution by working directly with X. Instead of squaring the condition number through X^TX, it transforms our features into an orthogonal basis that preserves their numerical properties.
 
-1. **Numerical Instability**: When we form X^TX, the condition number grows by a factor of 6,262x (from 6,262 to 39.2 million). This dramatic growth in condition number leads to numerical instability in the LU solution.
+The QR approach splits X into two matrices:
+- Q: Has orthonormal columns (perpendicular and unit length)
+- R: Upper triangular, captures feature relationships
 
-2. **Weight Estimation**: 
-   - LU's weights deviate from true values:
-     * 209.25 dollars per square foot (vs true 200 dollars)
-     * -1000.07 dollars per year of age (vs true -1000 dollars)
-     * 50,001 dollars per bedroom (vs true 50,000 dollars)
-   - QR stays extremely close to true weights:
-     * 199.97 dollars per square foot
-     * -1000.07 dollars per year of age
-     * 50,000.39 dollars per bedroom
+For a data matrix X with n rows and p columns (an n×p matrix):
+- Q is n×n 
+- R is n×p (same shape as X)
+- Only the top p×p part of R is needed for solving 
 
-3. **Prediction Error**:
-   - LU's RMSE is 138.04 dollars
-   - QR's RMSE is 101.08 dollars
-   - Even with reasonable weights, LU's predictions are about 37% less accurate than QR's
+For example, with p=3 features, R has this structure:
 
-Modern practice favors QR because:
-1. It avoids the numerical instability of forming X^TX
-2. It finds weights that make physical sense
-3. The slightly higher computational cost is worth the dramatic improvement in numerical stability
+$$ R = \begin{bmatrix}
+r_{11} & r_{12} & r_{13} \\
+0 & r_{22} & r_{23} \\
+0 & 0 & r_{33} \\
+\hline
+0 & 0 & 0 \\
+\vdots & \vdots & \vdots \\
+0 & 0 & 0
+\end{bmatrix} \begin{array}{l}
+\leftarrow \text{upper triangular } p \times p \text{ part} \\
+\\
+\leftarrow \text{zeros in remaining rows}
+\end{array} $$
 
-## QR Factorization: Trading Speed for Stability
-
-Instead of eliminating variables like LU, QR factorization transforms our features to make them independent of each other. The key insight? We can rotate our feature vectors until they're perpendicular (orthogonal), making their relationships easier to understand.
+Instead of eliminating variables like LU, QR factorization transforms our features to make them independent of each other.
 
 You've likely seen this idea before in linear algebra - it's the same principle behind the Gram-Schmidt process, which turns any set of vectors into orthogonal ones. QR factorization is essentially an efficient, numerically stable way to do Gram-Schmidt. While we won't dive into the details of how it's computed (that's a topic for numerical linear algebra courses), here's what it does:
 
@@ -776,8 +734,8 @@ print("Q column lengths:", q_lengths)
 
 Notice:
 - Q's columns are orthogonal (perpendicular) and normalized (length 1)
-- R captures how to combine these new directions to get our original features
-- Together QR spans the same space as X, but with better numerical properties
+- R captures how to combine these new directions to get our original ones
+- Together they give us X = QR, but with Q's columns being perfectly perpendicular
 
 ### Solving with QR
 
@@ -798,7 +756,32 @@ IRw &= Q^Ty \\
 Rw &= Q^Ty
 \end{aligned} $$
 
-This is beautiful! We've turned our problem into a triangular system (R) without ever forming X^TX. Let's compare both approaches:
+This is beautiful! We've turned our problem into a triangular system ($Rw = Q^Ty$) without ever forming X^TX. More precisely, 
+- If our data matrix $X$ is 4×3 (4 houses × 3 features)
+- $Q$ is 4×4 (as many rows as we have houses)
+- $R$ is 4×3 (same shape as X)
+- Only the top 3×3 part of $R$ (matching our number of features) is needed for solving
+
+Since we're solving for 3 weights (one per feature), we only need 3 equations. The top 3×3 part of R gives us exactly these equations in upper triangular form. This is why we can focus on:
+
+$$ R = \begin{bmatrix}
+r_{11} & r_{12} & r_{13} \\
+0 & r_{22} & r_{23} \\
+0 & 0 & r_{33}
+\end{bmatrix}, \quad
+Rw = c \quad \text{where } c = Q^Ty $$
+
+Just as with LU factorization, we can solve this triangular system efficiently using back substitution. Starting from the bottom row (which has only one unknown) and working up:
+
+$$ \begin{aligned}
+w_3 &= c_3/r_{33} \\
+w_2 &= (c_2 - r_{23}w_3)/r_{22} \\
+w_1 &= (c_1 - r_{12}w_2 - r_{13}w_3)/r_{11}
+\end{aligned} $$
+
+### Comparing LU and QR
+
+The key difference between QR and LU is that we get an triangular system directly from QR, without ever forming the numerically unstable X^TX. This process is both numerically stable (avoiding condition number squaring) and computationally efficient (requiring just one triangular solve). Let's compare both approaches:
 
 $$ \begin{aligned}
 &\text{LU approach: } np^2 \text{ to form } X^TX \text{, then } \frac{2p^3}{3} \text{ to factor it} \\
@@ -807,7 +790,9 @@ $$ \begin{aligned}
 
 When we have many more houses than features ($n \gg p$), the $np^2$ terms dominate. In this case, LU should be about twice as fast as QR since it needs $np^2$ operations compared to QR's $2np^2$. However, as we'll see, this theoretical speed advantage often isn't worth the potential loss in numerical accuracy.
 
-Why use QR despite being slower? Let's run a comprehensive stability experiment:
+Let's verify QR's numerical stability with a comprehensive test:
+
+Let's design an experiment that mirrors real-world challenges in house price prediction. We'll start by generating synthetic data that captures natural relationships - like how larger houses tend to have more bedrooms - and then introduce a deliberately challenging feature to test how our methods handle numerical stress.
 
 ```python
 # Generate synthetic house data
@@ -817,31 +802,31 @@ n_samples = 10000
 # Create base features with realistic scales
 sqft = torch.rand(n_samples) * 2000 + 1000  # Uniform between 1000-3000
 age = torch.rand(n_samples) * 30            # Uniform between 0-30
+# Make bedrooms correlate naturally with size
 bedrooms = torch.clamp(sqft/1000 + torch.randn(n_samples) * 0.5, 1, 5)
 
 # Stack features and add known weights
 X = torch.stack([sqft, age, bedrooms], dim=1)
-true_weights = torch.tensor([200.0, -1000.0, 50000.0])  # dollars/sqft, dollars/year, dollars/bedroom
+true_weights = torch.tensor([200.0, -1000.0, 50000.0])  # $/sqft, $/year, $/bedroom
 y = X @ true_weights + torch.randn(n_samples) * 100     # Add small noise
 
-# Add correlated feature
+# Add highly correlated feature to test stability
 X = torch.cat([X, X[:, 0:1] + torch.randn(n_samples, 1) * 10], dim=1)
 
 # Compare condition numbers
 print(f"Condition number of X: {torch.linalg.cond(X):.1f}")
 print(f"Condition number of X^TX: {torch.linalg.cond(X.T @ X):.1f}")
 
-# Solve using LU (with normal equations)
+# Solve using both methods
 XtX = X.T @ X
 Xty = X.T @ y
 LU, pivots = torch.linalg.lu_factor(XtX)
 w_lu = torch.linalg.lu_solve(LU, pivots, Xty.unsqueeze(1)).squeeze(1)
 
-# Solve using QR
 Q, R = torch.linalg.qr(X)
 w_qr = torch.linalg.solve_triangular(R, Q.T @ y.unsqueeze(1), upper=True).squeeze(1)
 
-# Compare weight estimates and errors
+# Compare results
 print("\nWeight estimates (first 3 features):")
 print(f"True weights: {true_weights}")
 print(f"LU weights:   {w_lu[:3]}")
@@ -855,7 +840,7 @@ print(f"LU: {rmse_lu:.2f} dollars")
 print(f"QR: {rmse_qr:.2f} dollars")
 ```
 
-Output:
+The output shows:
 ```
 Condition number of X: 6261.7
 Condition number of X^TX: 39208800.0
@@ -870,98 +855,15 @@ LU: 138.04 dollars
 QR: 101.08 dollars
 ```
 
-This example shows the key insights:
+This experiment demonstrates key numerical effects in least squares problems. Forming X^TX squares the condition number from 6,262 to 39.2 million - a worst-case scenario with highly correlated features. This affects the accuracy of weights computed through normal equations with LU factorization, visible in the price per square foot coefficient (209.25 versus true 200). QR factorization, by avoiding explicit formation of X^TX, maintains better accuracy (199.97) and achieves lower prediction error (RMSE 101.08 dollars versus 138.04).
 
-1. **Numerical Instability**: When we form X^TX, the condition number grows by a factor of 6,262x (from 6,262 to 39.2 million). This dramatic growth in condition number leads to numerical instability in the LU solution.
-
-2. **Weight Estimation**: 
-   - LU's weights deviate from true values:
-     * 209.25 dollars per square foot (vs true 200 dollars)
-     * -1000.07 dollars per year of age (vs true -1000 dollars)
-     * 50,001 dollars per bedroom (vs true 50,000 dollars)
-   - QR stays extremely close to true weights:
-     * 199.97 dollars per square foot
-     * -1000.07 dollars per year of age
-     * 50,000.39 dollars per bedroom
-
-3. **Prediction Error**:
-   - LU's RMSE is 138.04 dollars
-   - QR's RMSE is 101.08 dollars
-   - Even with reasonable weights, LU's predictions are about 37% less accurate than QR's
-
-Let's compare the actual timing of both methods across different problem sizes:
-
-```python
-# Compare timing of LU vs QR methods at different scales
-ns = [1000, 10000, 100000]  # number of houses
-ps = [5, 20, 100]           # number of features
-n_trials = 3                # run multiple trials for timing
-
-for n in ns:
-    for p in ps:
-        # Generate synthetic data
-        X = torch.randn(n, p)
-        y = torch.randn(n)
-        
-        # Time LU approach (including forming normal equations)
-        start = time.time()
-        XtX = X.T @ X
-        Xty = X.T @ y
-        LU, pivots = torch.linalg.lu_factor(XtX)
-        w_lu = torch.linalg.lu_solve(LU, pivots, Xty.unsqueeze(1)).squeeze(1)
-        lu_time = time.time() - start
-        
-        # Time QR approach
-        start = time.time()
-        Q, R = torch.linalg.qr(X)
-        w_qr = torch.linalg.solve_triangular(R, Q.T @ y.unsqueeze(1), upper=True).squeeze(1)
-        qr_time = time.time() - start
-        
-        print(f"n={n}, p={p}:")
-        print(f"LU time:  {lu_time:.3f}s")
-        print(f"QR time:  {qr_time:.3f}s")
-        print(f"Ratio LU/QR: {lu_time/qr_time:.2f}x\n")
-```
-
-Output:
-```
-n=1000, p=5:
-LU time:  0.000s
-QR time:  0.000s
-Ratio LU/QR: 0.38x
-
-n=10000, p=20:
-LU time:  0.000s
-QR time:  0.002s
-Ratio LU/QR: 0.07x
-
-n=100000, p=100:
-LU time:  0.006s
-QR time:  0.146s
-Ratio LU/QR: 0.04x
-```
-
-The timing results show that LU is consistently faster than QR, with the speed difference becoming more pronounced as the problem size grows. For our largest test case (100,000 houses with 100 features), LU is about 25 times faster than QR. This speed advantage comes from LU requiring fewer operations overall (np² vs 2np² for large n).
-
-However, this computational advantage comes with a significant trade-off in numerical stability. When features are correlated (as they often are in real data), forming X^TX squares the condition number, which can lead to significant errors in the computed weights. In our experiments, QR produced more accurate weights and lower prediction errors, despite taking longer to compute.
-
-This tension between speed and stability explains why different numerical libraries may choose different defaults depending on their primary use case. When features are well-conditioned and speed is crucial, LU might be preferred. But when dealing with potentially correlated features where accuracy is paramount, QR's superior numerical properties often make it the safer choice.
-
-For our house price predictions, QR is the clear choice:
-- Features are naturally correlated (size ↔ bedrooms)
-- We have many more houses than features
-- Accurate price estimates matter more than speed
+The choice between methods depends on the problem structure. Both approaches are backward stable in their respective formulations - QR for the original least squares problem, and Cholesky-based normal equations for the X^TX formulation. For well-conditioned problems (κ(X) close to 1), normal equations with Cholesky factorization can be faster and perfectly adequate. QR factorization, while requiring roughly twice the operations (2np² versus np²), provides better numerical stability by inheriting X's condition number directly rather than squaring it. In practice, implementations use "thin QR" where Q is n×p instead of n×n (since we only need p orthogonal vectors), making it more efficient. Neither method completely solves ill-conditioning, but QR handles it more gracefully by avoiding the explicit formation of X^TX.
 
 ## The Limits of Direct Methods: Scaling Up
 
-Consider a regression problem with millions of observations and hundreds of features. Both LU and QR factorization require $O(np^2)$ operations just to begin - with n=10⁷ houses and p=10³ features, that's 10¹³ operations. Even at a billion operations per second, this takes hours.
+Direct methods face a hard constraint: they must complete their entire computation before producing any solution. For problems with millions of observations, this means waiting minutes for an answer. In massive-scale applications like recommender systems, this delay becomes impractical.
 
-The core issue is that direct methods must complete their entire computation before producing any solution. Each step in LU or QR costs O(np²) operations, and we need all steps to get meaningful weights.
+This constraint motivates iterative methods. Instead of computing an exact solution upfront, they produce increasingly accurate predictions over time. This trade-off - accepting approximate answers for faster results - often matters more than theoretical perfection.
 
-This computational barrier motivates iterative methods, which we'll study next. These methods:
-- Require as little as O(np) operations per step
-- Produce increasingly better weights at each step
-- Can be stopped when the error is sufficiently small
-
-The choice between direct and iterative methods often depends on problem size. Direct methods give exact solutions efficiently for small to medium problems. For large problems where n or p make O(np²) operations infeasible, iterative methods become necessary.
+Direct methods remain competitive for moderate-sized problems, especially those with special structure like sparsity. But when datasets grow large or quick answers matter more than perfect ones, iterative methods become essential. We'll explore these methods next.
 
