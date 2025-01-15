@@ -2,6 +2,11 @@
 layout: course_page
 title: Linear Regression - Direct Methods
 ---
+# Linear Regression: Direct Methods
+
+## Notebooks and Slides
+- [Lecture slides](slides.pdf)
+- [Colab notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/2/notebook.ipynb)
 
 ## Table of contents
 1. [Introduction](#introduction)
@@ -12,12 +17,6 @@ title: Linear Regression - Direct Methods
 6. [The effect of and remedy for numerical instability](#the-effect-of-and-remedy-for-numerical-instability)
 7. [QR Factorization: A More Stable Approach](#qr-factorization-a-more-stable-approach)
 8. [The Limits of Direct Methods: Scaling Up](#the-limits-of-direct-methods-scaling-up)
-
-# Linear Regression: Direct Methods
-
-## Notebooks and Slides
-- [Lecture slides](slides.pdf)
-- [Colab notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/2/notebook.ipynb)
 
 ## Introduction
 
