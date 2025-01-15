@@ -50,7 +50,7 @@ By the end of this course, you will become an intelligent consumer of numerical 
 * Basic Probability (Stat 4300)
 * Programming experience in a scripting language such as Python. Basic comfort in iteration and functions. 
 
-## Deliverable: a final project due on week 2
+## Deliverable: a final project due on week 3
 
 ...which you then iterate on throughout the semester.
 

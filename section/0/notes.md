@@ -32,7 +32,7 @@ Welcome to STAT 4830: Numerical optimization for data science and machine learni
 
 ### Deliverables
 
-- A single final project that you begin drafting by Week 2 and refine throughout the semester.
+- A single final project that you begin drafting by Week 3 and refine throughout the semester.
 - Several “checkpoints” (drafts, presentations) so you can get feedback and improve incrementally.
 - The final submission will consist of a GitHub repository (code, report, slides) plus a polished demonstration (e.g., a Google Colab notebook).
 
