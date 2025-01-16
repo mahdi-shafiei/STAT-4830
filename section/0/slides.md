@@ -63,6 +63,47 @@ size: 16:9
 
 ---
 
+# Dev Environment: Cursor
+
+```
+                                                        GETTING STARTED WITH CURSOR
+                                                        ==========================
+
+                                    ┌──────────────┐                                    DAY 1: START HERE
+                                    │  WRITE CODE  │         ┌─────────────┐            ═══════════════
+                                    │  As you type ├────────►│  STUCK?     │──────┐     Just press Cmd+K
+                                    │  AI assists  │         └─────────────┘      │     for instant help
+                                    └──────────────┘                              ▼
+                                        ▲                                 ┌──────────────┐
+                                        │                                 │ QUICK HELP   │
+                                        │                                 │   Cmd+K      │
+                                        │                                 └──────────────┘
+                                        │                                        │
+                                        │                                        ▼
+                                        │                                 ┌──────────────┐
+                                        └─────────────────────────────────┤ BACK TO CODE │
+                                                                          └──────────────┘
+
+                                                                                 ┌─────────────┐
+                                            WHEN YOU'RE READY                    │  COMPOSER   │    ADVANCED FEATURES
+                                            ══════════════════     ┌────────────►│   Cmd+L     │    ════════════════
+                                            Need deeper help?      │             └─────────────┘    • Git integration
+                                            Try the composer!      │                                • Multi-file edits
+                                                                   │                                • Testing tools
+                                                                   │
+                                                            ┌──────────────┐
+                                                            │ DEEP DIVING  │
+                                                            │ Debug & Learn│
+                                                            └──────────────┘
+
+                                    QUICK HELP (Cmd+K):                      COMPOSER (Cmd+L):
+                                    • "Fix this error"                       • Complex debugging
+                                    • "Explain this code"                    • Step-by-step learning
+                                    • "Add a test here"                      • Extended discussions
+```
+
+---
+
 # Why PyTorch?
 
 - Modern auto-differentiation frameworks drive deep learning success
