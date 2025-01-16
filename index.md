@@ -251,7 +251,7 @@ Sasha Rush's has luckily made a series of open source puzzles for helping you un
 
 # Brief historical perspective on optimization
 
-It's useful to appreciate how optimization evolved as an algorithmic discipline over the last center:
+It's useful to appreciate how optimization evolved as an algorithmic discipline over the last seventy years:
 
 - Mid-20th Century: Linear Programming emerged as a critical tool in operations research, fueled by George Dantzig’s simplex method. This was pivotal for industrial logistics, military planning, and resource allocation.
 - 1960s–1990s: Convex optimization grew more important, driven by work on gradient-based methods, interior-point methods, and software that could solve large-scale linear and convex problems.
