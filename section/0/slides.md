@@ -43,6 +43,29 @@ size: 16:9
 
 ---
 
+# A Brief History of Optimization
+
+```
+    EVOLUTION OF OPTIMIZATION
+    ========================
+
+    1950s                1960s-1990s              2000s                  TODAY
+    ├─────────────────┐  ├────────────────┐  ┌────────────────┐  ┌─────────────────┐
+    │ LINEAR PROGRAM. │  │ CONVEX OPTIM.  │  │ SOLVER ERA     │  │ DEEP LEARNING   │
+    │ Dantzig's       │──│ Interior-point │--│ CVX & friends  │──│ PyTorch & JAX   │
+    │ Simplex Method  │  │ Large-scale    │  │ "Write it,     │  │ Custom losses   │
+    └─────────────────┘  └────────────────┘  │  solve it"     │  │ LLM Revolution  │
+           │                    │            └────────────────┘  └─────────────────┘
+           │                    │                   │                    │
+           ▼                    ▼                   ▼                    ▼
+     APPLICATIONS:        APPLICATIONS:       APPLICATIONS:        APPLICATIONS:
+     • Military          • Engineering       • Signal Process    • Language Models
+     • Logistics         • Control           • Finance           • Image Gen
+     • Planning          • Networks          • Robotics          • RL & Control
+```
+
+---
+
 # Do you have access to and experience with LLMs?
 
 <br>
@@ -54,14 +77,7 @@ size: 16:9
 
 ---
 
-# Prerequisites
 
-- Basic calculus and linear algebra (Math 2400)
-- Basic probability (Stat 4300)
-- Python programming experience
-- No advanced optimization/ML background needed
-
----
 
 # Dev Environment: [cursor](https://www.cursor.com/)
 
@@ -101,6 +117,15 @@ size: 16:9
                                     • "Explain this code"                    • Step-by-step learning
                                     • "Add a test here"                      • Extended discussions
 ```
+
+---
+
+# Prerequisites
+
+- Basic calculus and linear algebra (Math 2400)
+- Basic probability (Stat 4300)
+- Python programming experience
+- No advanced optimization/ML background needed
 
 ---
 
