@@ -19,9 +19,9 @@ size: 16:9
 - **Focus**: Numerical optimization for data science and ML
 - **Tools**: PyTorch, Python, occasional use of other libraries
 - **LLM Policy**: Use them.
-- **Deliverables**: Weekly assignments, final project
+- **Deliverables**: HW, final project
     - **Homework**: 0-5 assignments.
-    - **Final Project**: Incrementally developed throughout semester. 
+    - **Final Project**: Incrementally developed throughout semester (more later)
 
 ---
 
