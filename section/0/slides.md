@@ -55,6 +55,43 @@ size: 16:9
 
 ---
 
+# Optimization Approaches Compared
+
+```
+                                +-----------------------------+          +-----------------------------+
+                                |       CLASSICAL TOOLS       |          |        MODERN TOOLS         |
+                                +-----------------------------+          +-----------------------------+
+                                | WHEN TO USE:                |          | WHEN TO USE:                |
+                                | • Small/Medium Scale        |          | • Large-Scale Data          |
+                                | • Structured Problems       |          | • Unstructured Problems     |
+                                | • Need Formal Guarantees    |          | • Need Speed & Scale        |
+                                +-----------------------------+    VS    +-----------------------------+
+                                | INPUT REQUIREMENTS:         |          | INPUT REQUIREMENTS:         |
+                                | • DCP Rules                 |          | • Raw Python Code           |
+                                | • Convex Functions          |          | • Any Function Type         |
+                                | • Standard Form             |          | • Black Box OK              |
+                                +-----------------------------+          +-----------------------------+
+                                | GUARANTEES:                 |          | CAPABILITIES:               |
+                                | • Global Optimality         |          | • Handle Any Problem        |
+                                | • Convergence Rates         |          | • Fast Development          |
+                                | • Optimality Certificates   |          | • Rapid Iteration           |
+                                +-----------------------------+          +-----------------------------+
+                                | WORKFLOW:                   |          | WORKFLOW:                   |
+                                | 1. Format Problem           |          | 1. Write Code               |
+                                | 2. Verify Convexity         |          | 2. Train Model              |
+                                | 3. Solve Exactly            |          | 3. Debug & Iterate          |
+                                +-----------------------------+          +-----------------------------+
+                                | TOOLS: CVX, MOSEK           |          | TOOLS: PyTorch, JAX        |
+                                +-----------------------------+          +-----------------------------+
+
+                                                           HYBRID APPROACHES:
+                                                     • Use Structure Where Possible
+                                                     • Add Flexibility Where Needed
+                                                     • Choose Based on Requirements
+```
+
+---
+
 # Preview: spam classification
 
 Let's start with a practical example:
