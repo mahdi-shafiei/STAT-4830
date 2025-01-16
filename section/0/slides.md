@@ -349,6 +349,41 @@ Three key metrics:
 7. Advanced topics
 8. Modern deep learning practice
 
+--- 
+# Final Project Structure
+
+```
+    ITERATIVE DEVELOPMENT PROCESS                          PROJECT COMPONENTS
+    ===========================                            ==================
+
+    ┌─────────────────┐           ┌─────────────────┐    ┌────────────────────┐
+    │  INITIAL SETUP  │           │  DELIVERABLES   │    │  PROJECT OPTIONS   │
+    │  Teams: 3-4     ├───────────┤  • GitHub Repo  │    │ • Model Training   │
+    │  Week 2 Start   │           │  • Colab Demo   │    │ • Reproducibility  │
+    └───────┬─────────┘           │  • Final Paper  │    │ • Benchmarking     │
+            │                     │  • Slide Deck   │    │ • Research Extend  │
+            │                     └───────┬─────────┘    │ • ...              │
+            │                             │              └────────────────────┘
+            │                             ▼                         
+            │                     ┌─────────────────┐    BIWEEKLY SCHEDULE
+            ▼                     │    FEEDBACK     │    ════════════════
+    ┌─────────────────┐           │ PEER REVIEWS:   │    Week 3:  Report
+    │   IMPLEMENT     │◀─────────┤ • Run Code      │    Week 4:  Slides Draft
+    │ • Write Code    │           │ • Test Demo     │    Week 5:  Report
+    │ • Test & Debug  ├─────────▶│ • Give Feedback │    Week 6:  Slides Draft
+    │ • Document      │           │                 │    Week 7:  Report
+    └─────────────────┘           │ PROF MEETINGS:  │    Week 8:  ⚡LIGHTNING TALK⚡
+                                  │ • Week 3 Scope  │    Week 9:  Report
+                                  │ • Week 7 Mid    │    Week 10: Slides Draft
+                                  │ • Week 11 Final │    Week 11: Report
+                                  └─────────────────┘    Week 12: Slides Draft
+                                                        Week 13: Final Report
+    DEVELOPMENT WITH LLMs                               Week 14: Final Present
+    • Write & review reports, documentation                         
+    • Develop & test code (verify outputs!)                         
+    • Regular commits with clear documentation
+```
+
 ---
 
 # Learning outcomes
@@ -378,4 +413,8 @@ By course end, you'll be able to:
 - Office hours: Listed on the course website
 - Email: [damek@wharton.upenn.edu](mailto:damek@wharton.upenn.edu) 
 - Discord: Check email for invite.
+
+---
+
+
 
