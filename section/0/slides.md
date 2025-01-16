@@ -63,7 +63,7 @@ size: 16:9
 
 ---
 
-# Dev Environment: Cursor
+# Dev Environment: [cursor](https://www.cursor.com/)
 
 ```
                                                         GETTING STARTED WITH CURSOR
@@ -472,8 +472,5 @@ By course end, you'll be able to:
 - Office hours: Listed on the course website
 - Email: [damek@wharton.upenn.edu](mailto:damek@wharton.upenn.edu) 
 - Discord: Check email for invite.
-
----
-
 
 
