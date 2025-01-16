@@ -25,6 +25,24 @@ size: 16:9
 
 ---
 
+# Why Optimization?
+
+<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+
+<div style="text-align: center; margin-bottom: 1em;">
+
+> "If you want to know something deep, fundamental, and maximally portable between virtually every field: study mathematical optimization."
+>
+> — Joshua Achiam (OpenAI)
+
+</div>
+
+![w:800](/figures/achiam_tweet.png)
+
+</div>
+
+---
+
 # Do you have access to and experience with LLMs?
 
 <br>
