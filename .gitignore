@@ -15,3 +15,30 @@
 # Don't ignore PNGs in figures directories
 !section/*/figures/
 !section/*/figures/*.png
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+
+# Base figures directory
+!figures/*.png
+
+# But allow section-specific figures
+!/section/*/figures/*.png
+
+# OS
+.DS_Store
+Thumbs.db
