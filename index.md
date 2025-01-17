@@ -15,6 +15,8 @@ For lecture notes see [table of contents](toc.md).
 
 **Discord server:** I'll invite you to the course's Discord server once the course starts. If you join late and do not have an invite, email me from your Penn email and I'll add you.
 
+**Office Hours:** Tuesdays 12:30-1:30 PM
+
 ## Table of contents
 - [High-level thoughts on the course](#high-level-thoughts-on-the-course)
 - [Overview](#overview)
