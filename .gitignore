@@ -42,3 +42,10 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
+
+project_template/.git/
+project_template/**/__pycache__/
+.DS_Store
+_site/
+.vscode/
+**/.ipynb_checkpoints/

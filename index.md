@@ -13,7 +13,7 @@ AKA: Optimization in PyTorch
 
 For lecture notes see [table of contents](toc.md).
 
-**Discord server:** I'll invite you to the course's Discord server once the course starts. If you join late and do not have an invite, email me from your Penn email and I'll add you.
+**ED/Canvas:** If you have not been added to the course on ED or Canvas, please email me from your Penn email and I'll add you.
 
 **Office Hours:** Tuesdays 12:30-1:30 PM
 
@@ -58,7 +58,7 @@ By the end of this course, you will become an intelligent consumer of numerical 
 
 # Final Project Structure
 
-The project template repository is available at: https://github.com/damek/STAT-4830-project-base
+VERY detailed instructions on how to get started with your project are available at the following link: [STAT-4830-project-base](https://github.com/damek/STAT-4830-project-base)
 
 ### Timeline and milestones
 
