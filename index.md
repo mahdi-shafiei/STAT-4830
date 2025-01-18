@@ -21,7 +21,7 @@ For lecture notes see [table of contents](toc.md).
 - [High-level thoughts on the course](#high-level-thoughts-on-the-course)
 - [Overview](#overview)
 - [Pre-requisites](#pre-requisites)
-- [Deliverable: a final project due on week 2](#deliverable-a-final-project-due-on-week-2)
+- [Deliverable: a final project due on week 3](#deliverable-a-final-project-due-on-week-3)
 - [Textbooks, readings, and software libraries](#textbooks-readings-and-software-libraries)
 - [Brief historical perspective on optimization](#brief-historical-perspective-on-optimization)
 
@@ -58,61 +58,29 @@ By the end of this course, you will become an intelligent consumer of numerical 
 
 # Final Project Structure
 
-```
-    ITERATIVE DEVELOPMENT PROCESS                          PROJECT COMPONENTS
-    ===========================                            ==================
-
-    ┌─────────────────┐           ┌─────────────────┐    ┌────────────────────┐
-    │  INITIAL SETUP  │           │  DELIVERABLES   │    │  PROJECT OPTIONS   │
-    │  Teams: 3-4     ├───────────┤  • GitHub Repo  │    │ • Model Training   │
-    │  Week 2 Start   │           │  • Colab Demo   │    │ • Reproducibility  │
-    └───────┬─────────┘           │  • Final Paper  │    │ • Benchmarking     │
-            │                     │  • Slide Deck   │    │ • Research Extend  │
-            │                     └───────┬─────────┘    │ • ...              │
-            │                             │              └────────────────────┘
-            │                             ▼                         
-            │                     ┌─────────────────┐    BIWEEKLY SCHEDULE
-            ▼                     │    FEEDBACK     │    ════════════════
-    ┌─────────────────┐           │ PEER REVIEWS:   │    Week 3:  Report
-    │   IMPLEMENT     │◀───────── ┤ • Run Code      │    Week 4:  Slides Draft
-    │ • Write Code    │           │ • Test Demo     │    Week 5:  Report
-    │ • Test & Debug  ├─────────▶ │ • Give Feedback │    Week 6:  Slides Draft
-    │ • Document      │           │                 │    Week 7:  Report
-    └─────────────────┘           │ PROF MEETINGS:  │    Week 8:  ⚡LIGHTNING TALK⚡
-                                  │ • Week 3 Scope  │    Week 9:  Report
-                                  │ • Week 7 Mid    │    Week 10: Slides Draft
-                                  │ • Week 11 Final │    Week 11: Report
-                                  └─────────────────┘    Week 12: Slides Draft
-                                                        Week 13: Final Report
-    DEVELOPMENT WITH LLMs                               Week 14: Final Present
-    • Write & review reports, documentation                         
-    • Develop & test code (verify outputs!)                         
-    • Regular commits with clear documentation
-```
-
----
-
-...which you then iterate on throughout the semester.
-
-**Why this approach?**  
-Final projects often become a single rushed deliverable. We’ll break the project into regular drafts and feedback cycles so your team can iterate, improve, and build something more substantial and refined. You’ll have multiple checkpoints, each with opportunities for critique and revision. By the end, you’ll have a polished piece of work you can showcase—something worthy of your portfolio or internship applications.
-
+The project template repository is available at: https://github.com/damek/STAT-4830-project-base
 
 ### Timeline and milestones
 
-1. **First draft (Week 2)**  
-   - Submit an initial write-up of your project idea and early exploration. The goal is to get feedback fast and clarify your scope.
+Deliverables (Due Fridays):
+- Week 3 (Jan 31): Report Draft 1 + Code + Self Critique
+- Week 4 (Feb 7): Slides Draft 1
+- Week 5 (Feb 14): Report Draft 2 + Code + Self Critique
+- Week 6 (Feb 21): Slides Draft 2
+- Week 7 (Feb 28): Report Draft 3 + Code + Self Critique
+- Week 8: ⚡ Lightning Talks in Class (Mar 5/7) & Slides Draft 3 due Friday ⚡
+- Spring Break (Mar 8-16)
+- Week 9 (Mar 21): Report Draft 4 + Code + Self Critique
+- Week 10 (Mar 28): Slides Draft 4
+- Week 11 (Apr 4): Report Draft 5 + Code + Self Critique
+- Week 12 (Apr 11): Slides Draft 5
+- Week 13: Final Presentations in Class (Apr 22/24) & Report Draft 6 + Code + Self Critique due Friday (Apr 18)
+- Week 14 (Apr 29): Final Report + Code + Self Critique Due
 
-2. **Regular drafts and critiques (every two weeks)**  
-   - You will submit an updated draft of the report **plus** a brief critique of your previous version.  
-   - On alternating weeks, submit a draft of your final presentation slides. This keeps your written and visual materials aligned as the project evolves.
+Note: Instructions for peer feedback will be added throughout the semester for each deliverable.
 
-3. **Midterm presentation (midpoint of semester)**  
-   - Prepare a *lightning* presentation of your project so far. You’ll get early audience feedback on your approach and results to date.
-
-4. **Final presentation (end of semester)**  
-   - Deliver a polished talk showcasing your findings, experiments, and lessons learned.
-
+**Why this approach?**  
+Final projects often become a single rushed deliverable. We’ll break the project into regular drafts and feedback cycles so your team can iterate, improve, and build something more substantial and refined. You’ll have multiple checkpoints, each with opportunities for critique and revision. By the end, you’ll have a polished piece of work you can showcase—something worthy of your portfolio or internship applications.
 
 
 ### Deliverable format
