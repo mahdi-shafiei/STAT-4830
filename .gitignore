@@ -43,8 +43,8 @@ ENV/
 .DS_Store
 Thumbs.db
 
-project_template/.git/
-project_template/**/__pycache__/
+# Explicitly ignore project_template as it's a separate repo
+project_template/
 .DS_Store
 _site/
 .vscode/
