@@ -8,6 +8,7 @@ title: Basic Linear Algebra in PyTorch
 ## Notebooks and Slides
 - [Lecture slides](slides.pdf)
 - [Colab notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/1/notebook.ipynb)
+- [Live demo notebook](live-demo.ipynb)
 
 ## Table of contents
 1. [Vectors and Tensors: The Foundation](#vectors-and-tensors-the-foundation)
