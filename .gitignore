@@ -9,6 +9,7 @@
 # Don't ignore specific files
 !section/*/notes.md
 !section/*/notebook.ipynb
+!section/*/live-demo.ipynb
 !section/*/slides.md
 !section/*/slides.pdf
 
