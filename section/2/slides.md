@@ -675,34 +675,6 @@ In general, we define the **condition number** as the ratio of the largest to sm
 $$ κ(A) = \sigma_{\text{max}}/\sigma_{\text{min}} $$
 
 
-<!-- ---
-
-# Understanding Our Feature Plots
-
-<div style="text-align: center">
-<img src="figures/condition_number_viz.png" width="70%" alt="Condition Number Visualization">
-</div>
-
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
-<div>
-
-**Left: Independent features**
-- Features vary independently
-- All directions matter similarly
-- κ(X) ≈ 1.0 (well-conditioned)
-
-</div>
-<div>
-
-**Right: Nearly dependent features**
-- Features almost perfectly correlated
-- One direction barely matters
-- κ(X) ≈ 201.2 (ill-conditioned)
-
-</div>
-</div> -->
-
-
 
 ---
 

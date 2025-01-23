@@ -17,6 +17,7 @@ title: Linear Regression - Direct Methods
 6. [The effect of and remedy for numerical instability](#the-effect-of-and-remedy-for-numerical-instability)
 7. [QR Factorization: A More Stable Approach](#qr-factorization-a-more-stable-approach)
 8. [The Limits of Direct Methods: Scaling Up](#the-limits-of-direct-methods-scaling-up)
+9. [Puzzle: Solving with SVD](#puzzle-solving-with-svd)
 
 ## Introduction
 
@@ -601,81 +602,133 @@ X = torch.tensor([
 A = X.T @ X
 
 # Compute LU factorization
-L, U = torch.lu(A)
+L, U = torch.linalg.lu_factor(A)
 print("L =\n", L)
 print("\nU =\n", U)
 
 # Output:
 # L = tensor([[1.0000, 0.0000, 0.0000],
-#            [0.3214, 1.0000, 0.0000],
-#            [0.0018, 0.0842, 1.0000]])
+#            [0.0082, 1.0000, 0.0000],
+#            [0.0019, 0.0095, 1.0000]])
 #
-# U = tensor([[1.1225e+07, 2.7400e+04, 4.8000e+03],
-#            [0.0000e+00, 2.8934e+03, 1.2000e+01],
-#            [0.0000e+00, 0.0000e+00, 2.0000e+00]])
+# U = tensor([[1.0540e+07, 8.6200e+04, 1.9900e+04],
+#            [0.0000e+00, 2.1240e+03, 2.0250e+01],
+#            [0.0000e+00, 0.0000e+00, 2.3482e-01]])
 ```
 
 Before moving on, it's worth noting that when A has the special form X^TX, there's another factorization called Cholesky that's twice as fast as LU. While we won't explore it here, keep it in mind for future reference.
 
 ## The effect of and remedy for numerical instability
 
-The LU approach has a hidden weakness that becomes clear when we think geometrically about our features. When we plot two features against each other, we can see two very different situations:
+### Understanding ill-conditioning
 
-![Condition Number Visualization](figures/condition_number_viz.png)
+While LU factorization provides an efficient way to solve linear equations, especially when updating solutions with new data, it inherits a critical weakness: numerical instability when features are highly correlated. This instability, known as **ill-conditioning**, can lead to numerically inaccurate solutions even when using standard floating-point arithmetic.
 
-- Left: Independent features form a "round" cloud - changes in one feature don't tell us much about the other
-- Right: Nearly dependent features form a "skinny" cloud - knowing one feature almost completely determines the other
+To understand ill-conditioning, we need to view matrix multiplication through a geometric lens: as an operation that stretches space in different directions. This stretching behavior reveals why some matrices are more sensitive to numerical errors than others.
 
-This "skinniness" makes our problem ill-conditioned - small changes in the data can cause large changes in our solution. The condition number κ(X) measures exactly this:
-- It's the ratio of the largest to smallest "stretching" our data does in any direction
-- A condition number of 100 means the longest direction is 100 times the shortest
-- The larger this ratio, the more sensitive our solution becomes to small errors
+#### The diagonal case: A simple example
 
-More precisely, the condition number κ(X) is computed as the ratio of the largest to smallest singular values of X (κ(X) = σ_max/σ_min). These singular values come from the SVD decomposition we mentioned at the end of the last lecture - they exactly measure the amount of stretching X does in each direction. We'll explore this connection in detail in later lectures, but the interested reader can consult the [mathematical foundations of SVD](https://en.wikipedia.org/wiki/Singular_value_decomposition) for a deeper understanding.
+For diagonal matrices, the stretching behavior is immediately visible. Consider:
 
-For example, in our visualization:
-- Independent features have κ(X) ≈ 1.0 (nearly circular)
-- Nearly dependent features have κ(X) ≈ 201.2 (very elongated)
+$$ D = \begin{bmatrix} 100 & 0 \\ 0 & 0.1 \end{bmatrix} $$
 
-Now comes the crucial issue: when we form X^TX in the normal equations, we're squaring this condition number:
-- Independent features: κ(X^TX) ≈ 1.1 (stays well-conditioned)
-- Nearly dependent features: κ(X^TX) ≈ 40,580.2 (becomes extremely ill-conditioned)
+When this matrix multiplies a vector, it:
+- Stretches the horizontal direction by a factor of 100
+- Shrinks the vertical direction to 0.1 times its original size
+- Creates a ratio of stretching = 100/0.1 = 1000
 
-This squaring effect explains why small measurement errors can lead to large errors in our weights. Let's see what happens when we add a tiny perturbation to our data:
+This ratio is called the **condition number** $κ(D)$. A large condition number (like 1000) indicates ill-conditioning, while a small ratio indicates well-conditioning.
+
+The practical impact becomes clear when solving equations. Consider:
 
 ```python
-# Add a small perturbation (0.0001% noise)
-X_perturbed = X * (1 + torch.randn(*X.shape) * 1e-6)
+D = torch.tensor([[1.0, 0.0], [0.0, 0.0001]])
+y1 = torch.tensor([1.0, 0.0])
+y2 = torch.tensor([1.0, 0.01])  # tiny change in second component
 
-# Solve both systems using normal equations
-def solve_normal_equations(X, y):
-    XtX = X.T @ X
-    Xty = X.T @ y
-    return torch.linalg.solve(XtX, Xty)
+x1 = torch.solve(y1, D)[0]
+x2 = torch.solve(y2, D)[0]
 
-# Create target that depends only on x1
-y = x1 + torch.randn(n) * 0.1
-
-w1 = solve_normal_equations(X, y)
-w2 = solve_normal_equations(X_perturbed, y)
-
-print("\nWeights with original data:", w1)
-print("Weights with perturbed data:", w2)
-print("\nRelative change in weights:", torch.abs((w2 - w1)/w1))
-print("But predictions change very little:", 
-      torch.norm(X@w2 - X@w1)/torch.norm(X@w1))
+print(f"x1: {x1}")  # [1.0, 0.0]
+print(f"x2: {x2}")  # [1.0, 100.0]  # huge change!
 ```
 
-The results are striking:
-- Original weights: [1.1, -0.1]
-- Perturbed weights: [1.8, -0.8]
-- Individual weights change by ~80%
-- But predictions barely change at all (<0.1%)
+A small change in the input (y) leads to a huge change in the solution (x) in the direction corresponding to small stretching.
 
-This reveals the core problem: when features are nearly dependent (creating a large condition number):
-1. Many different weight combinations give similar predictions
-2. Tiny data changes can cause large swings between these combinations
-3. Forming X^TX makes this instability much worse by squaring the condition number
+#### General matrices and hidden stretching
+
+For non-diagonal matrices, the stretching behavior is less obvious but equally important. Consider:
+
+$$ A = \begin{bmatrix} 1 & 1 \\ 1 & 1.001 \end{bmatrix} $$
+
+This matrix represents nearly perfectly correlated features, where:
+- The first feature is almost identical to the second feature
+- Their difference barely affects the output
+- Their sum has a large effect
+
+We discussed SVD (Singular Value Decomposition) in detail in Section 1 as a tool for finding patterns in data. Here, we'll use it to understand how matrices stretch space and why this matters for numerical stability. Recall that SVD factorizes a matrix as:
+
+$$ A = U\Sigma V^T $$
+
+Each component has a specific role:
+1. $V^T$: rotates/reflects to directions of maximum/minimum stretching
+2. $\Sigma$: stretches by singular values in those directions
+3. $U$: rotates/reflects to final orientation (independent of $V$)
+
+<div style="text-align: center"><img src="figures/svd_stretching.png" width="90%" alt="SVD stretching visualization showing how a unit square is transformed through SVD steps"></div>
+
+The singular values (diagonal elements of $\Sigma$) directly measure the stretching in each direction:
+
+```python
+A = torch.tensor([[1.0, 1.0], [1.0, 1.001]])
+U, S, Vt = torch.linalg.svd(A)
+print(f"Stretching amounts: {S}")  # [2.001, 0.001]
+```
+
+The tiny singular value (0.001) reveals the near dependency between features. The condition number is defined as the ratio of largest to smallest singular values:
+
+$$ κ(A) = \sigma_{\text{max}}/\sigma_{\text{min}} $$
+
+#### Seeing instability in practice
+
+The following example demonstrates how correlated features lead to instability:
+
+```python
+# Features with condition number ≈ 4000
+X = torch.tensor([[1.0, 1.0], [1.0, 1.001]])
+U, s, Vt = torch.linalg.svd(X)
+print(f"Singular values: {s}")  
+# s ≈ [2.001, 0.0005]  # Ratio ≈ 4000!
+
+# Original problem
+w_true = torch.tensor([1.0, 0.0])
+y1 = X @ w_true                    # y1 ≈ [1.000, 1.000]
+w1 = torch.solve(X.T @ X @ w_true) # w1 ≈ [1.000, 0.000]
+
+# Perturb along direction of small singular value
+u2 = U[:, 1]                       # u2 ≈ [-0.707, 0.707]
+perturbation = 0.001 * torch.norm(y1) * u2
+y2 = y1 + perturbation            # y2 ≈ [0.999, 1.001]
+                                  # (0.1% change in y)
+
+# Solve perturbed system
+w2 = torch.solve(X.T @ X @ y2)    # w2 ≈ [-1.001, 2.000]
+                                  # ( 235.2% change in w!)
+```
+
+Key insights from this example:
+1. A tiny perturbation (0.1%) along the direction of the small singular value
+2. Results in dramatic weight changes ( 235.2%)
+3. Yet predictions barely change (0.1%)
+
+#### The problem with normal equations
+
+The normal equations $(X^TX)w = X^Ty$ actually make this instability worse:
+- $X^TX = V\Sigma^2 V^T$ squares the singular values
+- This squares the condition number
+- Example: Stretching ratios go from 1:10000 → 1:100000000
+
+This raises a crucial question: Can we solve the linear regression problem without forming $X^TX$? The answer is yes, through QR factorization, which we'll explore in the next section.
 
 ## QR Factorization: A More Stable Approach
 
@@ -793,7 +846,7 @@ w_1 &= (c_1 - r_{12}w_2 - r_{13}w_3)/r_{11}
 
 ### Comparing LU and QR
 
-The key difference between QR and LU is that we get an triangular system directly from QR, without ever forming the numerically unstable X^TX. This process is both numerically stable (avoiding condition number squaring) and computationally efficient (requiring just one triangular solve). Let's compare both approaches:
+The key difference between QR and LU is that we get an triangular system directly from QR, without ever forming X^TX. This process is both numerically stable (avoiding condition number squaring) and computationally efficient (requiring just one triangular solve). Let's compare both approaches:
 
 $$ \begin{aligned}
 &\text{LU approach: } np^2 \text{ to form } X^TX \text{, then } \frac{2p^3}{3} \text{ to factor it} \\
@@ -878,4 +931,8 @@ Direct methods face a hard constraint: they must complete their entire computati
 This constraint motivates iterative methods. Instead of computing an exact solution upfront, they produce increasingly accurate predictions over time. This trade-off - accepting approximate answers for faster results - often matters more than theoretical perfection.
 
 Direct methods remain competitive for moderate-sized problems, especially those with special structure like sparsity. But when datasets grow large or quick answers matter more than perfect ones, iterative methods become essential. We'll explore these methods next.
+
+## Puzzle: Solving with SVD
+
+Suppose you have already computed the SVD of a matrix $A = U\Sigma V^T$. How many operations does it take to solve the system $Ax = b$?
 
