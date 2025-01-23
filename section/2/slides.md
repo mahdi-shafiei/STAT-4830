@@ -16,14 +16,13 @@ size: 16:9
 
 # Overview
 
-1. Introduction
-2. Prediction with Multiple Features
-3. Computing Predictions Efficiently
-4. Finding Optimal Weights
-5. Direct Solution Methods
-6. Effect and Remedy for Numerical Instability
-7. QR Factorization: A More Stable Approach
-8. The Limits of Direct Methods: Scaling Up
+1. Introduction & Prediction with Features
+2. Computing Predictions Efficiently
+3. Finding Optimal Weights
+4. Direct Solution Methods
+5. Numerical Stability
+6. QR Factorization
+
 
 ---
 
@@ -60,8 +59,7 @@ Each weight has clear meaning:
 
 ![Feature Mapping](figures/feature_mapping.png)
 
-Why linear models often work:
-- Linear relationships in real data
+- Linear relationships sometimes exist in real data
 - Scatter represents noise/unexplained factors
 - Simple but powerful approximation
 
@@ -88,29 +86,7 @@ def predict_price(house, weights):
     )
 ```
 
----
-
-# Testing Our Model
-
-```python
-X = torch.tensor([
-    [1500, 10, 3, 0.8],  # house 1
-    [2100, 2,  4, 0.9],  # house 2
-    [800,  50, 2, 0.3]   # house 3
-], dtype=torch.float32)
-y = torch.tensor([500000, 800000, 250000], dtype=torch.float32)
-weights = torch.tensor([200, -1000, 50000, 100000], dtype=torch.float32)
-
-predictions = X @ weights  # Matrix multiplication!
-
-# Results:
-# House 1: $520,000 (Error: +4.0%)
-# House 2: $708,000 (Error: -11.5%)
-# House 3: $240,000 (Error: -4.0%)
-```
-
----
-
+<!-- 
 # Prediction Errors
 
 ![Prediction Errors](figures/prediction_errors.png)
@@ -118,7 +94,7 @@ predictions = X @ weights  # Matrix multiplication!
 Our model's performance:
 - Errors range from 4% to 12%
 - Systematic patterns?
-- Can we do better?
+- Can we do better? -->
 
 ---
 
@@ -159,19 +135,6 @@ Why so fast?
 - Optimized BLAS libraries
 - Critical for iterative methods later!
 
----
-
-# Finding Optimal Weights
-
-Error function:
-$$ \text{error} = \sum_{i=1}^n (y_i - w^T x_i)^2 $$
-
-Partial derivatives:
-$$ \frac{\partial}{\partial w_j} \text{error} = -2\sum_{i=1}^n x_{ij}(y_i - w^T x_i) = 0 $$
-
-Matrix form:
-$$ -2X^T(y - Xw) = 0 $$
-$$ X^TXw = X^Ty $$
 
 ---
 # Finding Optimal Weights: The Math in 1D
@@ -597,98 +560,124 @@ def update_solution(L, U, X, y_new):
 # LU Factorization: A Hidden Weakness
 
 LU factorization is fast for updates, but inherits a critical issue:
-- Still based on normal equations $(X^TX)w = X^Ty$
-- Correlated features create unstable systems
-- Small measurement errors → large weight changes
+- Correlated create unstable systems: small errors → large weight changes
+- Called **ill-conditioning** and can lead to numerically inaccurate solutions.
 
-What happens when features tell almost the same story?
+Can happen in practice:
 ```python
 # Square footage and rooms are highly correlated
 X = torch.tensor([
-    [1500, 6],    # 1500 sq ft ≈ 6 rooms
-    [2000, 8],    # 2000 sq ft ≈ 8 rooms
-    [1800, 7]     # 1800 sq ft ≈ 7 rooms
+    [1500, 6],    # 1500 sq ft ≈ 6 rooms, 1500/6 = 250
+    [2000, 8],    # 2000 sq ft ≈ 8 rooms, 2000/8 = 250
+    [1800, 7]     # 1800 sq ft ≈ 7 rooms, 1800/7 ~ 257
 ])
 ```
 ---
 
-# Matrix Stretching: The Simple Case
+# Ill-conditioning: diagonal case 
 
-When we multiply by a matrix, it stretches some directions more than others.
+Key insight: Matrix multiplication stretches space
+- Some directions get stretched more than others
+- This stretching can reveal hidden problems
+- We can measure this stretching!
 
-Simple example (diagonal matrix):
-$$ D = \begin{bmatrix} 
-100 & 0 \\
-0 & 0.1
-\end{bmatrix} $$
+Example: Unit vectors get stretched differently
+$$ \begin{bmatrix} 100 & 0 \\ 0 & 0.1 \end{bmatrix} 
+\begin{bmatrix} 1 \\ 0 \end{bmatrix} = 
+\begin{bmatrix} 100 \\ 0 \end{bmatrix} $$
 
-What happens when we multiply by $D$?
-- Horizontal vector $[1, 0]$ gets stretched by 100
-- Vertical vector $[0, 1]$ gets shrunk to 0.1
-- Ratio of stretching: 100/0.1 = 1000
-
-This is our condition number!
+$$ \begin{bmatrix} 100 & 0 \\ 0 & 0.1 \end{bmatrix} 
+\begin{bmatrix} 0 \\ 1 \end{bmatrix} = 
+\begin{bmatrix} 0 \\ 0.1 \end{bmatrix} $$
 
 ---
 
-# Matrix Stretching: The General Case
+# Ill-conditioning: diagonal case 
 
-For non-diagonal matrices, stretching is harder to see:
-$$ A = \begin{bmatrix}
-1 & 1 \\
-1 & 1.001
-\end{bmatrix} $$
+For diagonal matrices, stretching is obvious:
+$$ D = \begin{bmatrix} 100 & 0 \\ 0 & 0.1 \end{bmatrix} $$
 
-But SVD reveals the hidden stretching:
+- Horizontal direction: stretched by 100
+- Vertical direction: shrunk to 0.1
+- Ratio of stretching = 100/0.1 = 1000
+
+This ratio is called the condition number $κ(D) = 1000$
+- Large ratio → ill-conditioned
+- Small ratio → well-conditioned
+
+---
+
+# Seeing Instability: diagonal case 
+
+$$ D = \begin{bmatrix} 1 & 0 \\ 0 & 0.0001 \end{bmatrix} $$
+
+Solving $Dx = y$ for two similar right-hand sides:
+```python
+D = torch.tensor([[1.0, 0.0], [0.0, 0.0001]])
+y1 = torch.tensor([1.0, 0.0])
+y2 = torch.tensor([1.0, 0.01])  # tiny change in second component
+
+x1 = torch.solve(y1, D)[0]
+x2 = torch.solve(y2, D)[0]
+
+print(f"x1: {x1}")  # [1.0, 0.0]
+print(f"x2: {x2}")  # [1.0, 100.0]  # huge change!
+```
+
+Small change in y → huge change in x in the direction of small stretching!
+
+
+
+---
+
+# More General Matrices
+
+For non-diagonal matrices, stretching is hidden:
+$$ A = \begin{bmatrix} 1 & 1 \\ 1 & 1.001 \end{bmatrix} $$
+
+This matrix represents nearly perfectly correlated features:
+- First feature ≈ second feature
+- Their difference barely affects output
+- Their sum has large effect
+
+This creates very uneven stretching in different directions.
+
+---
+
+# From Diagonal to General Matrices
+
+Key insight: SVD reveals the directions and amounts of stretching in any $n \times p$ matrix!
+
 $$ A = U\Sigma V^T $$
 
-where:
-- $U, V$: change of basis (orthogonal matrices)
-- $\Sigma$: diagonal matrix showing stretching
-- $\kappa(A) = \sigma_{\max}/\sigma_{\min}$
+Each part has a specific role:
+1. $V^T$: rotates/reflects to directions of maximum/minimum stretching
+2. $\Sigma$: stretches by singular values in those directions
+3. $U$: rotates/reflects to final orientation (independent of $V$)
+
+<div style="text-align: center"><img src="figures/svd_stretching.png" width="90%" alt="SVD stretching visualization showing how a unit square is transformed through SVD steps"></div>
 
 ---
 
-# SVD Example
+# The condition number
 
-For our nearly dependent matrix:
-$$ A = \begin{bmatrix}
-1 & 1 \\
-1 & 1.001
-\end{bmatrix} = U\Sigma V^T $$
+The diagonal elements of $\Sigma$ determine the stretching
+$$ A = U\Sigma V^T $$
 
-Computing SVD:
 ```python
 A = torch.tensor([[1.0, 1.0], [1.0, 1.001]])
 U, S, Vt = torch.linalg.svd(A)
-print(f"Singular values: {S}")  
-# [2.001, 0.001]  # Big stretch vs tiny stretch!
+print(f"Stretching amounts: {S}")  # [2.001, 0.001]
 ```
+The tiny singular value (0.001) reveals the near dependency!
 
-Condition number: 2.001/0.001 ≈ 2001
+In general, we define the **condition number** as the ratio of the largest to smallest (nonzero) stretching:
+$$ κ(A) = \sigma_{\text{max}}/\sigma_{\text{min}} $$
 
----
 
-# Why X^TX Squares the Condition Number
+<!-- ---
 
-Using SVD of $X = U\Sigma V^T$:
-
-$$ X^TX = (U\Sigma V^T)^T(U\Sigma V^T) = V\Sigma^T\Sigma V^T $$
-
-The diagonal entries of $\Sigma^T\Sigma$ are squares:
-- If $X$ has singular values $[\sigma_1, \sigma_2]$
-- Then $X^TX$ has singular values $[\sigma_1^2, \sigma_2^2]$
-- Condition number gets squared!
-
-Example:
-- $X$: κ ≈ 2001
-- $X^TX$: κ ≈ 4,004,001
-
----
-
-# Understanding the Problem Geometrically
-
-Now we can understand our feature plots:
+# Understanding Our Feature Plots
 
 <div style="text-align: center">
 <img src="figures/condition_number_viz.png" width="70%" alt="Condition Number Visualization">
@@ -698,115 +687,95 @@ Now we can understand our feature plots:
 <div>
 
 **Left: Independent features**
-- Nearly equal stretching
-- κ(X) ≈ 1.0
-- Well-conditioned
+- Features vary independently
+- All directions matter similarly
+- κ(X) ≈ 1.0 (well-conditioned)
 
 </div>
 <div>
 
 **Right: Nearly dependent features**
-- Very uneven stretching
-- κ(X) ≈ 201.2
-- Ill-conditioned
+- Features almost perfectly correlated
+- One direction barely matters
+- κ(X) ≈ 201.2 (ill-conditioned)
 
 </div>
-</div>
+</div> -->
+
+
 
 ---
 
-# The Squaring Effect
 
-Critical issue: Normal equations square the condition number!
-
-$$ \text{κ}(X^TX) = \text{κ}(X)^2 $$
-
-> it's easy to see this with the SVD: 
-
-Example impact:
-- Independent features: 
-  * κ(X) ≈ 1.0 → κ(X^TX) ≈ 1.1
-  * Stays well-conditioned
-
-- Nearly dependent features:
-  * κ(X) ≈ 201.2 → κ(X^TX) ≈ 40,580.2
-  * Becomes extremely ill-conditioned!
-
----
-
-# Seeing Instability in Action
+# Seeing Instability: Correlated Features
 
 ```python
-# Add a small perturbation (0.0001% noise)
-X_perturbed = X * (1 + torch.randn(*X.shape) * 1e-6)
+# Features with condition number ≈ 4000
+X = torch.tensor([[1.0, 1.0], [1.0, 1.001]])
+U, s, Vt = torch.linalg.svd(X)
+print(f"Singular values: {s}")  
+# s ≈ [2.001, 0.0005]  # Ratio ≈ 4000!
 
-# Solve both systems using normal equations
-def solve_normal_equations(X, y):
-    XtX = X.T @ X
-    Xty = X.T @ y
-    return torch.linalg.solve(XtX, Xty)
+# Original problem
+w_true = torch.tensor([1.0, 0.0])
+y1 = X @ w_true                    # y1 ≈ [1.000, 1.000]
+w1 = torch.solve(X.T @ X @ w_true) # w1 ≈ [1.000, 0.000]
 
-# Create target that depends only on x1
-y = x1 + torch.randn(n) * 0.1
+# Perturb along direction of small singular value
+u2 = U[:, 1]                       # u2 ≈ [-0.707, 0.707]
+perturbation = 0.001 * torch.norm(y1) * u2
+y2 = y1 + perturbation            # y2 ≈ [0.999, 1.001]
+                                  # (0.1% change in y)
 
-w1 = solve_normal_equations(X, y)
-w2 = solve_normal_equations(X_perturbed, y)
+# Solve perturbed system
+w2 = torch.solve(X.T @ X @ y2)    # w2 ≈ [-1.001, 2.000]
+                                  # (283% change in w!)
 ```
 
----
-
-# The Results Are Striking
-
-Original vs Perturbed Weights:
-```python
-print("Original weights:", w1)     # [1.1, -0.1]
-print("Perturbed weights:", w2)    # [1.8, -0.8]
-```
-
-Key observations:
-- Individual weights change by ~80%
-- But predictions barely change at all (<0.1%)
-- Small data changes → large weight changes
-- Yet predictions remain stable
+<!-- Key insights:
+1. Tiny perturbation (0.1%) along u₂ (direction of small singular value)
+2. Weights change dramatically (283%)
+3. But predictions barely change (0.1%)
+4. Normal equations make this worse by squaring condition number! -->
 
 ---
 
-# Understanding Why This Happens
+# Understanding the Instability
 
-When features are nearly dependent:
+When solving $Ax = b$:
+- Small changes in b's small-stretch directions
+- Force large changes in $x$ to compensate
 
-1. Many different weight combinations give similar predictions
-   - Like different ways to split a restaurant bill
-   - Total is the same, individual contributions vary
-
-2. Tiny data changes cause large swings
-   - Small noise pushes solution between valid options
-   - Like slightly changing bill total
-
-3. Normal equations amplify this effect
-   - Squaring condition number makes it worse
-   - Small uncertainties become large uncertainties
+Normal equations make this worse:
+- $X^TX = V\Sigma^2 V^T$ squares the singular values (check!)
+- Stretching ratios: 1:10000 → 1:100000000
+- Makes an already sensitive problem much worse
 
 ---
 
-# Key Takeaways
+# Question
 
-1. Watch for correlated features
-   - Look for "skinny" clouds in feature plots
-   - Check condition numbers if available
+> Is it possible to solve the linear regression problem without ever forming $X^TX$?
 
-2. Be careful with normal equations
-   - They square the condition number
-   - Make ill-conditioning much worse
-
-3. Consider alternatives
-   - QR factorization (coming next)
-   - Regularization (future lectures)
-   - Feature selection/engineering
 
 ---
 
-# QR Factorization: A Better Way
+# A partial remedy: QR Factorization
+
+Instead of squaring the condition number:
+1. Work directly with $X$
+2. Find orthogonal directions ($Q$)
+3. Solve triangular system ($R$)
+
+Benefits:
+- Avoids squaring condition number
+- More stable computations
+- Still efficient
+
+Next: We'll see exactly how QR works!
+
+---
+# QR Factorization: The Details
 
 Instead of forming $X^TX$, decompose $X$ directly:
 $$ X = QR $$
@@ -815,7 +784,6 @@ where:
 - $Q$: orthogonal matrix (perpendicular columns)
 - $R$: upper triangular matrix
 
-Clean implementation:
 ```python
 def solve_regression(X, y):
     """Solve linear regression using QR factorization"""
@@ -844,43 +812,98 @@ print("Q^T @ Q =\n", Q.T @ Q)
 
 ---
 
-# Solving with QR
+# Structure of R
 
-Original problem: $Xw = y$
+For a data matrix $X$ with $n$ rows and $p$ columns:
 
-With QR: $(QR)w = y$
+$$ R = \begin{bmatrix}
+r_{11} & r_{12} & r_{13} \\
+0 & r_{22} & r_{23} \\
+0 & 0 & r_{33} \\
+\hline
+0 & 0 & 0 \\
+\vdots & \vdots & \vdots \\
+0 & 0 & 0
+\end{bmatrix} \begin{array}{l}
+\leftarrow \text{upper triangular } p \times p \text{ part} \\
+\\
+\leftarrow \text{zeros in remaining rows}
+\end{array} $$
 
-Multiply both sides by $Q^T$:
-$$ \begin{aligned}
-Q^T(QRw) &= Q^Ty \\
-(Q^TQ)Rw &= Q^Ty \\
-IRw &= Q^Ty \\
-Rw &= Q^Ty
-\end{aligned} $$
-
-Beautiful! We get triangular system without forming $X^TX$
+Key insight:
+- Only need top $p \times p$ part for solving
+- Bottom rows are all zeros
+- Much more efficient than working with full $n \times n$ matrices!
 
 ---
 
-# QR vs Normal Equations
+# Solving with QR: A 4×3 Example
 
-Comparison:
-1. Stability
-   - QR: Inherits X's condition number
-   - Normal Equations: Squares condition number
+With 4 houses and 3 features:
+- $X$ is $4 \times 3$ (houses × features)
+- $Q$ is $4 \times 4$ (orthogonal)
+- $R$ is $4 \times 3$ (same shape as $X$)
+- Only need top $3 \times 3$ part of $R$
 
-2. Cost
-   - QR: ~2np² operations
-   - Normal Equations: ~np² operations
+The system $Rw = Q^Ty$ becomes:
 
-3. Updates
-   - QR: Need full recomputation
-   - Normal Equations: Can reuse factorization
+$$ \begin{bmatrix}
+r_{11} & r_{12} & r_{13} \\
+0 & r_{22} & r_{23} \\
+0 & 0 & r_{33}
+\end{bmatrix}
+\begin{bmatrix} w_1 \\ w_2 \\ w_3 \end{bmatrix} =
+\begin{bmatrix} c_1 \\ c_2 \\ c_3 \end{bmatrix} $$
 
-Rule of thumb:
-- Well-conditioned: Both work fine
-- Ill-conditioned: Use QR
-- Need fast updates: Consider normal equations
+where $c = Q^Ty$
+
+---
+
+# Back Substitution with QR
+
+Solve from bottom up:
+
+$$ \begin{aligned}
+w_3 &= c_3/r_{33} \\
+w_2 &= (c_2 - r_{23}w_3)/r_{22} \\
+w_1 &= (c_1 - r_{12}w_2 - r_{13}w_3)/r_{11}
+\end{aligned} $$
+
+Clean implementation:
+```python
+def solve_regression(X, y):
+    """Solve linear regression using QR factorization"""
+    Q, R = torch.qr(X)
+    return torch.triangular_solve(Q.T @ y, R)[0]
+```
+
+---
+
+# QR vs Normal Equations: Cost
+
+Operation counts:
+- Normal Equations + LU: $np^2$ to form $X^TX$, then $\frac{2p^3}{3}$ to factor
+- QR: $2np^2$ to factor $X$ directly
+
+When $n \gg p$ (many more houses than features):
+- Formation cost $np^2$ dominates
+- LU theoretically twice as fast
+- But numerical stability often more important!
+
+---
+
+# QR vs Normal Equations: Stability
+
+In notes, we run a test with correlated features:
+```python
+# Add highly correlated feature
+X = torch.cat([X, X[:, 0:1] + torch.randn(n, 1) * 10], dim=1)
+```
+
+Key findings:
+- $X^TX$ squares condition number (6,262 → 39.2 million!)
+- QR more accurate (RMSE: 101.08 vs 138.04)
+- QR weights closer to true values
 
 ---
 
@@ -897,3 +920,9 @@ This motivates iterative methods:
 - Essential for massive datasets
 
 We'll explore these methods next lecture!
+
+---
+
+# Puzzle
+
+> Supopse you computed the SVD of a matrix $A$. How many operations does it take to solve the system $Ax = b$?
