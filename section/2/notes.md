@@ -20,14 +20,13 @@ title: Linear Regression - Direct Methods
 
 ## Introduction
 
-Last lecture, we explored PyTorch's efficient handling of vectors and matrices. Now we'll apply these tools to a fundamental challenge in data science: prediction. Our goal is to use historical data to make accurate predictions about new situations, a problem that lies at the heart of many real-world applications.
+Last lecture, we explored PyTorch's efficient handling of vectors and matrices. Now we'll apply these tools to a fundamental challenge in data science: prediction. Our goal is to use historical data to make accurate predictions about new situations, a problem that lies at the heart of many applications.
 
-We'll develop this idea through three key steps:
+We'll develop this idea through four key steps:
 1. Converting predictions into matrix operations
-2. Finding optimal predictions through optimization
-3. Solving the optimization problem efficiently
-
-The efficient matrix operations we studied last time aren't just theoretical - they're crucial for handling the large datasets we encounter in practice. As we'll see, even small improvements in computational efficiency can make the difference between a usable model and one that's too slow for real-world use.
+2. Formulating the optimization problem of finding the optimal predictions
+3. Converting the optimization problem into a system of linear equations
+4. Solving the system of linear equations efficiently via direct methods
 
 ## Prediction with Multiple Features
 
@@ -430,7 +429,7 @@ w_2 &= \displaystyle\frac{b_2' - a_{23}'w_3}{a_{22}'} && \text{(2 ops + 1 divisi
 w_1 &= \displaystyle\frac{b_1 - a_{12}w_2 - a_{13}w_3}{a_{11}} && \text{(4 ops + 1 division)}
 \end{aligned} $$
 
-For our 3×3 system, we needed 6 divisions, 19 multiplications, and 19 additions or subtractions. Looking at how these counts arise reveals the pattern: each elimination step processes one column, requiring operations proportional to the size of the remaining matrix. For an n×n system, this pattern leads to approximately $\frac{2n^3}{3}$ operations for elimination and another $\frac{n^2}{2}$ for back-substitution.
+For our 3×3 system, we needed 6 divisions, 19 multiplications, and 19 additions or subtractions. Looking at how these counts arise reveals the pattern: each elimination step processes one column, requiring operations proportional to the size of the remaining matrix. For an $p\times p$ system, this pattern leads to approximately $\frac{2p^3}{3}$ operations for elimination and another $\frac{p^2}{2}$ for back-substitution.
 
 To find optimal weights, we need two steps:
 1. Form the normal equations by computing $X^TX$ and $X^Ty$
@@ -491,45 +490,47 @@ a_{11} & a_{12} & a_{13} \\[0.7em]
 Compute multipliers to eliminate marked entries:
 $$ m_{21} = \displaystyle\frac{a_{21}}{a_{11}} \quad \text{and} \quad m_{31} = \displaystyle\frac{a_{31}}{a_{11}} $$
 
-When we subtract $m_{21}$ times row 1 from row 2:
-- The multiplier $m_{21}$ goes into L (recording what we did)
-- A zero appears in U (showing what we achieved)
+After first column elimination:
+- $a_{22}' = a_{22} - m_{21}a_{12}$ 
+- $a_{23}' = a_{23} - m_{21}a_{13}$
+- $a_{32}' = a_{32} - m_{31}a_{12}$
+- $a_{33}' = a_{33} - m_{31}a_{13}$
 
-After both eliminations:
-$$ \begin{bmatrix}
+This gives us the intermediate factorization:
+$$ A = \begin{bmatrix}
 a_{11} & a_{12} & a_{13} \\[0.7em]
-& a_{22}' & a_{23}' \\[0.7em]
-& a_{32}' & a_{33}'
+a_{21} & a_{22} & a_{23} \\[0.7em]
+a_{31} & a_{32} & a_{33}
 \end{bmatrix} = 
-\underbrace{\begin{bmatrix}
-1 & & \\[0.7em]
-m_{21} & 1 & \\[0.7em]
-m_{31} & \text{next} & 1
-\end{bmatrix}}_{\text{L (multipliers used)}} \times
-\underbrace{\begin{bmatrix}
+\begin{bmatrix}
+1 & 0 & 0 \\[0.7em]
+m_{21} & 1 & 0 \\[0.7em]
+m_{31} & 0 & 1
+\end{bmatrix} \times
+\begin{bmatrix}
 a_{11} & a_{12} & a_{13} \\[0.7em]
-& a_{22}' & a_{23}' \\[0.7em]
-& a_{32}' & a_{33}'
-\end{bmatrix}}_{\text{U (current state)}} $$
-
-The "next" entry in L will come from our next elimination step. Each column of L is completed as we eliminate variables in the corresponding column of U.
+0 & a_{22}' & a_{23}' \\[0.7em]
+0 & a_{32}' & a_{33}'
+\end{bmatrix} $$
 
 *Step 2: Create zero in second column*
 
-Compute the next multiplier:
+Next, we compute:
 $$ m_{32} = \displaystyle\frac{a_{32}'}{a_{22}'} $$
 
-This gives our final factorization:
+And use it to eliminate $a_{32}'$, giving our final factorization:
 $$ A = \underbrace{\begin{bmatrix}
-1 & & \\[0.7em]
-m_{21} & 1 & \\[0.7em]
+1 & 0 & 0 \\[0.7em]
+m_{21} & 1 & 0 \\[0.7em]
 m_{31} & m_{32} & 1
 \end{bmatrix}}_{\text{L (elimination history)}} \times
 \underbrace{\begin{bmatrix}
 a_{11} & a_{12} & a_{13} \\[0.7em]
-& a_{22}' & a_{23}' \\[0.7em]
-& & a_{33}''
+0 & a_{22}' & a_{23}' \\[0.7em]
+0 & 0 & a_{33}''
 \end{bmatrix}}_{\text{U (eliminated system)}} $$
+
+where $a_{33}'' = a_{33}' - m_{32}a_{23}'$
 
 Why does this work?
 Each elimination step:
