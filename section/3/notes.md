@@ -77,7 +77,7 @@ The pattern is clear: memory becomes the bottleneck long before computation time
 
 ![Scaling Comparison](figures/scaling_comparison_v2_300dpi-1.png)
 
-This isn't an implementation limitation - it's fundamental to the direct approach. The O(p²) memory scaling means each significant increase in problem size requires a quadratic increase in contiguous memory allocation. Even high-end workstations with abundant RAM eventually fail when trying to allocate these large matrix blocks. We need a fundamentally different approach.
+This isn't an implementation limitation - it's fundamental to the direct approach. The $O(p^2)$ memory scaling means each significant increase in problem size requires a quadratic increase in contiguous memory allocation. Even high-end workstations with abundant RAM eventually fail when trying to allocate these large matrix blocks. We need a fundamentally different approach.
 
 ### A Memory-Efficient Alternative: Gradient Descent
 
@@ -126,6 +126,8 @@ This matrix-vector approach is so powerful that it forms the foundation of moder
 How quickly does gradient descent converge? Our experiments with random matrices reveal a fascinating pattern:
 
 ![Convergence Comparison](figures/convergence_comparison_v2_300dpi-1.png)
+
+<!-- need to indicate that relative loss is f(x) - min f(x) -->
 
 The plot shows relative error (current error divided by initial error) versus iteration number. Two key insights emerge:
 
@@ -243,77 +245,69 @@ This geometric understanding leads naturally to gradient descent. At each step:
 3. Move in the negative gradient direction: $w_{k+1} = w_k - \alpha_k g_k$
 4. Repeat until the gradient becomes small
 
-The algorithm's simplicity hides several crucial details that affect convergence. The stepsize $\alpha_k$ must be chosen carefully - too large and we overshoot, too small and we inch forward. For quadratic functions like least squares, theory tells us we need $\alpha_k < 2/\lambda_{\max}(X^\top X)$ to ensure convergence, where $\lambda_{\max}$ is the largest eigenvalue.
+Three key factors determine the algorithm's success. First, the stepsize $\alpha_k$ controls our progress. Too small and we inch forward, wasting computation. Too large and we overshoot, potentially increasing the objective value. For quadratic functions like least squares, the optimal stepsize is related to the eigenvalues of $X^\top X$. Specifically, convergence is guaranteed when:
 
-## Implementation and Convergence Analysis
+$$ 0 < \alpha_k < \frac{2}{\lambda_{\max}(X^\top X)} $$
 
-Let's implement gradient descent and examine its behavior. Our implementation precomputes $X^\top X$ and $X^\top y$ for efficiency:
+where $\lambda_{\max}$ is the largest eigenvalue. This connects beautifully to our geometric picture - the eigenvalues determine the shape of the level sets, and the largest eigenvalue determines how far we can safely step.
+
+![Stepsize Geometry](figures/stepsize_geometry.png)
+
+The figure illustrates why the stepsize bound depends on $\lambda_{\max}$. The narrowest width of the level sets (shown by the vertical arrow) is proportional to $1/\sqrt{\lambda_{\max}}$ - this occurs in the direction of the eigenvector corresponding to $\lambda_{\max}$. Taking too large a step (shown by the "overshooting" path) moves us outside the current level set and potentially increases the objective value. The "safe step" stays within a region where our linear approximation remains valid. This geometric insight explains why we need smaller steps when $\lambda_{\max}$ is large - the level sets become very narrow in their thinnest direction, requiring more careful progress to avoid overshooting.
+
+Second, the condition number of $X^\top X$ affects convergence speed. When all eigenvalues are similar (condition number near 1), the level sets are nearly circular, and we progress steadily toward the minimum. But when eigenvalues differ greatly, the level sets become highly elongated ellipses, forcing the algorithm to zigzag its way down a narrow valley. This geometric picture explains why poorly conditioned problems converge slowly. We'll see this zigzagging behavior clearly illustrated in the convergence plots below, where high condition numbers force the algorithm to take an inefficient meandering path to the solution.
+
+Third, our initial guess $w_0$ matters. While gradient descent will eventually find the minimum for any starting point (thanks to convexity), a good initial guess can dramatically reduce the number of iterations needed. For least squares, starting at zero is often reasonable since it gives zero predictions - a natural baseline.
+
+## Implementation
+
+Let's implement gradient descent to see these factors in action. Our implementation will explicitly compute gradients using matrix-vector products to maintain memory efficiency:
 
 ```python
-def gradient_descent(X, y, n_steps=100, stepsize=None):
+def gradient_descent(X, y, n_steps=100, step_size=0.01):
     # Initialize weights
     w = torch.zeros(X.shape[1])
     
-    # Precompute matrices and set stepsize
-    XtX = X.T @ X
+    # Cache only X^T y, not X^T X
     Xty = X.T @ y
-    if stepsize is None:
-        stepsize = 1.8 / torch.linalg.norm(XtX, 2)
     
-    # Track convergence
+    # Compute optimal value for relative loss
+    w_opt = torch.linalg.lstsq(X, y).solution
+    f_opt = 0.5 * ((X @ w_opt - y)**2).sum()
+    f_init = 0.5 * ((X @ w - y)**2).sum()
+    
     losses = []
-    
     for step in range(n_steps):
-        # Compute gradient
-        grad = XtX @ w - Xty
+        # Compute gradient in two steps to avoid forming X^T X
+        Xw = X @ w
+        grad = X.T @ (Xw - y)
         
-        # Update weights
-        w = w - stepsize * grad
+        # Take step in negative gradient direction
+        w = w - step_size * grad
         
-        # Track progress
-        loss = 0.5 * ((X @ w - y)**2).sum()
-        losses.append(loss.item())
+        # Track relative loss
+        f_curr = 0.5 * ((X @ w - y)**2).sum()
+        rel_loss = (f_curr - f_opt)/(f_init - f_opt)
+        losses.append(rel_loss.item())
     
     return w, losses
 ```
 
-The convergence of gradient descent depends on three key factors:
+This implementation reveals several practical considerations. First, we compute gradients using two matrix-vector products (X@w then X.T@result) instead of forming X^T X. This maintains O(np) memory usage, crucial for large-scale problems. Second, we track the relative loss (f(w) - f*)/(f(w_0) - f*) to monitor convergence independent of problem scale.
 
-1. **Stepsize**: Theory guarantees convergence when $\alpha < 2/\lambda_{\max}(X^\top X)$. Our default choice $\alpha = 1.8/\|X^\top X\|_2$ satisfies this since the spectral norm equals the largest eigenvalue.
+Let's visualize how these factors affect convergence. We'll create test problems with different condition numbers and compare their convergence paths:
 
-2. **Condition Number**: The ratio $\kappa = \lambda_{\max}/\lambda_{\min}$ of extreme eigenvalues determines convergence speed. After $k$ iterations:
+![Convergence Factors](figures/convergence_factors.png)
 
-   $$ \|Xw_k - y\|^2 - \min_w f(w) \leq \left(1 - \frac{2\alpha\lambda_{\min}\lambda_{\max}}{\lambda_{\min} + \lambda_{\max}}\right)^k (\|Xw_0 - y\|^2 - \min_w f(w)) $$
+The plots reveal key insights about gradient descent. The left plot shows how stepsize affects convergence when κ=10: small steps (α=0.1/λ_max) give steady but slow progress, while large steps (α=1.8/λ_max) can initially make rapid progress but risk overshooting. The right plot demonstrates how condition number impacts convergence: well-conditioned problems (κ=2) converge quickly in a direct path, while poorly conditioned problems (κ=100) require many iterations, zigzagging their way to the solution.
 
-3. **Initial Distance**: The term $\|Xw_0 - y\|^2 - \min_w f(w)$ measures how far our initial guess is from optimal. This affects the total number of iterations needed.
+The interplay between stepsize and condition number becomes particularly clear when we visualize the optimization paths in 2D:
 
-To understand these effects visually, let's examine the simplest non-trivial case: a 2×2 diagonal system. The figure below shows gradient descent's behavior for different condition numbers:
+![Zigzag Visualization](figures/zigzag_visualization.png)
 
-![Diagonal Convergence](figures/diagonal_convergence.png)
+The contour plots show level sets of the objective function for different combinations of condition number (κ) and stepsize (α). When κ=2 (top row), the level sets are nearly circular. With a small stepsize (α=0.1/λ_max), we make steady but slow progress. A larger stepsize (α=1.8/λ_max) converges faster but shows slight oscillation. When κ=50 (bottom row), the level sets become highly elongated. Now the stepsize choice becomes crucial: small steps make slow but steady progress, while large steps cause dramatic zigzagging as the algorithm bounces between the walls of the narrow valley. This geometric view explains why high condition numbers demand more careful stepsize selection - we must balance the need for progress in the well-conditioned direction against the risk of overshooting in the poorly conditioned direction.
 
-The top row reveals the geometry of gradient descent. Each plot shows:
-1. **Level Sets** (gray contours): Ellipses stretched along eigenvectors, with eccentricity determined by κ
-2. **Eigenvectors** (red/green arrows): Principal axes of the ellipses, corresponding to λ₁ and λ₂
-3. **Optimization Path** (blue line): Color intensity shows speed - darker where progress is slow
-4. **Optimal Point** (green star): The true solution w*
-
-As κ increases, three key effects emerge:
-1. **Stretched Level Sets**: The ratio λ₁/λ₂ determines how elongated the ellipses become
-2. **Zigzagging**: Each step makes good progress in the λ₁ direction but poor progress in λ₂
-3. **Speed Variation**: Dark segments show slow movement in the λ₂ direction
-
-The bottom row compares actual convergence (blue) to theoretical bounds (red dashed). The bound captures two crucial behaviors:
-1. **Initial Rate**: Determined by λ₁, causing rapid progress in first few iterations
-2. **Asymptotic Rate**: Limited by λ₂, leading to slow final convergence
-
-When κ=50, the ratio (κ-1)/(κ+1) ≈ 0.96 means we reduce error by only 4% per iteration. This geometric view explains why: each step must carefully balance progress between the well-conditioned (λ₁) and ill-conditioned (λ₂) directions.
-
-The stepsize α affects this balance:
-- **Conservative** (α << 2/λ₁): Safe but slow progress in all directions
-- **Optimal** (α = 2/(λ₁ + λ₂)): Best average progress across directions
-- **Aggressive** (α ≈ 2/λ₁): Fast in λ₁ direction but risks overshooting
-
-This behavior isn't unique to diagonal matrices. Any symmetric positive definite matrix can be diagonalized as $X^\top X = Q\Lambda Q^\top$, where $\Lambda$ contains the eigenvalues and $Q$ is orthogonal. The same zigzagging occurs in the rotated coordinate system defined by $Q$, making condition number a fundamental limit on convergence speed.
+Later, we'll see how PyTorch's automatic differentiation can simplify this implementation, especially for more complex objective functions. But the core ideas - following the negative gradient with appropriate stepsize - remain the same.
 
 ## Gradient Descent in PyTorch
 
