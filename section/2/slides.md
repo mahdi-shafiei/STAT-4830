@@ -601,7 +601,7 @@ $$ D = \begin{bmatrix} 100 & 0 \\ 0 & 0.1 \end{bmatrix} $$
 - Vertical direction: shrunk to 0.1
 - Ratio of stretching = 100/0.1 = 1000
 
-This ratio is called the condition number $κ(D) = 1000$
+This ratio is called the **condition number** $κ(D) = 1000$
 - Large ratio → ill-conditioned
 - Small ratio → well-conditioned
 
@@ -715,8 +715,7 @@ w2 = torch.solve(X.T @ X @ y2)    # w2 ≈ [-1.001, 2.000]
 # Understanding the Instability
 
 When solving $Ax = b$:
-- Small changes in b's small-stretch directions
-- Force large changes in $x$ to compensate
+- Small changes in b's "small-stretch directions" force large changes in $x$ to compensate
 
 Normal equations make this worse:
 - $X^TX = V\Sigma^2 V^T$ squares the singular values (check!)
@@ -732,6 +731,7 @@ Normal equations make this worse:
 
 ---
 
+
 # A partial remedy: QR Factorization
 
 Instead of squaring the condition number:
@@ -744,7 +744,6 @@ Benefits:
 - More stable computations
 - Still efficient
 
-Next: We'll see exactly how QR works!
 
 ---
 # QR Factorization: The Details
@@ -764,6 +763,7 @@ def solve_regression(X, y):
 ```
 
 ---
+
 
 # Properties of QR
 
@@ -806,6 +806,25 @@ Key insight:
 - Only need top $p \times p$ part for solving
 - Bottom rows are all zeros
 - Much more efficient than working with full $n \times n$ matrices!
+
+---
+
+# Solving with QR: The Key Insight
+
+Start with original problem and QR decomposition:
+$$ Xw = y \quad \text{becomes} \quad QRw = y $$
+
+> Key insight: Multiply both sides by $Q^T$ to "untangle" equations
+
+Why this works:
+$$ \begin{aligned}
+Q^T(QRw) &= Q^Ty \\
+(Q^TQ)Rw &= Q^Ty \\
+IRw &= Q^Ty \\
+Rw &= Q^Ty
+\end{aligned} $$
+
+Beautiful result: Problem becomes triangular without forming $X^TX$!
 
 ---
 
@@ -864,25 +883,53 @@ When $n \gg p$ (many more houses than features):
 
 ---
 
-# QR vs Normal Equations: Stability
+# QR vs LU: A Stability Experiment
 
-In notes, we run a test with correlated features:
+Generate synthetic house data with correlated features:
 ```python
-# Add highly correlated feature
-X = torch.cat([X, X[:, 0:1] + torch.randn(n, 1) * 10], dim=1)
+# Features: sq ft, age, bedrooms + correlated feature
+X = torch.stack([sqft, age, bedrooms], dim=1)
+X = torch.cat([X, X[:, 0:1] + noise], dim=1)  # Add correlated feature
 ```
 
-Key findings:
-- $X^TX$ squares condition number (6,262 → 39.2 million!)
-- QR more accurate (RMSE: 101.08 vs 138.04)
-- QR weights closer to true values
+The normal equations change the condition number through the formation of $X^TX$. Our experiment quantifies this: $\kappa(X) = 6,262$ increases to $\kappa(X^TX) = 39.2$ million.
+
+QR factorization preserves the original condition number by operating directly on $X$. The numerical advantage manifests in the prediction accuracy and weight estimates.
+
+
+---
+
+# QR vs LU: A Stability Experiment (cont.)
+
+
+Weight estimates for price per square foot (true weight: $200):
+- LU result: $209.25 (4.6% error)
+- QR result: $199.97 (0.015% error)
+
+Root Mean Square Error (RMSE) quantifies average prediction error:
+- LU: $138.04 per house
+- QR: $101.08 per house
+
+---
+
+# QR vs LU: Stability Analysis
+
+Both methods stable in their formulations:
+- LU: Stable for solving $(X^TX)w = X^Ty$
+- QR: Stable for solving original $Xw = y$
+
+1. Well-conditioned case ($\kappa(X) \approx 1$): Normal equations with LU suffice (2x speed)
+2. Ill-conditioned case (our example): QR's higher cost justified by accuracy
+
+> Modern implementations use thin QR ($Q$ is $n \times p$)
+> Reduces cost while preserving stability benefits
 
 ---
 
 # The Limits of Direct Methods
 
 Direct methods face hard constraint:
-- Must complete entire computation before any solution
+- Must complete entire computation before any solution and high memory.
 - Minutes of waiting for large problems
 - Impractical for massive applications
 
