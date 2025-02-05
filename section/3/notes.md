@@ -1,9 +1,8 @@
 ---
 layout: course_page
-title: Iterative Methods for Least Squares
+title: Linear regression: gradient descent
 ---
-
-# 3. Iterative Methods for Least Squares
+# Linear regression: gradient descent
 
 ## Notebooks and Slides
 - [Lecture slides](slides.pdf)
@@ -233,9 +232,13 @@ When the gradient vanishes, something remarkable happens: we've found a point wh
 
 This principle extends far beyond least squares. When the gradient of any function $f$ is zero, we've found what mathematicians call a first-order critical point or stationary point. The name captures the geometry: the function has stopped changing (to first order) in every direction, just as a ball at rest on a surface has no tendency to roll in any direction. This is precisely what you learned about minimizers in calculus - the gradient must vanish at any local minimum.
 
+![Critical Points](figures/critical_points.png)
+
 But not every critical point is a minimum - think of a ball balanced on a hill (a maximum) or resting at a saddle point. To guarantee we've found a minimum, we need to examine the second derivatives. In multiple dimensions, these form the Hessian matrix, which measures the local curvature in every direction. When the Hessian is positive definite (all eigenvalues positive), every direction curves upward, and we've found a local minimum.
 
-Our least squares problem has an even nicer structure. The Hessian $X^\top X$ is positive semidefinite everywhere - it's the same matrix at every point, with eigenvalues that are always nonnegative. This constant positive curvature explains the perfect elliptical level sets we saw earlier and is a signature of convex functions, where every local minimum must be a global minimum. We'll explore convexity in detail later, but for now, we have a powerful guarantee: when gradient descent finds a point where the gradient vanishes, we've solved our problem completely.
+Our least squares problem has an even nicer structure. The Hessian $X^\top X$ is positive semidefinite everywhere - it's the same matrix at every point, with eigenvalues that are always nonnegative. (See the figure below for a one-dimensional example.) This positive curvature explains the elliptical level sets we saw earlier and is a signature of convex functions, where every local minimum must be a global minimum.We'll explore convexity in detail later, but for now, we have a powerful guarantee: when gradient descent finds a point where the gradient vanishes, we've solved our problem completely.
+
+![Convex Quadratic](figures/convex_quadratic.png)
 
 ## The Algorithm
 
@@ -253,9 +256,9 @@ where $\lambda_{\max}$ is the largest eigenvalue. This connects beautifully to o
 
 ![Stepsize Geometry](figures/stepsize_geometry.png)
 
-The figure illustrates why the stepsize bound depends on $\lambda_{\max}$. The narrowest width of the level sets (shown by the vertical arrow) is proportional to $1/\sqrt{\lambda_{\max}}$ - this occurs in the direction of the eigenvector corresponding to $\lambda_{\max}$. Taking too large a step (shown by the "overshooting" path) moves us outside the current level set and potentially increases the objective value. The "safe step" stays within a region where our linear approximation remains valid. This geometric insight explains why we need smaller steps when $\lambda_{\max}$ is large - the level sets become very narrow in their thinnest direction, requiring more careful progress to avoid overshooting.
+The figure illustrates why the stepsize bound depends on $\lambda_{\max}$. For any level set where $f(w) = c$, it can be shown that $\|\nabla f(w)\| \leq \sqrt{2\lambda_{\max}c}$. The width of the level sets varies with both the value of $c$ and the eigenvalues: the narrowest width (shown by the vertical arrow) is $2\sqrt{\frac{2c}{\lambda_{\max}}}$ - this occurs in the direction of the eigenvector corresponding to $\lambda_{\max}$, while the widest width is $2\sqrt{\frac{2c}{\lambda_{\min}}}$ in the direction of the smallest eigenvalue. Taking too large a step (shown by the "overshooting" path) moves us outside the current level set and potentially increases the objective value. The "safe step" stays within a region where our linear approximation remains valid. This geometric insight explains why we need smaller steps when $\lambda_{\max}$ is large - the level sets become very narrow in their thinnest direction, requiring more careful progress to avoid overshooting.
 
-Second, the condition number of $X^\top X$ affects convergence speed. When all eigenvalues are similar (condition number near 1), the level sets are nearly circular, and we progress steadily toward the minimum. But when eigenvalues differ greatly, the level sets become highly elongated ellipses, forcing the algorithm to zigzag its way down a narrow valley. This geometric picture explains why poorly conditioned problems converge slowly. We'll see this zigzagging behavior clearly illustrated in the convergence plots below, where high condition numbers force the algorithm to take an inefficient meandering path to the solution.
+Second, the condition number of $X^\top X$ affects convergence speed. When all eigenvalues are similar (condition number near 1), the level sets are nearly circular, and we progress steadily toward the minimum. But when eigenvalues differ greatly, the level sets become highly elongated ellipses with the ratio of widths determined by $\sqrt{\lambda_{\max}/\lambda_{\min}}$, forcing the algorithm to zigzag its way down a narrow valley. This geometric picture explains why poorly conditioned problems converge slowly. We'll see this zigzagging behavior clearly illustrated in the convergence plots below, where high condition numbers force the algorithm to take an inefficient meandering path to the solution.
 
 Third, our initial guess $w_0$ matters. While gradient descent will eventually find the minimum for any starting point (thanks to convexity), a good initial guess can dramatically reduce the number of iterations needed. For least squares, starting at zero is often reasonable since it gives zero predictions - a natural baseline.
 
@@ -293,7 +296,7 @@ def gradient_descent(X, y, n_steps=100, step_size=0.01):
     return w, losses
 ```
 
-This implementation reveals several practical considerations. First, we compute gradients using two matrix-vector products (X@w then X.T@result) instead of forming X^T X. This maintains O(np) memory usage, crucial for large-scale problems. Second, we track the relative loss (f(w) - f*)/(f(w_0) - f*) to monitor convergence independent of problem scale.
+This implementation reveals several practical considerations. First, we compute gradients using two matrix-vector products ($Xw$ then $X^T (Xw - y)$) instead of forming $X^T X$. This maintains $O(np)$ memory usage, crucial for large-scale problems. Second, we track the relative loss $(f(w) - f*)/(f(w_0) - f^*)$ to monitor convergence independent of problem scale.
 
 Let's visualize how these factors affect convergence. We'll create test problems with different condition numbers and compare their convergence paths:
 
@@ -309,315 +312,9 @@ The contour plots show level sets of the objective function for different combin
 
 Later, we'll see how PyTorch's automatic differentiation can simplify this implementation, especially for more complex objective functions. But the core ideas - following the negative gradient with appropriate stepsize - remain the same.
 
-## Gradient Descent in PyTorch
+## Conclusion
 
-PyTorch makes implementing gradient descent remarkably simple through automatic differentiation. Let's compare manual gradient computation with PyTorch's automatic approach.
+We have much left to learn about gradient descent which like direct methods for least squares problems has limitations. For example, for large n or p, our $O(np)$ memory implementation fails. When n is large, computing the full gradient becomes too expensive - we need stochastic methods that estimate gradients from subsets. When p is large, coordinate descent methods that update parameters sequentially work better. We'll cover these variants later in the course. I started with least squares to get you using gradient descent quickly.
 
-### Manual Gradient Computation
+Next we'll study optimization problems in data science and machine learning. We'll write them down precisely and implement them in PyTorch. You'll see how to use autodifferentiation in practice, though we'll save the theory of why it works for later in the course.
 
-First, let's implement gradient descent by explicitly computing $X^\top X w - X^\top y$:
-
-```python
-def gradient_descent_manual(X, y, n_steps=100, lr=0.01):
-    # Initialize weights
-    w = torch.zeros(X.shape[1], requires_grad=False)
-    
-    # Precompute X^T X and X^T y for efficiency
-    XtX = X.T @ X
-    Xty = X.T @ y
-    
-    losses = []
-    for step in range(n_steps):
-        # Compute gradient manually
-        grad = XtX @ w - Xty
-        
-        # Update weights
-        w = w - lr * grad
-        
-        # Track loss
-        loss = 0.5 * ((X @ w - y)**2).sum()
-        losses.append(loss.item())
-    
-    return w, losses
-```
-
-### Automatic Differentiation Approach
-
-Now let's use PyTorch's autograd to compute gradients automatically:
-
-```python
-def gradient_descent_auto(X, y, n_steps=100, lr=0.01):
-    # Initialize weights with gradient tracking
-    w = torch.zeros(X.shape[1], requires_grad=True)
-    
-    losses = []
-    for step in range(n_steps):
-        # Forward pass: compute loss
-        y_pred = X @ w
-        loss = 0.5 * ((y_pred - y)**2).sum()
-        
-        # Backward pass: compute gradients
-        loss.backward()
-        
-        # Update weights (need to detach from computation graph)
-        with torch.no_grad():
-            w.data = w.data - lr * w.grad
-            w.grad.zero_()
-        
-        losses.append(loss.item())
-    
-    return w, losses
-```
-
-### Verifying Gradient Correctness
-
-We can verify that both approaches compute the same gradients:
-
-```python
-# Generate some test data
-X = torch.randn(100, 5)
-y = torch.randn(100)
-
-# Compare gradients
-w = torch.zeros(5, requires_grad=True)
-y_pred = X @ w
-loss = 0.5 * ((y_pred - y)**2).sum()
-loss.backward()
-auto_grad = w.grad.clone()
-
-manual_grad = X.T @ (X @ w.detach() - y)
-
-print("Maximum difference between gradients:",
-      (auto_grad - manual_grad).abs().max().item())
-```
-
-### Benefits of Automatic Differentiation
-
-The automatic approach has several advantages:
-
-1. **Flexibility**: Easy to modify the objective function
-2. **Correctness**: Eliminates potential errors in manual derivation
-3. **Efficiency**: PyTorch optimizes the computation
-4. **Simplicity**: No need to derive gradients by hand
-
-However, for the simple least squares case, manual computation can be more efficient since we can precompute $X^\top X$ and $X^\top y$. The real power of automatic differentiation becomes apparent with more complex objectives.
-
-In the next section, we'll explore practical considerations like stepsize selection and convergence criteria that are crucial for both approaches. 
-
-## Practical Considerations
-
-The theory of gradient descent is elegant, but making it work in practice requires careful attention to several key details.
-
-### Stepsize Selection
-
-The stepsize (or learning rate) $\alpha_k$ critically affects convergence. For least squares problems, we have three main options:
-
-1. **Constant stepsize**: Choose $\alpha_k = \alpha$ where:
-   $$ 0 < \alpha < \frac{2}{\lambda_{\max}(X^\top X)} $$
-   This ensures convergence but may be slow.
-
-2. **Exact line search**: At each step, solve:
-   $$ \alpha_k = \arg\min_\alpha f(w_k - \alpha g_k) $$
-   For least squares, this has a closed form:
-   $$ \alpha_k = \frac{\|g_k\|^2}{g_k^\top(X^\top X)g_k} $$
-
-3. **Backtracking line search**: Start with a large step and reduce until improvement is sufficient:
-   ```python
-   def backtracking_line_search(f, w, grad, direction, c=0.5, rho=0.8):
-       alpha = 1.0
-       f0 = f(w)
-       while f(w + alpha * direction) > f0 + c * alpha * grad.dot(direction):
-           alpha *= rho
-       return alpha
-   ```
-
-### Convergence Criteria
-
-We need to decide when to stop iterating. Common criteria include:
-
-1. **Gradient norm**: Stop when $\|g_k\| \leq \epsilon$
-2. **Relative improvement**: Stop when $\frac{|f_k - f_{k-1}|}{|f_k|} \leq \epsilon$
-3. **Maximum iterations**: Stop after fixed number of steps
-
-Here's a practical implementation combining these criteria:
-
-```python
-def gradient_descent_with_stopping(X, y, tol=1e-6, max_iter=1000):
-    w = torch.zeros(X.shape[1], requires_grad=True)
-    
-    for step in range(max_iter):
-        # Forward and backward passes
-        y_pred = X @ w
-        loss = 0.5 * ((y_pred - y)**2).sum()
-        loss.backward()
-        
-        # Check gradient norm
-        grad_norm = w.grad.norm()
-        if grad_norm < tol:
-            print(f"Converged at step {step}: gradient norm {grad_norm:.2e}")
-            break
-            
-        # Update weights
-        with torch.no_grad():
-            w.data -= lr * w.grad
-            w.grad.zero_()
-    
-    return w
-```
-
-### The Effect of Condition Number
-
-The condition number of $X^\top X$ strongly influences convergence rate. For a diagonal matrix with eigenvalues $\lambda_1 \geq \lambda_2 \geq \cdots \geq \lambda_n$, the convergence rate is:
-
-$$ \|w_k - w^*\| \leq \left(\frac{\kappa-1}{\kappa+1}\right)^k \|w_0 - w^*\| $$
-
-where $\kappa = \lambda_1/\lambda_n$ is the condition number. This shows that:
-
-1. High condition numbers lead to slow convergence
-2. Progress is determined by ratio of largest to smallest eigenvalues
-3. Poorly conditioned problems may require preconditioning
-
-We can visualize this effect using diagonal matrices in the next section.
-
-## Visualization with Diagonal Matrices
-
-Diagonal matrices provide an ideal setting to visualize gradient descent because:
-1. Their eigenvalues are explicit on the diagonal
-2. Their condition number is the ratio of largest to smallest diagonal entry
-3. The optimization trajectory lies in a 2D plane when solving $Ax = b$
-
-### A Simple 2D Example
-
-Let's create a diagonal system and visualize the optimization path:
-
-```python
-def create_diagonal_system(condition_number=10):
-    # Create diagonal matrix with specified condition number
-    lambda1, lambda2 = 1.0, 1.0/condition_number
-    A = torch.diag(torch.tensor([lambda1, lambda2]))
-    x_true = torch.tensor([1.0, 1.0])
-    b = A @ x_true
-    return A, b, x_true
-
-def plot_contours_and_path(A, b, path):
-    # Create contour plot of objective function
-    x1, x2 = torch.meshgrid(torch.linspace(-2, 2, 100),
-                           torch.linspace(-2, 2, 100))
-    Z = torch.zeros_like(x1)
-    for i in range(x1.shape[0]):
-        for j in range(x1.shape[1]):
-            x = torch.stack([x1[i,j], x2[i,j]])
-            Z[i,j] = 0.5 * ((A @ x - b)**2).sum()
-    
-    plt.figure(figsize=(10, 4))
-    
-    # Plot contours
-    plt.contour(x1, x2, Z, levels=20)
-    
-    # Plot optimization path
-    path = torch.stack(path)
-    plt.plot(path[:,0], path[:,1], 'r.-', label='GD path')
-    
-    # Plot optimal point
-    x_opt = torch.linalg.solve(A, b)
-    plt.plot(x_opt[0], x_opt[1], 'g*', 
-            markersize=15, label='Optimum')
-    
-    plt.axis('equal')
-    plt.legend()
-    plt.title(f'Condition Number: {A[0,0]/A[1,1]:.1f}')
-    plt.xlabel('$x_1$')
-    plt.ylabel('$x_2$')
-```
-
-### Effect of Condition Number
-
-Let's compare convergence for different condition numbers:
-
-```python
-def compare_condition_numbers():
-    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
-    
-    for i, cond in enumerate([2, 10, 50]):
-        A, b, _ = create_diagonal_system(cond)
-        path = gradient_descent_path(A, b)
-        
-        plt.sca(axes[i])
-        plot_contours_and_path(A, b, path)
-        plt.title(f'κ = {cond}')
-    
-    plt.tight_layout()
-```
-
-This visualization reveals several key insights:
-
-1. **Elliptical Level Sets**: The contours of the objective function are ellipses, with axes aligned to the eigenvectors of $A$
-
-2. **Zigzagging**: With high condition numbers, the path zigzags between the walls of the valley, making slow progress toward the optimum
-
-3. **Step Size Sensitivity**: Poor conditioning makes the optimal step size harder to choose - too large and we overshoot, too small and progress is slow
-
-### The Relationship to Eigenvalues
-
-The visualization also helps understand why the convergence rate depends on $(\kappa-1)/(\kappa+1)$:
-
-1. In the direction of the largest eigenvalue, we make rapid progress
-2. In the direction of the smallest eigenvalue, progress is much slower
-3. The overall convergence rate is limited by the slowest direction
-
-This geometric understanding helps explain why:
-- Preconditioning (transforming to better condition number) helps
-- Momentum methods can accelerate convergence
-- Second-order methods (which we'll study later) can be more effective
-
-In the next lecture, we'll extend these ideas to stochastic gradient methods, which handle large datasets by sampling random subsets of the data.
-
-## Summary and Next Steps
-
-In this section, we've explored iterative methods for solving least squares problems, focusing on gradient descent. Key takeaways include:
-
-1. **Why Iterative Methods?**
-   - Direct methods become impractical for large problems
-   - Iterative methods trade exactness for scalability
-   - Memory requirements are much lower
-
-2. **The Mathematics**
-   - Gradient gives direction of steepest ascent
-   - Negative gradient gives optimal descent direction
-   - Convergence rate depends on condition number
-
-3. **Implementation Approaches**
-   - Manual gradient computation is possible but tedious
-   - PyTorch's autograd simplifies implementation
-   - Trade-off between flexibility and efficiency
-
-4. **Practical Considerations**
-   - Stepsize selection critically affects performance
-   - Multiple convergence criteria are needed
-   - Condition number determines convergence rate
-
-5. **Visualization and Intuition**
-   - Diagonal matrices reveal key behaviors
-   - High condition numbers cause zigzagging
-   - Progress is limited by smallest eigenvalue
-
-### Looking Ahead
-
-In the next lecture, we'll explore stochastic gradient methods, which are crucial for large-scale machine learning. Key topics will include:
-
-1. **Mini-batch Gradient Descent**
-   - Sampling strategies
-   - Variance reduction
-   - Adaptive learning rates
-
-2. **Practical Implementation**
-   - PyTorch DataLoader
-   - Batch processing
-   - GPU acceleration
-
-3. **Theoretical Analysis**
-   - Convergence guarantees
-   - Effect of batch size
-   - Learning rate schedules
-
-The concepts we've covered here - particularly the role of condition number and the importance of stepsize selection - will be essential for understanding these more advanced topics.
