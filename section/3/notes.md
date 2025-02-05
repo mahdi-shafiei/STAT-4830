@@ -1,6 +1,6 @@
 ---
 layout: course_page
-title: Linear regression- gradient descent
+title: Linear regression - gradient descent
 ---
 # Linear regression: gradient descent
 
@@ -11,13 +11,9 @@ title: Linear regression- gradient descent
 ## Table of contents
 1. [Introduction](#introduction)
 2. [The Direction of Steepest Descent](#the-direction-of-steepest-descent)
-3. [Gradient Descent in PyTorch](#gradient-descent-in-pytorch)
-4. [Practical Considerations](#practical-considerations)
-   - [Stepsize Selection](#stepsize-selection)
-   - [Convergence Criteria](#convergence-criteria)
-   - [The Effect of Condition Number](#the-effect-of-condition-number)
-5. [Visualization with Diagonal Matrices](#visualization-with-diagonal-matrices)
-6. [Summary and Next Steps](#summary-and-next-steps)
+3. [The Algorithm](#the-algorithm)
+4. [Implementation](#implementation)
+5. [Conclusion](#conclusion)
 
 ## Introduction
 
@@ -31,19 +27,19 @@ memory_needed = (n_markers * n_markers * 8) / (1024**3)  # in GB
 print(f"Memory needed for X^TX: {memory_needed:.1f} GB")  # 80.0 GB
 ```
 
-Just forming the matrix $X^TX$ would exceed most workstations' memory. You can't even start the analysis, let alone solve the resulting system in $O(p^3)$ operations.
+Just forming the matrix $X^\top X$ would exceed most workstations' memory. You can't even start the analysis, let alone solve the resulting system in $O(p^3)$ operations.
 
 This memory wall appears because we're solving a least squares problem with a direct method. Given a data matrix $X \in \mathbb{R}^{n \times p}$ and observations $y \in \mathbb{R}^n$, we seek:
 
 $$ \min_w \frac{1}{2}\|Xw - y\|_2^2 $$
 
-While mathematically elegant, the standard solution requires forming and storing a $p \times p$ matrix - impossible when $p$ is large. Consider medical image reconstruction: converting MRI sensor data into a 3D image with 256³ voxels would require 2.2 petabytes just to store $X^TX$ - that's 0.2% of the world's total data center storage in 2023. 
+While mathematically elegant, the standard solution requires forming and storing a $p \times p$ matrix - impossible when $p$ is large. Consider medical image reconstruction: converting MRI sensor data into a 3D image with $256^3$ voxels would require 2.2 petabytes just to store $X^\top X$ - that's 0.2% of the world's total data center storage in 2023. 
 
 Even our genomics example, modest by comparison, needs 80GB of RAM on a workstation typically limited to 16-32GB. These aren't edge cases - they're routine analysis tasks. And the problem isn't about buying more RAM or faster processors. The quadratic memory scaling means doubling your problem size requires quadrupling your memory. We need a fundamentally different approach.
 
 ### The Memory Wall: Why Direct Methods Fail
 
-Direct methods solve the normal equations $X^TX w = X^Ty$. This transforms our least squares problem into a linear system we know how to solve:
+Direct methods solve the normal equations $X^\top X w = X^\top y$. This transforms our least squares problem into a linear system we know how to solve:
 ```python
 # Direct method (fails for large p)
 XtX = X.T @ X           # Form p × p matrix
@@ -52,9 +48,9 @@ w = solve(XtX, Xty)    # Solve p × p system
 ```
 
 Each step has a cost:
-1. Forming X^TX: O(np²) operations and O(p²) memory
-2. Forming X^Ty: O(np) operations and O(p) memory
-3. Solving system: O(p³) operations
+1. Forming $X^\top X$: $O(np^2)$ operations and $O(p^2)$ memory
+2. Forming $X^\top y$: $O(np)$ operations and $O(p)$ memory
+3. Solving system: $O(p^3)$ operations
 
 To see these costs in practice, we ran experiments with random matrices - the best-case scenario where numerical issues don't interfere:
 ```python
@@ -72,7 +68,7 @@ Size (p)    Memory for X^TX    Time      Status
 50,000      20GB             FAILS     Out of memory
 ```
 
-The pattern is clear: memory becomes the bottleneck long before computation time. Even with 64GB of RAM, forming X^TX fails for p=50,000 - not because we lack total memory, but because allocating a contiguous 20GB block for X^TX exceeds system capabilities. The $O(p^3)$ solving cost - roughly $(50,000)^3/3 \approx 42$ trillion floating point operations - becomes irrelevant when we can't even form the matrix. Remember, this is with ideally-conditioned random data - real problems often have worse numerical properties.
+The pattern is clear: memory becomes the bottleneck long before computation time. Even with 64GB of RAM, forming $X^\top X$ fails for p=50,000 - not because we lack total memory, but because allocating a contiguous 20GB block for $X^\top X$ exceeds system capabilities. The $O(p^3)$ solving cost - roughly $(50,000)^3/3 \approx 42$ trillion floating point operations - becomes irrelevant when we can't even form the matrix. Remember, this is with ideally-conditioned random data - real problems often have worse numerical properties.
 
 ![Scaling Comparison](figures/scaling_comparison_v2_300dpi-1.png)
 
@@ -80,23 +76,23 @@ This isn't an implementation limitation - it's fundamental to the direct approac
 
 ### A Memory-Efficient Alternative: Gradient Descent
 
-These memory constraints force us to rethink our approach entirely. The key insight? We never need $X^TX$ as a matrix - we only need its action on vectors. Consider what $X^TX$ does:
+One memory-efficient alternative is gradient descent. Instead of storing the full $p \times p$ matrix, it uses matrix-vector products:
 ```python
 # This forms a huge p × p matrix (bad)
 XtX = X.T @ X           # Need O(p²) memory
 result = XtX @ w        # Matrix-vector product
 
-# This does the same computation (good)
+# Gradient descent uses operations like these:
 Xw = X @ w             # Need O(p) memory
 result = X.T @ Xw      # Another O(p) operation
 ```
 
-Both compute $(X^TX)w$, but the second approach:
+Both compute $(X^\top X)w$, but gradient descent:
 - Never forms the $p \times p$ matrix
 - Uses $O(np)$ operations (same as first approach)
 - Only needs $O(p)$ extra memory for vectors
 
-This insight leads to gradient descent: instead of solving the problem in one step, we:
+The memory efficiency comes from iteratively updating our solution:
 1. Start with an initial guess (even all zeros)
 2. Compute the gradient using matrix-vector products
 3. Take a small step in that direction
@@ -112,13 +108,13 @@ for k in range(max_iters):
     w -= step_size * grad   # Update: O(p)
 ```
 
-The advantages are striking:
-1. **Memory**: Only $O(np)$ total, never forms $X^TX$
-2. **Operations per step**: $O(np)$, same as one $X^TX$ multiplication
-3. **Scalability**: Works even when $X^TX$ would exceed RAM
+The advantages of this approach are:
+1. **Memory**: Only $O(np)$ total, never forms $X^\top X$
+2. **Operations per step**: $O(np)$, same as one $X^\top X$ multiplication
+3. **Scalability**: Works even when $X^\top X$ would exceed RAM
 4. **Flexibility**: Easily modified for different loss functions
 
-This matrix-vector approach is so powerful that it forms the foundation of modern deep learning frameworks. PyTorch uses the same principle - breaking large matrix operations into sequences of matrix-vector products - to train neural networks with millions of parameters. The trade-off is that we need multiple iterations to converge. But as our experiments show, for large problems ($p > 5,000$), the total computation time is often less than direct methods - even before considering memory constraints.
+This matrix-vector approach is widely used in practice. PyTorch uses similar principles to train neural networks with millions of parameters. The trade-off is that we need multiple iterations to converge. But as our experiments show, for large problems ($p > 5,000$), the total computation time is often less than direct methods - even before considering memory constraints.
 
 ### Convergence Behavior
 
@@ -178,8 +174,7 @@ $$ \begin{aligned}
 f(w + \epsilon v) &= \frac{1}{2}\|X(w + \epsilon v) - y\|_2^2 \\
 &= \frac{1}{2}(Xw + \epsilon Xv - y)^\top(Xw + \epsilon Xv - y) \\
 &= \frac{1}{2}\big((Xw - y)^\top(Xw - y) + 2\epsilon(Xw - y)^\top Xv + \epsilon^2v^\top X^\top Xv\big) \\
-&= f(w) + \epsilon(Xw - y)^\top Xv + \frac{\epsilon^2}{2}v^\top X^\top Xv \\
-&= f(w) + \epsilon \nabla f(w)^\top v + \frac{\epsilon^2}{2}v^\top X^\top X v
+&= f(w) + \epsilon(Xw - y)^\top Xv + \frac{\epsilon^2}{2}v^\top X^\top Xv
 \end{aligned} $$
 
 where we used our previous calculation that $\nabla f(w) = X^\top(Xw - y)$. 
@@ -207,7 +202,7 @@ To prove this is optimal, we use the Cauchy-Schwarz inequality. For any unit vec
 
 $$ |\nabla f(w)^\top v| \leq \|\nabla f(w)\| \|v\| = \|\nabla f(w)\| $$
 
-Since $\\|v\\| = 1$, this tells us that $\nabla f(w)^\top v$ can't be smaller than $-\\|\nabla f(w)\|$
+Since $\|v\| = 1$, this tells us that $\nabla f(w)^\top v$ can't be smaller than $-\|\nabla f(w)\|$
 
 This lower bound is crucial: it tells us that no unit vector can achieve a value of $\nabla f(w)^\top v$ smaller than $-\|\nabla f(w)\|$. When $v = v_\star = -\nabla f(w)/\|\nabla f(w)\|$, we achieve exactly this lower bound:
 $$ \nabla f(w)^\top v_\star = -\|\nabla f(w)\| $$
@@ -302,19 +297,19 @@ Let's visualize how these factors affect convergence. We'll create test problems
 
 ![Convergence Factors](figures/convergence_factors.png)
 
-The plots reveal key insights about gradient descent. The left plot shows how stepsize affects convergence when κ=10: small steps (α=0.1/λ_max) give steady but slow progress, while large steps (α=1.8/λ_max) can initially make rapid progress but risk overshooting. The right plot demonstrates how condition number impacts convergence: well-conditioned problems (κ=2) converge quickly in a direct path, while poorly conditioned problems (κ=100) require many iterations, zigzagging their way to the solution.
+The plots reveal key insights about gradient descent. The left plot shows how stepsize affects convergence when $\kappa=10$: small steps ($\alpha=0.1/\lambda_{\max}$) give steady but slow progress, while large steps ($\alpha=1.8/\lambda_{\max}$) can initially make rapid progress but risk overshooting. The right plot demonstrates how condition number impacts convergence: well-conditioned problems ($\kappa=2$) converge quickly in a direct path, while poorly conditioned problems ($\kappa=100$) require many iterations, zigzagging their way to the solution.
 
 The interplay between stepsize and condition number becomes particularly clear when we visualize the optimization paths in 2D:
 
 ![Zigzag Visualization](figures/zigzag_visualization.png)
 
-The contour plots show level sets of the objective function for different combinations of condition number (κ) and stepsize (α). When κ=2 (top row), the level sets are nearly circular. With a small stepsize (α=0.1/λ_max), we make steady but slow progress. A larger stepsize (α=1.8/λ_max) converges faster but shows slight oscillation. When κ=50 (bottom row), the level sets become highly elongated. Now the stepsize choice becomes crucial: small steps make slow but steady progress, while large steps cause dramatic zigzagging as the algorithm bounces between the walls of the narrow valley. This geometric view explains why high condition numbers demand more careful stepsize selection - we must balance the need for progress in the well-conditioned direction against the risk of overshooting in the poorly conditioned direction.
+The contour plots show level sets of the objective function for different combinations of condition number ($\kappa$) and stepsize ($\alpha$). When $\kappa=2$ (top row), the level sets are nearly circular. With a small stepsize ($\alpha=0.1/\lambda_{\max}$), we make steady but slow progress. A larger stepsize ($\alpha=1.8/\lambda_{\max}$) converges faster but shows slight oscillation. When $\kappa=50$ (bottom row), the level sets become highly elongated. Now the stepsize choice becomes crucial: small steps make slow but steady progress, while large steps cause dramatic zigzagging as the algorithm bounces between the walls of the narrow valley. This geometric view explains why high condition numbers demand more careful stepsize selection - we must balance the need for progress in the well-conditioned direction against the risk of overshooting in the poorly conditioned direction.
 
 Later, we'll see how PyTorch's automatic differentiation can simplify this implementation, especially for more complex objective functions. But the core ideas - following the negative gradient with appropriate stepsize - remain the same.
 
 ## Conclusion
 
-We have much left to learn about gradient descent which like direct methods for least squares problems has limitations. For example, for large n or p, our $O(np)$ memory implementation fails. When n is large, computing the full gradient becomes too expensive - we need stochastic methods that estimate gradients from subsets. When p is large, coordinate descent methods that update parameters sequentially work better. We'll cover these variants later in the course. I started with least squares to get you using gradient descent quickly.
+We have much left to learn about gradient descent which -- like direct methods for least squares problems -- has limitations. For example, for large $n$ or $p$, our $O(np)$ memory implementation fails. When $n$ is large, computing the full gradient becomes too expensive - we need stochastic methods that estimate gradients from subsets. When $p$ is large, coordinate descent methods that update parameters sequentially work better. We'll cover these variants later in the course. I started with least squares to get you using gradient descent quickly.
 
 Next we'll study optimization problems in data science and machine learning. We'll write them down precisely and implement them in PyTorch. You'll see how to use autodifferentiation in practice, though we'll save the theory of why it works for later in the course.
 
