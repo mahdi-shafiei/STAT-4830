@@ -185,20 +185,21 @@ For our quadratic function, we can compute the exact change:
 
 $$ \begin{aligned}
 f(w + \epsilon v) &= \frac{1}{2}\|X(w + \epsilon v) - y\|_2^2 \\
-&= f(w) + \epsilon(Xw - y)^\top Xv + \frac{\epsilon^2}{2}v^\top X^\top Xv
+&= f(w) + \epsilon(Xw - y)^\top Xv + \frac{\epsilon^2}{2}v^\top X^\top Xv\\
+&= f(w) + \epsilon\nabla f(w)^\top  v + \frac{\epsilon^2}{2}v^\top X^\top Xv
 \end{aligned} $$
 
-The quadratic term explains overshooting with large stepsizes.
+For small $\epsilon$, the $\epsilon$ dominates $\epsilon^2$.
 
 ---
 
 # Linear Approximation
 
-At any point $w$, we can approximate $f$ using its gradient:
+IDEA: At any point $w$, we can approximate $f$ using its gradient:
 
 $$ f(w + \epsilon v) \approx f(w) + \epsilon \nabla f(w)^\top v $$
 
-This first-order approximation:
+This so-called **first-order approximation**:
 - Determines initial rate of descent
 - Guides stepsize selection
 - Explains convergence behavior
@@ -209,15 +210,15 @@ This first-order approximation:
 
 # The Optimization Problem
 
-At any point $w$, we want the direction $v$ that decreases $f$ most rapidly:
+At any point $w$, we want the direction $v$ that decreases the first order approximation of $f$ most rapidly:
 
 $$ \mathrm{minimize} \quad \nabla f(w)^\top v \quad \mathrm{subject \ to} \quad \|v\| = 1 $$
 
-By Cauchy-Schwarz inequality:
-$$ |\nabla f(w)^\top v| \leq \|\nabla f(w)\| \|v\| = \|\nabla f(w)\| $$
-
 The solution is:
 $$ v_\star = -\frac{\nabla f(w)}{\|\nabla f(w)\|} $$
+
+Indeed, by Cauchy-Schwarz inequality:
+$$ |\nabla f(w)^\top v| \leq \|\nabla f(w)\| \|v\| = \|\nabla f(w)\| $$
 
 ---
 
@@ -227,7 +228,7 @@ $$ v_\star = -\frac{\nabla f(w)}{\|\nabla f(w)\|} $$
 
 ---
 
-# Critical Points: Theory
+# What if the Gradient is zero?
 
 When $\nabla f(w) = 0$, we've found a critical point:
 
@@ -236,10 +237,11 @@ When $\nabla f(w) = 0$, we've found a critical point:
 - **Saddle Point**: Some up, some down
 
 For least squares: All critical points are global minima!
+- This is due to **convexity** -- a property we'll study later.
 
 ---
 
-# Critical Points and Their Types
+#  What if the Gradient is zero?
 
 ![bg 35%](figures/critical_points.png)
 
