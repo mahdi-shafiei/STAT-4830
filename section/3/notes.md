@@ -1,6 +1,6 @@
 ---
 layout: course_page
-title: Linear regression: gradient descent
+title: Linear regression- gradient descent
 ---
 # Linear regression: gradient descent
 
