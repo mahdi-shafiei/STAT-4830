@@ -133,17 +133,16 @@ Our experiments with random matrices reveal a fascinating pattern:
 
 # Convergence Behavior: Key Insights
 
-Two fundamental properties emerge:
+**Linear Convergence**
+Error decreases exponentially, appearing as a straight line on log scale. This predictable rate of improvement lets us estimate progress.
 
-1. **Linear Convergence**: 
-   - Error decreases exponentially
-   - Appears as straight line on log scale
-   - Predictable rate of improvement
+**Precision vs Time**
+Each doubling of iterations improves precision by ~$10^4$. This consistent behavior lets us plan computational resources.
 
-2. **Precision vs Time**: 
-   - Each doubling of iterations improves precision by ~$10^4$
-   - Can estimate iterations needed for desired accuracy
-   - Consistent behavior across problem sizes
+**Practical Impact**
+- 20 iterations: ~$10^{-5}$ relative error
+- 40 iterations: ~$10^{-9}$ relative error
+- 60 iterations: ~$10^{-13}$ relative error
 
 ---
 
@@ -163,7 +162,8 @@ Each term has meaning:
 
 ---
 
-# Finding the Best Direction
+
+# Computing the Gradient
 
 The gradient has a beautiful form:
 
@@ -176,6 +176,34 @@ This tells us:
 - $Xw-y$ is prediction error in output space
 - $X^\top$ projects error back to parameter space
 - Direction tells us how to adjust each parameter
+
+---
+
+# Finding the Direction of Steepest Descent
+
+For our quadratic function, we can compute the exact change:
+
+$$ \begin{aligned}
+f(w + \epsilon v) &= \frac{1}{2}\|X(w + \epsilon v) - y\|_2^2 \\
+&= f(w) + \epsilon(Xw - y)^\top Xv + \frac{\epsilon^2}{2}v^\top X^\top Xv
+\end{aligned} $$
+
+The quadratic term explains overshooting with large stepsizes.
+
+---
+
+# Linear Approximation
+
+At any point $w$, we can approximate $f$ using its gradient:
+
+$$ f(w + \epsilon v) \approx f(w) + \epsilon \nabla f(w)^\top v $$
+
+This first-order approximation:
+- Determines initial rate of descent
+- Guides stepsize selection
+- Explains convergence behavior
+
+
 
 ---
 
@@ -199,11 +227,57 @@ $$ v_\star = -\frac{\nabla f(w)}{\|\nabla f(w)\|} $$
 
 ---
 
-# Critical Points and Their Types
+# Critical Points: Theory
 
-![bg 95%](figures/critical_points.png)
+When $\nabla f(w) = 0$, we've found a critical point:
+
+- **Local Minimum**: All directions curve upward
+- **Local Maximum**: All directions curve downward
+- **Saddle Point**: Some up, some down
+
+For least squares: All critical points are global minima!
 
 ---
+
+# Critical Points and Their Types
+
+![bg 35%](figures/critical_points.png)
+
+
+---
+
+# Convergence Speed vs Condition Number
+
+![w:1100](figures/convergence_factors.png)
+
+Left: Effect of stepsize ($\kappa=10$)
+Right: Effect of condition number (fixed stepsize)
+
+---
+
+# Effect of Condition Number: Analysis
+
+The path to the minimum depends on problem conditioning:
+
+**Well-Conditioned** ($\kappa=2$)
+- Direct path to minimum
+- Fast, steady progress
+- Efficient use of computation
+
+**Poorly-Conditioned** ($\kappa=50$)
+- Zigzag path to minimum
+- Slow overall progress
+- Many wasted steps
+
+---
+
+# Effect of Condition Number
+
+![bg 45%](figures/zigzag_visualization.png)
+
+---
+
+
 
 # Stepsize Selection: The Theory
 
@@ -256,19 +330,6 @@ def gradient_descent(X, y, n_steps=100, step_size=0.01):
 
 ---
 
-# Effect of Condition Number: Well-Conditioned
-
-![bg 90%](figures/zigzag_visualization.png)
-
----
-
-# Effect of Condition Number: Poorly-Conditioned
-
-- Well-conditioned ($\kappa=2$): Direct path to minimum
-- Poorly-conditioned ($\kappa=50$): Zigzag path
-- Stepsize affects convergence speed and stability
-
----
 
 # Limitations and Next Steps
 
@@ -277,7 +338,7 @@ Gradient descent also has limitations:
 - For large $p$: Memory still scales with problem size
 - Poor conditioning: Slow convergence
 
-Solutions we'll cover:
+Solutions we'll cover later:
 1. Stochastic methods for large $n$
 2. Coordinate descent for large $p$
 3. Momentum and adaptive methods for conditioning
@@ -293,4 +354,4 @@ Solutions we'll cover:
 5. **Implementation**: Simple, scalable algorithm
 6. **Limitations**: Sets up need for advanced methods
 
-Next lecture: Stochastic gradient descent for large datasets 
+Next lecture: problems beyond least squares.
