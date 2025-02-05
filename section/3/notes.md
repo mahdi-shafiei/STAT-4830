@@ -235,27 +235,7 @@ Our least squares problem has an even nicer structure. The Hessian $X^\top X$ is
 
 ![Convex Quadratic](figures/convex_quadratic.png)
 
-## The Algorithm
 
-This geometric understanding leads naturally to gradient descent. At each step:
-1. Start at our current point $w_k$
-2. Compute the gradient $g_k = X^\top X w_k - X^\top y$
-3. Move in the negative gradient direction: $w_{k+1} = w_k - \alpha_k g_k$
-4. Repeat until the gradient becomes small
-
-Three key factors determine the algorithm's success. First, the stepsize $\alpha_k$ controls our progress. Too small and we inch forward, wasting computation. Too large and we overshoot, potentially increasing the objective value. For quadratic functions like least squares, the optimal stepsize is related to the eigenvalues of $X^\top X$. Specifically, convergence is guaranteed when:
-
-$$ 0 < \alpha_k < \frac{2}{\lambda_{\max}(X^\top X)} $$
-
-where $\lambda_{\max}$ is the largest eigenvalue. This connects beautifully to our geometric picture - the eigenvalues determine the shape of the level sets, and the largest eigenvalue determines how far we can safely step.
-
-![Stepsize Geometry](figures/stepsize_geometry.png)
-
-The figure illustrates why the stepsize bound depends on $\lambda_{\max}$. For any level set where $f(w) = c$, it can be shown that $\|\nabla f(w)\| \leq \sqrt{2\lambda_{\max}c}$. The width of the level sets varies with both the value of $c$ and the eigenvalues: the narrowest width (shown by the vertical arrow) is $2\sqrt{\frac{2c}{\lambda_{\max}}}$ - this occurs in the direction of the eigenvector corresponding to $\lambda_{\max}$, while the widest width is $2\sqrt{\frac{2c}{\lambda_{\min}}}$ in the direction of the smallest eigenvalue. Taking too large a step (shown by the "overshooting" path) moves us outside the current level set and potentially increases the objective value. The "safe step" stays within a region where our linear approximation remains valid. This geometric insight explains why we need smaller steps when $\lambda_{\max}$ is large - the level sets become very narrow in their thinnest direction, requiring more careful progress to avoid overshooting.
-
-Second, the condition number of $X^\top X$ affects convergence speed. When all eigenvalues are similar (condition number near 1), the level sets are nearly circular, and we progress steadily toward the minimum. But when eigenvalues differ greatly, the level sets become highly elongated ellipses with the ratio of widths determined by $\sqrt{\lambda_{\max}/\lambda_{\min}}$, forcing the algorithm to zigzag its way down a narrow valley. This geometric picture explains why poorly conditioned problems converge slowly. We'll see this zigzagging behavior clearly illustrated in the convergence plots below, where high condition numbers force the algorithm to take an inefficient meandering path to the solution.
-
-Third, our initial guess $w_0$ matters. While gradient descent will eventually find the minimum for any starting point (thanks to convexity), a good initial guess can dramatically reduce the number of iterations needed. For least squares, starting at zero is often reasonable since it gives zero predictions - a natural baseline.
 
 ## Implementation
 

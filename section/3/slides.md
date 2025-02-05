@@ -245,7 +245,91 @@ For least squares: All critical points are global minima!
 
 ![bg 35%](figures/critical_points.png)
 
+---
 
+# The Algorithm: Overview
+
+At each step:
+1. Start at our current point $w_k$
+2. Compute the gradient $g_k = X^\top X w_k - X^\top y$
+3. Move in the negative gradient direction: $w_{k+1} = w_k - \alpha_k g_k$
+4. Repeat until the gradient becomes small
+
+Three key factors determine success:
+- Stepsize selection
+- Problem conditioning
+- Initial guess quality
+
+---
+
+# The Algorithm: Implementation
+
+```python
+# Gradient descent with matrix-vector products
+w = torch.zeros(p)           # Initial guess
+for k in range(max_iters):
+    Xw = X @ w              # Forward pass: O(np)
+    grad = X.T @ (Xw - y)   # Backward pass: O(np)
+    w -= step_size * grad   # Update: O(p)
+```
+
+For least squares, starting at zero is reasonable:
+- Gives zero predictions - a natural baseline
+- Will eventually find minimum (thanks to convexity)
+- Good initial guess reduces iterations needed
+
+---
+
+
+# Stepsize Selection: The Theory
+
+Convergence is guaranteed when:
+
+$$ 0 < \alpha_k < \frac{2}{\lambda_{\max}(X^\top X)} $$
+
+Why this bound?
+- Level sets become very narrow in some directions
+- Width determined by eigenvalues of $X^\top X$
+- Too large a step overshoots the minimum
+
+---
+
+# Stepsize Selection: The Geometry
+
+![bg 95%](figures/stepsize_geometry.png)
+
+
+<!-- ---
+
+# Gradient Descent: the Implementation
+
+```python
+def gradient_descent(X, y, n_steps=100, step_size=0.01):
+    # Initialize weights
+    w = torch.zeros(X.shape[1])
+    
+    # Cache X^T y (constant throughout)
+    Xty = X.T @ y
+    
+    # Track relative loss
+    f_init = 0.5 * ((X @ w - y)**2).sum()
+    losses = []
+    
+    for step in range(n_steps):
+        # Compute gradient efficiently
+        Xw = X @ w
+        grad = X.T @ (Xw - y)
+        
+        # Update weights
+        w = w - step_size * grad
+        
+        # Track progress
+        f_curr = 0.5 * ((X @ w - y)**2).sum()
+        rel_loss = f_curr/f_init
+        losses.append(rel_loss.item())
+    
+    return w, losses
+``` -->
 ---
 
 # Convergence Speed vs Condition Number
@@ -281,56 +365,7 @@ The path to the minimum depends on problem conditioning:
 
 
 
-# Stepsize Selection: The Theory
 
-Convergence is guaranteed when:
-
-$$ 0 < \alpha_k < \frac{2}{\lambda_{\max}(X^\top X)} $$
-
-Why this bound?
-- Level sets become very narrow in some directions
-- Width determined by eigenvalues of $X^\top X$
-- Too large a step overshoots the minimum
-
----
-
-# Stepsize Selection: The Geometry
-
-![bg 95%](figures/stepsize_geometry.png)
-
----
-
-# Implementation
-
-```python
-def gradient_descent(X, y, n_steps=100, step_size=0.01):
-    # Initialize weights
-    w = torch.zeros(X.shape[1])
-    
-    # Cache X^T y (constant throughout)
-    Xty = X.T @ y
-    
-    # Track relative loss
-    f_init = 0.5 * ((X @ w - y)**2).sum()
-    losses = []
-    
-    for step in range(n_steps):
-        # Compute gradient efficiently
-        Xw = X @ w
-        grad = X.T @ (Xw - y)
-        
-        # Update weights
-        w = w - step_size * grad
-        
-        # Track progress
-        f_curr = 0.5 * ((X @ w - y)**2).sum()
-        rel_loss = f_curr/f_init
-        losses.append(rel_loss.item())
-    
-    return w, losses
-```
-
----
 
 
 # Limitations and Next Steps
