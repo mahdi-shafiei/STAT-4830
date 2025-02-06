@@ -145,6 +145,16 @@ Each doubling of iterations improves precision by ~$10^4$. This consistent behav
 
 ---
 
+# How to think about gradient descent 
+
+- Compute direction of steepest descent (how to compute?)
+- Move in that direction (how far?)
+- Repeat until convergence (how to measure?)
+
+We'll answer these questions today.
+
+--- 
+
 # The Least Squares Landscape
 
 Our objective measures squared prediction error:
@@ -164,7 +174,7 @@ Each term has meaning:
 
 # Computing the Gradient
 
-The gradient has a beautiful form:
+The gradient has the form:
 
 $$ \begin{aligned}
 \frac{\partial f}{\partial w_j} &= \sum_{i=1}^n (x_i^\top w - y_i)x_{ij} \\
