@@ -91,7 +91,6 @@ One memory-efficient alternative is gradient descent:
 # This forms a huge p × p matrix (bad)
 XtX = X.T @ X           # Need O(p²) memory
 result = XtX @ w        # Matrix-vector product
-
 # Gradient descent uses operations like these:
 Xw = X @ w             # Need O(p) memory
 result = X.T @ Xw      # Another O(p) operation
