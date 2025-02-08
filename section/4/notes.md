@@ -487,7 +487,7 @@ def train_model(model, X_train, y_train, X_val, y_val, alpha=0.01, n_steps=1000)
                 param.grad.zero_()
 ```
 
-The neural network achieves 92.60% test accuracy versus logistic regression's 86.80%. This gap results from the neural network's ability to learn nonlinear decision boundaries.
+The neural network achieves 92.40% test accuracy versus logistic regression's 87.30%. This gap results from the neural network's ability to learn nonlinear decision boundaries.
 
 ![MNIST Training Curves](figures/mnist_training_curves.png)
 *Training curves for logistic regression (blue) and neural network (red). The neural network learns faster and reaches higher accuracy.*
