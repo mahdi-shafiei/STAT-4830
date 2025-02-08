@@ -438,15 +438,19 @@ train_dataset = datasets.MNIST('./data', train=True, transform=transform)
 ```
 
 ![MNIST Examples](figures/mnist_examples.png)
-*Examples of correctly classified MNIST digits. The models successfully identify the parity (odd/even) of clear, well-formed digits.*
+*Examples of MNIST digits. The models aims to identify the parity (odd/even) of each digit.*
 
 The objective uses binary cross-entropy loss to measure the discrepancy between predicted probabilities and true labels:
 
 $$ L(w) = -\frac{1}{n}\sum_{i=1}^n [y_i \log p(y_i|x_i) + (1-y_i)\log(1-p(y_i|x_i))] $$
 
-where $y_i$ indicates whether digit $i$ is odd (1) or even (0), and $p(y_i|x_i)$ is the model's predicted probability.
+where $y_i$ indicates whether digit $i$ is odd (1) or even (0), and $$ p(y_i \mid x_i) $$ is the model's predicted probability. As before: 
 
-We implement two models. First, logistic regression provides a baseline using a single linear layer:
+$$
+p(y_i = 1 \mid x_i) = \sigma(\text{model}(x_i)),
+$$
+
+where we use one of two models. First, logistic regression provides a baseline using a single linear layer:
 
 ```python
 class Logistic(torch.nn.Module):
@@ -472,7 +476,7 @@ class SimpleNN(torch.nn.Module):
         return torch.sigmoid(self.fc2(h))
 ```
 
-Training uses PyTorch's automatic differentiation to compute gradients of the binary cross-entropy loss:
+We then train the model using PyTorch's automatic differentiation to compute gradients of the binary cross-entropy loss:
 
 ```python
 criterion = torch.nn.BCELoss()
@@ -497,7 +501,7 @@ The neural network achieves 92.40% test accuracy versus logistic regression's 87
 
 
 ![MNIST Common Mistakes](figures/mnist_misclassified.png)
-*Examples misclassified by both models. These cases show digits with unclear shapes and unusual writing styles.*
+*Examples misclassified by both models.*
 
 Analysis of misclassified examples reveals patterns in model errors. The neural network performs better by learning features through its hidden layer to distinguish odd from even digits.
 
