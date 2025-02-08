@@ -437,6 +437,9 @@ transform = transforms.Compose([
 train_dataset = datasets.MNIST('./data', train=True, transform=transform)
 ```
 
+![MNIST Examples](figures/mnist_examples.png)
+*Examples of correctly classified MNIST digits. The models successfully identify the parity (odd/even) of clear, well-formed digits.*
+
 The objective uses binary cross-entropy loss to measure the discrepancy between predicted probabilities and true labels:
 
 $$ L(w) = -\frac{1}{n}\sum_{i=1}^n [y_i \log p(y_i|x_i) + (1-y_i)\log(1-p(y_i|x_i))] $$
@@ -492,7 +495,6 @@ The neural network achieves 92.40% test accuracy versus logistic regression's 87
 ![MNIST Training Curves](figures/mnist_training_curves.png)
 *Training curves for logistic regression (blue) and neural network (red). The neural network learns faster and reaches higher accuracy.*
 
-The training curves show that the neural network learns faster and reaches higher accuracy. Both models maintain consistent performance between training and validation sets.
 
 ![MNIST Common Mistakes](figures/mnist_misclassified.png)
 *Examples misclassified by both models. These cases show digits with unclear shapes and unusual writing styles.*
