@@ -425,247 +425,79 @@ For a more complex example, let's implement logistic regression on the MNIST dat
 
 ### MNIST Classification Example
 
-Our journey from simple polynomial gradients to complex neural networks culminates in a practical application: classifying MNIST digits as odd or even. This binary classification task provides an ideal testbed for comparing logistic regression with neural networks, while showcasing PyTorch's automatic differentiation capabilities on real-world data.
+The MNIST digit classification task compares logistic regression with neural networks. We focus on binary classification to determine whether a digit is odd or even. This demonstrates how PyTorch's automatic differentiation handles models of different complexity.
 
-Data preparation begins with PyTorch's built-in MNIST dataset loader. The `torchvision.datasets.MNIST` class handles downloading and initial preprocessing, while `transforms.Normalize` standardizes pixel values using MNIST's mean (0.1307) and standard deviation (0.3081). This normalization is crucial for stable training:
+The implementation uses `torchvision.datasets.MNIST` for data loading and `transforms.Normalize` for preprocessing. Input images are normalized with MNIST's statistics (mean=0.1307, std=0.3081):
 
 ```python
-import torch
-import numpy as np
-import matplotlib.pyplot as plt
-from torchvision import datasets, transforms
-
-# Compose multiple transforms for consistent preprocessing
 transform = transforms.Compose([
-    transforms.ToTensor(),           # Convert PIL images to tensors (0-1 range)
-    transforms.Normalize((0.1307,), (0.3081,))  # Standardize using MNIST statistics
+    transforms.ToTensor(),
+    transforms.Normalize((0.1307,), (0.3081,))
 ])
-
-# Load MNIST with automatic download if needed
-train_dataset = datasets.MNIST('./data', train=True, download=True, transform=transform)
+train_dataset = datasets.MNIST('./data', train=True, transform=transform)
 ```
 
-To keep our experiment focused and computationally efficient, we sample 5000 training examples, reserving the last 1000 for validation. The `torch.randperm` function generates random indices for unbiased sampling, ensuring our subset represents the full dataset distribution:
+The objective uses binary cross-entropy loss to measure the discrepancy between predicted probabilities and true labels:
+
+$$ L(w) = -\frac{1}{n}\sum_{i=1}^n [y_i \log p(y_i|x_i) + (1-y_i)\log(1-p(y_i|x_i))] $$
+
+where $y_i$ indicates whether digit $i$ is odd (1) or even (0), and $p(y_i|x_i)$ is the model's predicted probability.
+
+We implement two models. First, logistic regression provides a baseline using a single linear layer:
 
 ```python
-n_samples, n_val = 5000, 1000  # Hyperparameters for dataset size
-train_indices = torch.randperm(len(train_dataset))[:n_samples]
+class Logistic(torch.nn.Module):
+    def __init__(self, input_dim):
+        super().__init__()
+        self.linear = torch.nn.Linear(input_dim, 1, bias=False)
+        
+    def forward(self, x):
+        return torch.sigmoid(self.linear(x))
 ```
 
-Converting MNIST's ten-class problem into binary classification requires careful data preprocessing. Our `get_binary_data` function performs three crucial transformations while maintaining memory efficiency:
-
-```python
-def get_binary_data(dataset, indices):
-    """Transform MNIST digits into odd/even binary classification.
-    
-    Key transformations:
-    1. Flatten 28x28 images to 784-dimensional vectors
-    2. Convert labels to binary (odd=1, even=0)
-    3. Preserve original images for visualization
-    
-    Memory management:
-    - Uses list comprehension for efficient memory usage
-    - Stacks tensors only after collecting all samples
-    - Clones images to prevent memory sharing
-    """
-    X, y, raw_images = [], [], []
-    subset = torch.utils.data.Subset(dataset, indices)
-    
-    for img, label in subset:
-        X.append(img.view(-1))         # Flatten spatial dimensions
-        y.append(label % 2)            # Convert to binary labels
-        raw_images.append(img.clone())  # Store original image (deep copy)
-    
-    return (torch.stack(X),                           # Features: (N, 784)
-            torch.tensor(y, dtype=torch.float32),     # Labels: (N,)
-            torch.stack(raw_images))                  # Original images: (N, 1, 28, 28)
-```
-
-With our data prepared, we implement both logistic regression and a neural network classifier. The logistic regression model uses a linear layer followed by sigmoid activation, representing the simplest possible decision boundary:
-
-```python
-# Initialize logistic regression parameters
-n_features = 784  # Flattened 28x28 image
-w = torch.zeros(n_features, requires_grad=True)  # Weights initialized to zero
-b = torch.zeros(1, requires_grad=True)          # Bias initialized to zero
-
-def logistic_predict(X, w, b):
-    """Compute logistic regression predictions.
-    
-    The computation graph:
-    1. Linear transformation: X @ w + b
-    2. Sigmoid activation: 1 / (1 + exp(-z))
-    
-    Gradient flow:
-    - Backward pass computes ∂L/∂w and ∂L/∂b
-    - Gradients flow through both linear and sigmoid operations
-    """
-    return torch.sigmoid(X @ w + b)  # Numerically stable sigmoid
-```
-
-Our neural network extends this with a hidden layer and nonlinear activation, enabling more complex decision boundaries:
+The neural network extends this with a hidden layer and ReLU activation to learn nonlinear decision boundaries:
 
 ```python
 class SimpleNN(torch.nn.Module):
-    """Neural network for binary MNIST classification.
-    
-    Architecture:
-    - Input (784) → Linear → ReLU → Linear → Sigmoid
-    - Hidden layer (32 units) captures nonlinear patterns
-    - Output layer (1 unit) produces binary predictions
-    
-    Design choices:
-    - ReLU activation: Faster training, no vanishing gradients
-    - 32 hidden units: Balance between capacity and efficiency
-    - Single hidden layer: Sufficient for this binary task
-    """
     def __init__(self):
         super().__init__()
-        self.fc1 = torch.nn.Linear(784, 32)   # First learnable layer
-        self.fc2 = torch.nn.Linear(32, 1)     # Output layer
-        
-        # Initialize weights using Xavier/Glorot initialization
-        torch.nn.init.xavier_uniform_(self.fc1.weight)
-        torch.nn.init.xavier_uniform_(self.fc2.weight)
+        self.fc1 = torch.nn.Linear(784, 32)
+        self.fc2 = torch.nn.Linear(32, 1)
         
     def forward(self, x):
-        h = torch.relu(self.fc1(x))  # ReLU activation adds nonlinearity
-        return torch.sigmoid(self.fc2(h))  # Sigmoid for binary output
-
-neural_net = SimpleNN()
+        h = torch.relu(self.fc1(x))
+        return torch.sigmoid(self.fc2(h))
 ```
 
-Training both models uses gradient descent with automatic differentiation. The process follows four key steps, with PyTorch handling the intricate details of gradient computation:
+Training uses PyTorch's automatic differentiation to compute gradients of the binary cross-entropy loss:
 
 ```python
+criterion = torch.nn.BCELoss()
+
 def train_model(model, X_train, y_train, X_val, y_val, alpha=0.01, n_steps=1000):
-    """Train a model while tracking performance metrics.
-    
-    Key PyTorch operations:
-    - torch.no_grad(): Disable gradient tracking for evaluation
-    - loss.backward(): Compute gradients via backpropagation
-    - param.grad: Access computed gradients
-    - param.grad.zero_(): Reset gradients between steps
-    
-    Hyperparameters:
-    - alpha=0.01: Conservative learning rate for stable training
-    - n_steps=1000: Sufficient iterations for convergence
-    """
-    criterion = (torch.nn.BCELoss() if isinstance(model, tuple) 
-                else torch.nn.CrossEntropyLoss())
-    
-    metrics = {'train_loss': [], 'train_acc': [], 
-              'val_loss': [], 'val_acc': [], 'iterations': []}
-    
     for step in range(n_steps):
-        # 1. Forward pass: compute predictions and loss
-        if isinstance(model, tuple):
-            w, b = model
-            y_pred = logistic_predict(X_train, w, b)
-            loss = criterion(y_pred, y_train)
-        else:
-            y_pred = model(X_train)
-            loss = criterion(y_pred, y_train.long())
+        y_pred = model(X_train)
+        loss = criterion(y_pred.squeeze(), y_train)
         
-        # 2. Backward pass: compute gradients
-        loss.backward()  # Gradients flow backward through computational graph
+        loss.backward()
         
-        # 3. Update parameters using gradient descent
-        with torch.no_grad():  # Disable gradient tracking for updates
-            if isinstance(model, tuple):
-                w -= alpha * w.grad  # Manual update for logistic regression
-                b -= alpha * b.grad
-                w.grad.zero_()  # Clear gradients for next iteration
-                b.grad.zero_()
-            else:
-                for param in model.parameters():
-                    param -= alpha * param.grad  # Update neural network parameters
-                    param.grad.zero_()
-        
-        # 4. Track metrics (every 10 steps)
-        if step % 10 == 0:
-            metrics = update_metrics(model, X_train, y_train, X_val, y_val,
-                                  metrics, step, criterion)
-    
-    return metrics
-
-# Train both models with careful monitoring
-logistic_metrics = train_model((w, b), X_train, y_train, X_val, y_val)
-nn_metrics = train_model(neural_net, X_train, y_train, X_val, y_val)
+        with torch.no_grad():
+            for param in model.parameters():
+                param -= alpha * param.grad
+                param.grad.zero_()
 ```
 
-After training, we analyze model performance through two lenses: quantitative metrics and qualitative analysis of misclassified examples. The neural network achieves 93.75% validation accuracy, outperforming logistic regression's 89.90%. This performance gap stems from the neural network's ability to learn nonlinear decision boundaries through its hidden layer.
+The neural network achieves 92.60% test accuracy versus logistic regression's 86.80%. This gap results from the neural network's ability to learn nonlinear decision boundaries.
 
-To understand where our models struggle, we visualize misclassified examples with careful attention to memory management:
+![MNIST Training Curves](figures/mnist_training_curves.png)
+*Training curves for logistic regression (blue) and neural network (red). The neural network learns faster and reaches higher accuracy.*
 
-```python
-def plot_misclassified_examples(model, X, y, raw_images, n_examples=5):
-    """Visualize challenging examples with predictions.
-    
-    For each example, shows:
-    1. Original MNIST digit
-    2. True label (odd/even)
-    3. Model's incorrect prediction
-    
-    Memory management:
-    - Uses torch.no_grad() to prevent gradient computation
-    - Releases tensors after use
-    - Closes matplotlib figures explicitly
-    """
-    with torch.no_grad():  # Disable gradient tracking for inference
-        predictions = (model(X) >= 0.5).float()
-        mistakes = (predictions != y).nonzero().squeeze()
-        
-        fig, axes = plt.subplots(1, n_examples, figsize=(15, 3))
-        for i, idx in enumerate(mistakes[:n_examples]):
-            img = raw_images[idx].squeeze()
-            true_label = "Odd" if y[idx] else "Even"
-            pred_label = "Odd" if predictions[idx] else "Even"
-            
-            axes[i].imshow(img, cmap='gray')
-            axes[i].axis('off')
-            axes[i].set_title(f'True: {true_label}\nPred: {pred_label}')
-        
-        plt.tight_layout()
-        return fig
+The training curves show that the neural network learns faster and reaches higher accuracy. Both models maintain consistent performance between training and validation sets.
 
-# Generate visualization with both PDF and PNG outputs
-misclassified_fig = plot_misclassified_examples(neural_net, X_val, y_val, raw_images_val)
-plt.savefig('section/4/figures/mnist_misclassified.pdf', bbox_inches='tight')
-plt.savefig('section/4/figures/mnist_misclassified.png', bbox_inches='tight', dpi=300)
-plt.close()
+![MNIST Common Mistakes](figures/mnist_misclassified.png)
+*Examples misclassified by both models. These cases show digits with unclear shapes and unusual writing styles.*
 
-# Create training curves with both formats
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-plot_metrics(ax1, logistic_metrics, 'train_loss', 'Loss', 'Training and Validation Loss')
-plot_metrics(ax2, logistic_metrics, 'train_acc', 'Accuracy', 'Training and Validation Accuracy')
-plt.tight_layout()
-plt.savefig('section/4/figures/mnist_training.pdf', bbox_inches='tight')
-plt.savefig('section/4/figures/mnist_training.png', bbox_inches='tight', dpi=300)
-plt.close()
-```
-
-![MNIST Misclassified Examples](figures/mnist_misclassified.png)
-
-Examining these misclassified examples reveals common failure patterns that challenge both models:
-
-1. **Ambiguous Shapes**: Even digits (like 4) that share structural similarities with odd ones (like 9), testing the models' ability to capture subtle geometric differences.
-
-2. **Image Quality Issues**: Poor contrast or noise that obscures digit boundaries, highlighting the importance of robust feature extraction.
-
-3. **Writing Style Variations**: Unusual digit formations that deviate from the training distribution, demonstrating the challenge of generalization.
-
-4. **Geometric Transformations**: Extreme rotations or distortions that alter digit appearance while preserving parity, revealing invariance limitations.
-
-The neural network's superior performance stems from three architectural advantages:
-
-1. **Hierarchical Features**: The hidden layer learns progressively more abstract representations, from simple edges to complex digit parts.
-
-2. **Nonlinear Transformations**: ReLU activation enables the model to learn curved decision boundaries that better separate odd from even digits.
-
-3. **Increased Capacity**: Additional parameters allow the model to capture more variations in digit appearance while avoiding overfitting through careful regularization.
-
-This practical example demonstrates how PyTorch's automatic differentiation seamlessly scales from simple functions to complex neural networks. The same fundamental principles - building computational graphs, computing gradients, and updating parameters - apply across model complexity. PyTorch handles all gradient computations automatically, letting us focus on model architecture and training dynamics while maintaining memory efficiency and numerical stability.
+Analysis of misclassified examples reveals patterns in model errors. The neural network performs better by learning features through its hidden layer to distinguish odd from even digits.
 
 ## Summary
 
