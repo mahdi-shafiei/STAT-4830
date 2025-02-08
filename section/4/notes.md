@@ -421,95 +421,7 @@ Both methods:
 
 This agreement confirms that PyTorch computes exact gradients, matching our manual calculations. The difference lies in convenience - PyTorch handles the gradient computation automatically, while we had to derive and implement the gradient formula manually.
 
-For a more complex example, let's implement logistic regression on the MNIST dataset:
-
-```python
-# Load subset of MNIST (first 1000 examples)
-X = torch.randn(1000, 784)  # Flattened 28x28 images
-y = torch.randint(0, 2, (1000,))  # Binary labels (0/1)
-
-# Initialize parameters
-w = torch.zeros(784, requires_grad=True)
-b = torch.zeros(1, requires_grad=True)
-alpha = 0.1
-
-# Training loop
-train_losses = []
-val_losses = []
-
-for step in range(1000):
-    # Forward pass
-    logits = X @ w + b
-    probs = torch.sigmoid(logits)
-    loss = -torch.mean(y * torch.log(probs) + (1-y) * torch.log(1-probs))
-    
-    # Backward pass
-    loss.backward()
-    
-    # Manual parameter update
-    with torch.no_grad():
-        w -= alpha * w.grad
-        b -= alpha * b.grad
-        w.grad.zero_()
-        b.grad.zero_()
-    
-    # Track metrics
-    train_losses.append(loss.item())
-    
-    # Compute validation loss (on last 200 examples)
-    with torch.no_grad():
-        val_logits = X[-200:] @ w + b
-        val_probs = torch.sigmoid(val_logits)
-        val_loss = -torch.mean(y[-200:] * torch.log(val_probs) + 
-                             (1-y[-200:]) * torch.log(1-val_probs))
-        val_losses.append(val_loss.item())
-```
-
-![MNIST Training](figures/mnist_training.png)
-
-The training curves reveal:
-1. Steady decrease in training loss
-2. Similar decrease in validation loss, indicating good generalization
-3. No overfitting despite the large number of parameters
-
-Adding a hidden layer dramatically improves performance:
-
-```python
-# Two-layer model
-W1 = torch.randn(784, 100, requires_grad=True) * 0.01
-b1 = torch.zeros(100, requires_grad=True)
-W2 = torch.randn(100, 1, requires_grad=True) * 0.01
-b2 = torch.zeros(1, requires_grad=True)
-
-# Training loop with hidden layer
-for step in range(1000):
-    # Forward pass through two layers
-    h = torch.tanh(X @ W1 + b1)
-    logits = h @ W2 + b2
-    probs = torch.sigmoid(logits)
-    loss = -torch.mean(y * torch.log(probs) + (1-y) * torch.log(1-probs))
-    
-    # Backward pass
-    loss.backward()
-    
-    # Manual parameter update
-    with torch.no_grad():
-        W1 -= alpha * W1.grad
-        b1 -= alpha * b1.grad
-        W2 -= alpha * W2.grad
-        b2 -= alpha * b2.grad
-        W1.grad.zero_()
-        b1.grad.zero_()
-        W2.grad.zero_()
-        b2.grad.zero_()
-```
-
-The added layer provides:
-1. Higher model capacity
-2. Better feature extraction
-3. Improved classification accuracy
-
-This example demonstrates how PyTorch's automatic differentiation handles gradient computation even as models become more complex. The same pattern - forward pass, backward pass, parameter update - works whether we're training linear regression, logistic regression, or neural networks with multiple layers.
+For a more complex example, let's implement logistic regression on the MNIST dataset. We'll explore this in detail in the following section.
 
 ### MNIST Classification Example
 
@@ -553,7 +465,7 @@ Next, we define helper functions for computing metrics and training models:
 
 ```python
 def compute_metrics(model, X, y, criterion):
-    """Compute loss and accuracy for a model."""
+    """Compute loss, accuracy, and predictions for a model."""
     with torch.no_grad():
         if isinstance(model, torch.nn.Module):
             logits = model(X)
@@ -564,8 +476,9 @@ def compute_metrics(model, X, y, criterion):
             probs = torch.sigmoid(X @ w + b)
             loss = criterion(probs, y)
         
-        acc = ((probs >= 0.5) == y).float().mean().item()
-        return loss.item(), acc
+        predictions = (probs >= 0.5).float()
+        acc = (predictions == y).float().mean().item()
+        return loss.item(), acc, predictions
 
 def train_model(model, X_train, y_train, X_val, y_val, alpha=0.01, n_steps=1000):
     """Train a model using gradient descent."""
@@ -590,8 +503,10 @@ def train_model(model, X_train, y_train, X_val, y_val, alpha=0.01, n_steps=1000)
             probs = torch.sigmoid(X_train @ w + b)
             loss = criterion(probs, y_train)
         
-        # Backward pass and update
+        # Backward pass
         loss.backward()
+        
+        # Manual parameter update
         with torch.no_grad():
             if isinstance(model, torch.nn.Module):
                 for param in model.parameters():
@@ -606,8 +521,8 @@ def train_model(model, X_train, y_train, X_val, y_val, alpha=0.01, n_steps=1000)
         
         # Track metrics every 10 steps
         if step % 10 == 0:
-            train_loss, train_acc = compute_metrics(model, X_train, y_train, criterion)
-            val_loss, val_acc = compute_metrics(model, X_val, y_val, criterion)
+            train_loss, train_acc, _ = compute_metrics(model, X_train, y_train, criterion)
+            val_loss, val_acc, _ = compute_metrics(model, X_val, y_val, criterion)
             
             metrics['train_loss'].append(train_loss)
             metrics['train_acc'].append(train_acc)
@@ -650,9 +565,27 @@ print("\nTraining neural network...")
 nn_metrics = train_model(neural_net, X_train, y_train, X_val, y_val)
 ```
 
-Finally, we visualize the results:
+After training, we analyze misclassified examples to understand where our models struggle:
 
 ```python
+def plot_misclassified_examples(logistic_model, neural_net, X_test, y_test, raw_images, n_examples=5):
+    """Visualize examples that both models misclassify."""
+    # Get predictions from both models
+    _, _, logistic_preds = compute_metrics(logistic_model, X_test, y_test, torch.nn.BCELoss())
+    _, _, nn_preds = compute_metrics(neural_net, X_test, y_test.long(), torch.nn.CrossEntropyLoss())
+    
+    # Find examples misclassified by both models
+    misclassified = torch.logical_and(
+        logistic_preds != y_test,
+        nn_preds != y_test
+    )
+    misclassified_indices = torch.where(misclassified)[0]
+    
+    # Create visualization
+    fig, axes = plt.subplots(1, n_examples, figsize=(3*n_examples, 3))
+    if n_examples == 1:
+        axes = [axes]
+    
 def plot_metrics(ax, metrics, y_key, ylabel, title):
     """Plot training curves for both models."""
     for model_name, m, color in [('Logistic', logistic_metrics, 'b'), 
@@ -706,6 +639,52 @@ The results reveal several insights:
 
 This example demonstrates how PyTorch's automatic differentiation handles both simple (logistic) and complex (neural network) models with the same basic training loop. The gradients flow correctly through all operations, enabling end-to-end training of both models.
 
+### Analysis of Misclassified Examples
+
+After training both models on the MNIST dataset, we can gain deeper insights by examining examples that were misclassified. This analysis helps us understand the strengths and limitations of each model. Let's look at the test set performance:
+
+1. **Logistic Regression**: 89.90% validation accuracy
+   - Uses a linear decision boundary
+   - Faster training and simpler model
+   - Struggles with complex digit variations
+
+2. **Neural Network**: 93.75% validation accuracy
+   - Single hidden layer with tanh activation
+   - More flexible decision boundary
+   - Better handling of digit variations
+
+The performance gap of 3.85% between models highlights the benefit of the neural network's nonlinear transformations. Let's examine specific cases where both models struggle:
+
+```python
+def analyze_misclassifications(logistic_model, neural_net, X_test, y_test):
+    """Analyze examples misclassified by both models."""
+    # Get predictions
+    with torch.no_grad():
+        logistic_pred = (torch.sigmoid(X_test @ logistic_model[0] + logistic_model[1]) >= 0.5).float()
+        neural_pred = (neural_net(X_test).argmax(dim=1) % 2).float()
+    
+    # Find common misclassifications
+    both_wrong = (logistic_pred != y_test) & (neural_pred != y_test)
+    return both_wrong
+
+# Analyze misclassified examples
+both_wrong = analyze_misclassifications(logistic_model, neural_net, X_test, y_test)
+print(f"Examples misclassified by both models: {both_wrong.sum()}")
+```
+
+Common characteristics of misclassified examples include:
+1. Ambiguous digit shapes (e.g., 4s that look like 9s)
+2. Poor image quality or contrast
+3. Unusual writing styles
+4. Digits written at extreme angles
+
+The neural network's superior performance comes from:
+1. Learning hierarchical features through its hidden layer
+2. Capturing nonlinear patterns in digit formation
+3. Better handling of digit variations and rotations
+
+This analysis reveals that while both models perform well, the neural network's ability to learn more complex decision boundaries leads to better generalization on challenging examples.
+
 ## Summary
 
 This lecture explored how PyTorch's automatic differentiation system enables gradient computation for complex loss functions. Key takeaways include:
@@ -733,4 +712,4 @@ This lecture explored how PyTorch's automatic differentiation system enables gra
    - Important considerations: batching, learning rates, monitoring
    - Validation prevents overfitting
 
-These tools form the foundation for modern deep learning. While we focused on relatively simple examples, the same principles scale to state-of-the-art models with millions of parameters. PyTorch's automatic differentiation makes this scaling possible by handling the complex task of gradient computation, letting practitioners focus on model design and optimization strategy. 
+These tools form the foundation for modern deep learning. While we focused on relatively simple examples, the same principles scale to state-of-the-art models with millions of parameters. PyTorch's automatic differentiation makes this scaling possible by handling the complex task of gradient computation, letting practitioners focus on model design and optimization strategy.
