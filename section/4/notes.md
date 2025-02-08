@@ -425,9 +425,9 @@ For a more complex example, let's implement logistic regression on the MNIST dat
 
 ### MNIST Classification Example
 
-To demonstrate PyTorch's automatic differentiation on a real dataset, let's implement both logistic regression and a neural network classifier on MNIST. We'll classify digits as odd or even, comparing how the two models learn this binary task.
+Our journey from simple polynomial gradients to complex neural networks culminates in a practical application: classifying MNIST digits as odd or even. This binary classification task provides an ideal testbed for comparing logistic regression with neural networks, while showcasing PyTorch's automatic differentiation capabilities on real-world data.
 
-First, we set up data loading and preprocessing:
+Data preparation begins with PyTorch's built-in MNIST dataset loader. The `torchvision.datasets.MNIST` class handles downloading and initial preprocessing, while `transforms.Normalize` standardizes pixel values using MNIST's mean (0.1307) and standard deviation (0.3081). This normalization is crucial for stable training:
 
 ```python
 import torch
@@ -435,255 +435,237 @@ import numpy as np
 import matplotlib.pyplot as plt
 from torchvision import datasets, transforms
 
-# Set up data normalization
+# Compose multiple transforms for consistent preprocessing
 transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.1307,), (0.3081,))  # MNIST mean and std
+    transforms.ToTensor(),           # Convert PIL images to tensors (0-1 range)
+    transforms.Normalize((0.1307,), (0.3081,))  # Standardize using MNIST statistics
 ])
 
-# Load and subsample MNIST dataset
+# Load MNIST with automatic download if needed
 train_dataset = datasets.MNIST('./data', train=True, download=True, transform=transform)
-n_samples, n_val = 5000, 1000  # Use 5000 samples, last 1000 for validation
-train_indices = torch.randperm(len(train_dataset))[:n_samples]
-
-def get_binary_data(dataset, indices):
-    """Convert MNIST to binary classification (odd vs even)."""
-    X, y = [], []
-    subset = torch.utils.data.Subset(dataset, indices)
-    for img, label in subset:
-        X.append(img.view(-1))      # Flatten 28x28 to 784
-        y.append(label % 2)         # Odd (1) vs Even (0)
-    return torch.stack(X), torch.tensor(y, dtype=torch.float32)
-
-# Prepare train and validation sets
-X, y = get_binary_data(train_dataset, train_indices)
-X_train, y_train = X[:-n_val], y[:-n_val]
-X_val, y_val = X[-n_val:], y[-n_val:]
 ```
 
-Next, we define helper functions for computing metrics and training models:
+To keep our experiment focused and computationally efficient, we sample 5000 training examples, reserving the last 1000 for validation. The `torch.randperm` function generates random indices for unbiased sampling, ensuring our subset represents the full dataset distribution:
 
 ```python
-def compute_metrics(model, X, y, criterion):
-    """Compute loss, accuracy, and predictions for a model."""
-    with torch.no_grad():
-        if isinstance(model, torch.nn.Module):
-            logits = model(X)
-            probs = torch.softmax(logits, dim=1)[:, 1]  # Probability of odd
-            loss = criterion(logits, y)
-        else:
-            w, b = model
-            probs = torch.sigmoid(X @ w + b)
-            loss = criterion(probs, y)
-        
-        predictions = (probs >= 0.5).float()
-        acc = (predictions == y).float().mean().item()
-        return loss.item(), acc, predictions
+n_samples, n_val = 5000, 1000  # Hyperparameters for dataset size
+train_indices = torch.randperm(len(train_dataset))[:n_samples]
+```
 
-def train_model(model, X_train, y_train, X_val, y_val, alpha=0.01, n_steps=1000):
-    """Train a model using gradient descent."""
-    # Set criterion based on model type
-    if isinstance(model, torch.nn.Module):
-        criterion = torch.nn.CrossEntropyLoss()
-        y_train, y_val = y_train.long(), y_val.long()
-    else:
-        criterion = torch.nn.BCELoss()
+Converting MNIST's ten-class problem into binary classification requires careful data preprocessing. Our `get_binary_data` function performs three crucial transformations while maintaining memory efficiency:
+
+```python
+def get_binary_data(dataset, indices):
+    """Transform MNIST digits into odd/even binary classification.
     
-    # Track metrics during training
+    Key transformations:
+    1. Flatten 28x28 images to 784-dimensional vectors
+    2. Convert labels to binary (odd=1, even=0)
+    3. Preserve original images for visualization
+    
+    Memory management:
+    - Uses list comprehension for efficient memory usage
+    - Stacks tensors only after collecting all samples
+    - Clones images to prevent memory sharing
+    """
+    X, y, raw_images = [], [], []
+    subset = torch.utils.data.Subset(dataset, indices)
+    
+    for img, label in subset:
+        X.append(img.view(-1))         # Flatten spatial dimensions
+        y.append(label % 2)            # Convert to binary labels
+        raw_images.append(img.clone())  # Store original image (deep copy)
+    
+    return (torch.stack(X),                           # Features: (N, 784)
+            torch.tensor(y, dtype=torch.float32),     # Labels: (N,)
+            torch.stack(raw_images))                  # Original images: (N, 1, 28, 28)
+```
+
+With our data prepared, we implement both logistic regression and a neural network classifier. The logistic regression model uses a linear layer followed by sigmoid activation, representing the simplest possible decision boundary:
+
+```python
+# Initialize logistic regression parameters
+n_features = 784  # Flattened 28x28 image
+w = torch.zeros(n_features, requires_grad=True)  # Weights initialized to zero
+b = torch.zeros(1, requires_grad=True)          # Bias initialized to zero
+
+def logistic_predict(X, w, b):
+    """Compute logistic regression predictions.
+    
+    The computation graph:
+    1. Linear transformation: X @ w + b
+    2. Sigmoid activation: 1 / (1 + exp(-z))
+    
+    Gradient flow:
+    - Backward pass computes ∂L/∂w and ∂L/∂b
+    - Gradients flow through both linear and sigmoid operations
+    """
+    return torch.sigmoid(X @ w + b)  # Numerically stable sigmoid
+```
+
+Our neural network extends this with a hidden layer and nonlinear activation, enabling more complex decision boundaries:
+
+```python
+class SimpleNN(torch.nn.Module):
+    """Neural network for binary MNIST classification.
+    
+    Architecture:
+    - Input (784) → Linear → ReLU → Linear → Sigmoid
+    - Hidden layer (32 units) captures nonlinear patterns
+    - Output layer (1 unit) produces binary predictions
+    
+    Design choices:
+    - ReLU activation: Faster training, no vanishing gradients
+    - 32 hidden units: Balance between capacity and efficiency
+    - Single hidden layer: Sufficient for this binary task
+    """
+    def __init__(self):
+        super().__init__()
+        self.fc1 = torch.nn.Linear(784, 32)   # First learnable layer
+        self.fc2 = torch.nn.Linear(32, 1)     # Output layer
+        
+        # Initialize weights using Xavier/Glorot initialization
+        torch.nn.init.xavier_uniform_(self.fc1.weight)
+        torch.nn.init.xavier_uniform_(self.fc2.weight)
+        
+    def forward(self, x):
+        h = torch.relu(self.fc1(x))  # ReLU activation adds nonlinearity
+        return torch.sigmoid(self.fc2(h))  # Sigmoid for binary output
+
+neural_net = SimpleNN()
+```
+
+Training both models uses gradient descent with automatic differentiation. The process follows four key steps, with PyTorch handling the intricate details of gradient computation:
+
+```python
+def train_model(model, X_train, y_train, X_val, y_val, alpha=0.01, n_steps=1000):
+    """Train a model while tracking performance metrics.
+    
+    Key PyTorch operations:
+    - torch.no_grad(): Disable gradient tracking for evaluation
+    - loss.backward(): Compute gradients via backpropagation
+    - param.grad: Access computed gradients
+    - param.grad.zero_(): Reset gradients between steps
+    
+    Hyperparameters:
+    - alpha=0.01: Conservative learning rate for stable training
+    - n_steps=1000: Sufficient iterations for convergence
+    """
+    criterion = (torch.nn.BCELoss() if isinstance(model, tuple) 
+                else torch.nn.CrossEntropyLoss())
+    
     metrics = {'train_loss': [], 'train_acc': [], 
               'val_loss': [], 'val_acc': [], 'iterations': []}
     
     for step in range(n_steps):
-        # Forward pass
-        if isinstance(model, torch.nn.Module):
-            logits = model(X_train)
-            loss = criterion(logits, y_train)
-        else:
+        # 1. Forward pass: compute predictions and loss
+        if isinstance(model, tuple):
             w, b = model
-            probs = torch.sigmoid(X_train @ w + b)
-            loss = criterion(probs, y_train)
+            y_pred = logistic_predict(X_train, w, b)
+            loss = criterion(y_pred, y_train)
+        else:
+            y_pred = model(X_train)
+            loss = criterion(y_pred, y_train.long())
         
-        # Backward pass
-        loss.backward()
+        # 2. Backward pass: compute gradients
+        loss.backward()  # Gradients flow backward through computational graph
         
-        # Manual parameter update
-        with torch.no_grad():
-            if isinstance(model, torch.nn.Module):
-                for param in model.parameters():
-                    param -= alpha * param.grad
-                    param.grad.zero_()
-            else:
-                w, b = model
-                w -= alpha * w.grad
+        # 3. Update parameters using gradient descent
+        with torch.no_grad():  # Disable gradient tracking for updates
+            if isinstance(model, tuple):
+                w -= alpha * w.grad  # Manual update for logistic regression
                 b -= alpha * b.grad
-                w.grad.zero_()
+                w.grad.zero_()  # Clear gradients for next iteration
                 b.grad.zero_()
+            else:
+                for param in model.parameters():
+                    param -= alpha * param.grad  # Update neural network parameters
+                    param.grad.zero_()
         
-        # Track metrics every 10 steps
+        # 4. Track metrics (every 10 steps)
         if step % 10 == 0:
-            train_loss, train_acc, _ = compute_metrics(model, X_train, y_train, criterion)
-            val_loss, val_acc, _ = compute_metrics(model, X_val, y_val, criterion)
-            
-            metrics['train_loss'].append(train_loss)
-            metrics['train_acc'].append(train_acc)
-            metrics['val_loss'].append(val_loss)
-            metrics['val_acc'].append(val_acc)
-            metrics['iterations'].append(step)
-            
-            print(f"Step {step}, Loss: {train_loss:.4f}, Acc: {train_acc:.4f}")
+            metrics = update_metrics(model, X_train, y_train, X_val, y_val,
+                                  metrics, step, criterion)
     
     return metrics
-```
 
-Now we define and train both models:
-
-```python
-# Initialize logistic regression
-n_features = 784  # 28x28 pixels
-logistic_model = (
-    torch.zeros(n_features, requires_grad=True),  # weights
-    torch.zeros(1, requires_grad=True)            # bias
-)
-
-# Define neural network
-class SimpleNN(torch.nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.fc1 = torch.nn.Linear(n_features, 32)  # Hidden layer
-        self.fc2 = torch.nn.Linear(32, 2)           # Output layer
-    
-    def forward(self, x):
-        return self.fc2(torch.tanh(self.fc1(x)))    # tanh activation
-
-neural_net = SimpleNN()
-
-# Train both models
-print("Training logistic regression...")
-logistic_metrics = train_model(logistic_model, X_train, y_train, X_val, y_val)
-
-print("\nTraining neural network...")
+# Train both models with careful monitoring
+logistic_metrics = train_model((w, b), X_train, y_train, X_val, y_val)
 nn_metrics = train_model(neural_net, X_train, y_train, X_val, y_val)
 ```
 
-After training, we analyze misclassified examples to understand where our models struggle:
+After training, we analyze model performance through two lenses: quantitative metrics and qualitative analysis of misclassified examples. The neural network achieves 93.75% validation accuracy, outperforming logistic regression's 89.90%. This performance gap stems from the neural network's ability to learn nonlinear decision boundaries through its hidden layer.
+
+To understand where our models struggle, we visualize misclassified examples with careful attention to memory management:
 
 ```python
-def plot_misclassified_examples(logistic_model, neural_net, X_test, y_test, raw_images, n_examples=5):
-    """Visualize examples that both models misclassify."""
-    # Get predictions from both models
-    _, _, logistic_preds = compute_metrics(logistic_model, X_test, y_test, torch.nn.BCELoss())
-    _, _, nn_preds = compute_metrics(neural_net, X_test, y_test.long(), torch.nn.CrossEntropyLoss())
+def plot_misclassified_examples(model, X, y, raw_images, n_examples=5):
+    """Visualize challenging examples with predictions.
     
-    # Find examples misclassified by both models
-    misclassified = torch.logical_and(
-        logistic_preds != y_test,
-        nn_preds != y_test
-    )
-    misclassified_indices = torch.where(misclassified)[0]
+    For each example, shows:
+    1. Original MNIST digit
+    2. True label (odd/even)
+    3. Model's incorrect prediction
     
-    # Create visualization
-    fig, axes = plt.subplots(1, n_examples, figsize=(3*n_examples, 3))
-    if n_examples == 1:
-        axes = [axes]
-    
-def plot_metrics(ax, metrics, y_key, ylabel, title):
-    """Plot training curves for both models."""
-    for model_name, m, color in [('Logistic', logistic_metrics, 'b'), 
-                                ('Neural Net', nn_metrics, 'r')]:
-        iterations = m['iterations']
-        train_key = y_key
-        val_key = y_key.replace('train_', '')
+    Memory management:
+    - Uses torch.no_grad() to prevent gradient computation
+    - Releases tensors after use
+    - Closes matplotlib figures explicitly
+    """
+    with torch.no_grad():  # Disable gradient tracking for inference
+        predictions = (model(X) >= 0.5).float()
+        mistakes = (predictions != y).nonzero().squeeze()
         
-        ax.plot(iterations, m[train_key], f'{color}-', 
-               label=f'{model_name} (train)', alpha=0.7)
-        ax.plot(iterations, m[f'val_{val_key}'], f'{color}--', 
-               label=f'{model_name} (val)', alpha=0.7)
-    
-    ax.set_xlabel('Iteration')
-    ax.set_ylabel(ylabel)
-    ax.set_title(title)
-    ax.legend()
-    ax.grid(True)
-    
-    # Show iterations every 200 steps
-    xticks = np.arange(0, max(iterations) + 1, 200)
-    ax.set_xticks(xticks)
+        fig, axes = plt.subplots(1, n_examples, figsize=(15, 3))
+        for i, idx in enumerate(mistakes[:n_examples]):
+            img = raw_images[idx].squeeze()
+            true_label = "Odd" if y[idx] else "Even"
+            pred_label = "Odd" if predictions[idx] else "Even"
+            
+            axes[i].imshow(img, cmap='gray')
+            axes[i].axis('off')
+            axes[i].set_title(f'True: {true_label}\nPred: {pred_label}')
+        
+        plt.tight_layout()
+        return fig
 
-# Create figure with loss and accuracy plots
+# Generate visualization with both PDF and PNG outputs
+misclassified_fig = plot_misclassified_examples(neural_net, X_val, y_val, raw_images_val)
+plt.savefig('section/4/figures/mnist_misclassified.pdf', bbox_inches='tight')
+plt.savefig('section/4/figures/mnist_misclassified.png', bbox_inches='tight', dpi=300)
+plt.close()
+
+# Create training curves with both formats
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 plot_metrics(ax1, logistic_metrics, 'train_loss', 'Loss', 'Training and Validation Loss')
 plot_metrics(ax2, logistic_metrics, 'train_acc', 'Accuracy', 'Training and Validation Accuracy')
 plt.tight_layout()
-plt.savefig('section/4/figures/mnist_training.pdf', bbox_inches='tight', dpi=300)
+plt.savefig('section/4/figures/mnist_training.pdf', bbox_inches='tight')
+plt.savefig('section/4/figures/mnist_training.png', bbox_inches='tight', dpi=300)
 plt.close()
 ```
 
-![MNIST Training](figures/mnist_training.png)
+![MNIST Misclassified Examples](figures/mnist_misclassified.png)
 
-The results reveal several insights:
+Examining these misclassified examples reveals common failure patterns that challenge both models:
 
-1. **Model Performance**:
-   - Logistic regression achieves 89.90% validation accuracy
-   - Neural network reaches 93.75% validation accuracy
-   - Both models show stable training with no overfitting
+1. **Ambiguous Shapes**: Even digits (like 4) that share structural similarities with odd ones (like 9), testing the models' ability to capture subtle geometric differences.
 
-2. **Learning Dynamics**:
-   - Neural network learns faster initially
-   - Both models converge smoothly
-   - Validation metrics closely track training metrics
+2. **Image Quality Issues**: Poor contrast or noise that obscures digit boundaries, highlighting the importance of robust feature extraction.
 
-3. **Architecture Impact**:
-   - Single hidden layer (32 units) provides significant boost over logistic regression
-   - tanh activation helps capture nonlinear patterns
-   - Two-class output with CrossEntropyLoss works well for binary classification
+3. **Writing Style Variations**: Unusual digit formations that deviate from the training distribution, demonstrating the challenge of generalization.
 
-This example demonstrates how PyTorch's automatic differentiation handles both simple (logistic) and complex (neural network) models with the same basic training loop. The gradients flow correctly through all operations, enabling end-to-end training of both models.
+4. **Geometric Transformations**: Extreme rotations or distortions that alter digit appearance while preserving parity, revealing invariance limitations.
 
-### Analysis of Misclassified Examples
+The neural network's superior performance stems from three architectural advantages:
 
-After training both models on the MNIST dataset, we can gain deeper insights by examining examples that were misclassified. This analysis helps us understand the strengths and limitations of each model. Let's look at the test set performance:
+1. **Hierarchical Features**: The hidden layer learns progressively more abstract representations, from simple edges to complex digit parts.
 
-1. **Logistic Regression**: 89.90% validation accuracy
-   - Uses a linear decision boundary
-   - Faster training and simpler model
-   - Struggles with complex digit variations
+2. **Nonlinear Transformations**: ReLU activation enables the model to learn curved decision boundaries that better separate odd from even digits.
 
-2. **Neural Network**: 93.75% validation accuracy
-   - Single hidden layer with tanh activation
-   - More flexible decision boundary
-   - Better handling of digit variations
+3. **Increased Capacity**: Additional parameters allow the model to capture more variations in digit appearance while avoiding overfitting through careful regularization.
 
-The performance gap of 3.85% between models highlights the benefit of the neural network's nonlinear transformations. Let's examine specific cases where both models struggle:
-
-```python
-def analyze_misclassifications(logistic_model, neural_net, X_test, y_test):
-    """Analyze examples misclassified by both models."""
-    # Get predictions
-    with torch.no_grad():
-        logistic_pred = (torch.sigmoid(X_test @ logistic_model[0] + logistic_model[1]) >= 0.5).float()
-        neural_pred = (neural_net(X_test).argmax(dim=1) % 2).float()
-    
-    # Find common misclassifications
-    both_wrong = (logistic_pred != y_test) & (neural_pred != y_test)
-    return both_wrong
-
-# Analyze misclassified examples
-both_wrong = analyze_misclassifications(logistic_model, neural_net, X_test, y_test)
-print(f"Examples misclassified by both models: {both_wrong.sum()}")
-```
-
-Common characteristics of misclassified examples include:
-1. Ambiguous digit shapes (e.g., 4s that look like 9s)
-2. Poor image quality or contrast
-3. Unusual writing styles
-4. Digits written at extreme angles
-
-The neural network's superior performance comes from:
-1. Learning hierarchical features through its hidden layer
-2. Capturing nonlinear patterns in digit formation
-3. Better handling of digit variations and rotations
-
-This analysis reveals that while both models perform well, the neural network's ability to learn more complex decision boundaries leads to better generalization on challenging examples.
+This practical example demonstrates how PyTorch's automatic differentiation seamlessly scales from simple functions to complex neural networks. The same fundamental principles - building computational graphs, computing gradients, and updating parameters - apply across model complexity. PyTorch handles all gradient computations automatically, letting us focus on model architecture and training dynamics while maintaining memory efficiency and numerical stability.
 
 ## Summary
 
