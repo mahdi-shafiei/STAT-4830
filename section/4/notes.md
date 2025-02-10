@@ -317,15 +317,7 @@ $$ \nabla f = \frac{\partial f}{\partial \mathbf{w}}^\top = \mathbf{X}^\top\math
 
 This computation happens automatically in PyTorch through the computational graph structure, with each node computing its local total derivatives. The graph structure determines where accumulation is needed (at nodes with multiple outgoing edges), and the mechanical process of backpropagation handles the rest.
 
-Our one-dimensional example demonstrated PyTorch's automatic differentiation on a simple function. Now let's return to the least squares problem we solved in the previous lecture, but this time using PyTorch's automatic differentiation. Given a data matrix $X \in \mathbb{R}^{n \times p}$ and observations $y \in \mathbb{R}^n$, we differentiate the least squares loss:
-
-$$ f(w) = \frac{1}{2n}\|Xw - y\|_2^2 = \frac{1}{2n }\sum_{i=1}^n (x_i^\top w - y_i)^2 $$
-
-In the previous lecture, we derived the gradient manually:
-
-$$ \nabla f(w) = X^\top(Xw - y)/n $$
-
-PyTorch can compute this gradient automatically:
+From the perspective of code, nothing changes. We still define the loss function as before, and call `loss.backward()` to compute the gradient.
 
 ```python
 # Convert data to PyTorch tensors
@@ -342,183 +334,106 @@ loss.backward()
 print(f"PyTorch gradient: {w.grad}")
 ```
 
-Under the hood, PyTorch computes the gradient using the computational graph we discussed earlier:
-
-![Least Squares Computational Graph](figures/least_squares_computation.png)
-
-This graph shows how PyTorch breaks down the least squares computation into elementary operations:
-1. Matrix multiplication to form predictions $Xw$
-2. Subtraction to compute residuals $Xw - y$
-3. Squared norm to measure error $\|Xw - y\|^2$
-4. Scaling by $\frac{1}{2n}$ to form the final loss
-5. Backward pass to compute the gradient $X^T(Xw - y)/n$
-
 To verify that PyTorch computes the correct gradient, we can compare it with our manual calculation:
 
 ![Least Squares Comparison](figures/least_squares_comparison.png)
 
 The figure shows the contours of the least squares loss function for a simple 2D problem. At three different points (marked in red, blue, and green), we compute gradients using both manual calculation (left) and PyTorch's automatic differentiation (right). The arrows show the negative gradient direction at each point - the direction of steepest descent. The gradient computed by PyTorch matches the manual calculation, confirming that PyTorch computes the correct gradient.
 
-
-
-### More Complex Loss Functions: Building Neural Networks
-
-While least squares provides a clean introduction to gradient computation, modern machine learning requires more sophisticated models. PyTorch's `torch.nn.Module` provides a structured way to build these models. Let's examine how PyTorch implements neural networks, focusing on a simple two-layer network.
-
-
-Key components of PyTorch's implementation:
-
-1. **Parameter Management**: Each layer inherits from `nn.Module` and automatically registers its parameters:
-   ```python
-   class Linear(nn.Module):
-       def __init__(self, in_features, out_features):
-           self.weight = nn.Parameter(torch.randn(out_features, in_features))
-           self.bias = nn.Parameter(torch.zeros(out_features))
-   ```
-   These parameters are automatically tracked for gradient computation.
-
-2. **Forward Computation**: The forward pass flows from input to output:
-   - Linear layers compute z = xW^T + b (note the transpose for efficiency)
-   - Activation functions introduce nonlinearity
-   - Each operation maintains references for the backward pass
-
-3. **Gradient Computation**: During `backward()`:
-   - PyTorch builds a dynamic computation graph
-   - Gradients flow through all intermediate values
-   - Each parameter's gradients accumulate in its `.grad` buffer
-   - The graph is released after backward to save memory
-
-4. **Training Loop Structure**:
-   ```python
-   for batch in dataloader:
-       optimizer.zero_grad()           # Clear gradient buffers
-       output = model(batch.x)         # Forward pass
-       loss = criterion(output, batch.y)# Compute loss
-       loss.backward()                 # Compute gradients
-       optimizer.step()                # Update parameters
-   ```
-
-This structure enables efficient training by:
-1. Automatically tracking parameters and gradients
-2. Computing gradients through arbitrary operations
-3. Managing memory by releasing intermediate values
-4. Enabling easy model composition and reuse
-
-This structure extends naturally to more complex architectures. For binary classification, we build a similar model but with different output transformation and loss:
-
-$$ p(y=1|x) = \sigma(w_2^\top \tanh(W_1x + b_1) + b_2) $$
-
-where $\sigma(z) = \frac{1}{1+e^{-z}}$ is the sigmoid function. The cross-entropy loss measures prediction quality:
-
-$$ L(w) = -\frac{1}{n}\sum_{i=1}^n [y_i \log p(y_i|x_i) + (1-y_i)\log(1-p(y_i|x_i))] $$
-
-The implementation mirrors our mathematical description:
-
-```python
-class NeuralClassifier(torch.nn.Module):
-    def __init__(self, hidden_size=10):
-        super().__init__()
-        self.linear1 = torch.nn.Linear(2, hidden_size)    # Input → Hidden
-        self.linear2 = torch.nn.Linear(hidden_size, 1)    # Hidden → Output
-    
-    def forward(self, x):
-        h = torch.tanh(self.linear1(x))                   # Hidden features
-        return torch.sigmoid(self.linear2(h))             # Probability output
-
-# Training
-model = NeuralClassifier()
-y_pred = model(X)                                        # Forward pass
-loss = torch.nn.functional.binary_cross_entropy(y_pred, y) # Loss computation
-loss.backward()                                          # Gradient computation
-```
-
-This modular design lets us:
-1. Define complex models by composing simple layers
-2. Automatically compute gradients through any differentiable computation
-3. Focus on model architecture without worrying about gradient calculations
-4. Easily modify architectures by changing layers or activation functions
-
 ## Applying Gradient Descent
 
-With PyTorch's automatic differentiation handling gradient computation, we can implement gradient descent directly. The algorithm follows three essential steps:
+Now that we know how to compute gradients via autodifferentiation, let's use them to find the optimal weights in a least squares problem. First let's recall how we manually ran gradient descent on the least squares loss
 
-1. Forward Pass: Compute predictions and loss
-   - Feed data through the model to compute predictions
-   - Calculate the loss between predictions and true labels
-   - For example, in linear regression: $L(w) = \frac{1}{2n}\|Xw - y\|_2^2$
+$$ f(w) = \frac{1}{2}\|Xw - y\|_2^2 $$
 
-2. Backward Pass: Compute gradients
-   - Call `loss.backward()` to compute gradients via backpropagation
-   - PyTorch automatically handles the chain rule through all operations
-   - The gradient $\nabla L(w)$ tells us how to adjust each parameter
+In the previous lecture, we derived the gradient manually:
 
-3. Parameter Update: Apply gradients
-   - Update parameters using $w \leftarrow w - \alpha \nabla L(w)$ where $\alpha$ is the learning rate
-   - Zero gradients with `param.grad.zero_()` to prevent accumulation from previous steps
-   - Repeat until convergence or for a fixed number of steps
-
-Let's implement this pattern for linear regression, comparing manual gradient computation with PyTorch's automatic differentiation:
+$$ \nabla f(w) = X^\top(Xw - y) $$
 
 ```python
-# Generate synthetic data
-torch.manual_seed(42)
-X = torch.randn(100, 2)
-w_true = torch.tensor([1.0, -0.5])
-y = X @ w_true
-
 # Manual gradient descent
 def manual_gradient(X, y, w):
-    # Gradient of 0.5 * ||Xw - y||^2 / n is X^T(Xw - y) / n
-    return X.T @ (X @ w - y) / X.shape[0]  # Normalize by batch size
+    # Gradient of 0.5 * ||Xw - y||^2 / n is X^T(Xw - y) 
+    return X.T @ (X @ w - y)  
 
-w_manual = torch.zeros(2)
-losses_manual = []
-ws_manual = []
-lambda_max = torch.linalg.svdvals(X)[0]**2
-alpha = X.shape[0]*1.8/lambda_max # Stepsize rate
-print(alpha)
-max_iter = 100
+w_manual = torch.zeros(2) # initialize the weights with zeros
 for step in range(max_iter):
-    pred = X @ w_manual
-    loss = 0.5 * torch.mean((pred - y)**2)  # Mean over batch
     grad = manual_gradient(X, y, w_manual)
     w_manual = w_manual - alpha * grad
-    losses_manual.append(loss.item())
-    ws_manual.append(w_manual.clone())
-
-# PyTorch gradient descent
-w_torch = torch.zeros(2, requires_grad=True)
-losses_torch = []
-ws_torch = []
-for step in range(max_iter):
-    pred = X @ w_torch
-    loss = 0.5 * torch.mean((pred - y)**2)  # Mean over batch
-    loss.backward()
-    
-    with torch.no_grad():
-        w_torch -= alpha * w_torch.grad
-        w_torch.grad.zero_()
-    
-    losses_torch.append(loss.item())
-    ws_torch.append(w_torch.clone())
 ```
 
-The results reveal perfect agreement between manual and automatic gradient computation:
+Now let's compare to the PyTorch implementation, which uses `backward()` to compute the gradient.
+
+```python
+# PyTorch gradient descent
+w_torch = torch.zeros(2, requires_grad=True) # initialize the weights with zeros and track gradients
+for step in range(max_iter):
+    ## Forward pass
+    pred = X @ w_torch # compute the predictions
+    loss = 0.5 * torch.sum((pred - y)**2)  # compute the loss
+    
+    ## Backward pass
+    loss.backward() # compute the gradient
+    
+    ## Update weights
+    with torch.no_grad(): # Do not modify the computational graph
+        w_torch -= alpha * w_torch.grad # update the weights
+        w_torch.grad.zero_() # reset the gradient to zero to avoid accumulation
+```
+
+We ran both implementations on the same data and found the following results: 
 
 ![Linear Regression Comparison](figures/linear_regression_comparison.png)
 
-Both methods:
-1. Converge to the same optimal weights
-2. Follow identical trajectories
-3. Achieve the same final loss value
-
-This agreement confirms that PyTorch computes exact gradients, matching our manual calculations. The difference lies in convenience - PyTorch handles the gradient computation automatically, while we had to derive and implement the gradient formula manually.
+Both methods (1) converge to the same optimal weights, (2) follow identical trajectories, and (3) achieve the same final loss value. This agreement confirms that PyTorch computes exact gradients, matching our manual calculations. The difference lies in convenience - PyTorch handles the gradient computation automatically, while we had to derive and implement the gradient formula manually.
 
 For a more complex example, let's implement logistic regression on the MNIST dataset. We'll explore this in detail in the following section.
 
+## More Complex Loss Functions: Building Neural Networks
+
+Linear regression maps inputs to outputs through a single transformation: $\mathbf{y} = \mathbf{X}\mathbf{w}$. Neural networks extend this idea by stacking multiple transformations, enabling them to learn more complex patterns. Let's examine how PyTorch implements these layered models.
+
+Consider binary classification. Instead of a single linear transformation, we compose (1) a linear transformation to create hidden features, (2) a nonlinear activation to introduce nonlinearity, (3) another linear transformation to produce predictions, and (4) a final nonlinearity to output probabilities. Graphically, this looks like:
+```
+Input → Linear₁ → Tanh → Linear₂ → Sigmoid → Output
+ℝᵈ      ℝʰˣᵈ      ℝʰ     ℝ¹ˣʰ      [0,1]     [0,1]
+```
+
+Mathematically, for input $\mathbf{x} \in \mathbb{R}^d$:
+
+1. First transformation creates hidden features $\mathbf{h} \in \mathbb{R}^h$:
+   $$ \mathbf{h} = \tanh(\mathbf{W}_1\mathbf{x} + \mathbf{b}_1) $$
+   where $\mathbf{W}_1 \in \mathbb{R}^{h \times d}$ and $\mathbf{b}_1 \in \mathbb{R}^h$
+
+2. Second transformation produces probability $p \in [0,1]$:
+   $$ p(y=1|\mathbf{x}) = \sigma(\mathbf{w}_2^\top\mathbf{h} + b_2) $$
+   where $\mathbf{w}_2 \in \mathbb{R}^h$ and $b_2 \in \mathbb{R}$
+
+PyTorch's `nn.Module` provides a natural way to implement this architecture:
+
+```python
+class BinaryClassifier(nn.Module):
+    def __init__(self, input_dim=2, hidden_dim=10):
+        super().__init__()
+        # First transformation: ℝᵈ → ℝʰ
+        self.linear1 = nn.Linear(input_dim, hidden_dim)
+        
+        # Second transformation: ℝʰ → ℝ
+        self.linear2 = nn.Linear(hidden_dim, 1)
+    
+    def forward(self, x):  # x shape: [batch_size, input_dim]
+        # Hidden features: [batch_size, hidden_dim]
+        h = torch.tanh(self.linear1(x))
+        
+        # Output probability: [batch_size, 1]
+        return torch.sigmoid(self.linear2(h))
+```
+
+Each `nn.Module` layer stores both a weight matrix and a bias vector. When we call the `forward` method, the layer computes the hidden features and then applies the nonlinearity to produce the output probability. The code initializes the weights and biases automatically, and registers them for gradient computation. This modular design lets us build complex models by composing simple layers, let PyTorch handle parameter management, and focus on model architecture rather than implementation details. For example, we can swap out the nonlinearity (the $\tanh$) with a different activation function to try out different architectures.
+
 ### MNIST Classification Example
 
-The MNIST digit classification task compares logistic regression with neural networks. We focus on binary classification to determine whether a digit is odd or even. This demonstrates how PyTorch's automatic differentiation handles models of different complexity.
+In this section, we design a classifier for the MNIST digit classification task using logistic regression (a neural network with no hidden layers) and a neural network with one hidden layer. We focus on binary classification to determine whether a digit is odd or even. This demonstrates how PyTorch allows us to swap out models and losses to try out different architectures with just a few lines of code.
 
 The implementation uses `torchvision.datasets.MNIST` for data loading and `transforms.Normalize` for preprocessing. Input images are normalized with MNIST's statistics (mean=0.1307, std=0.3081):
 
@@ -543,7 +458,7 @@ $$
 p(y_i = 1 \mid x_i) = \sigma(\text{model}(x_i)),
 $$
 
-where we use one of two models. First, logistic regression provides a baseline using a single linear layer:
+where we $\sigma$ is the sigmoid function and we use one of two models. First, logistic regression provides a baseline using a single linear layer:
 
 ```python
 class Logistic(torch.nn.Module):
@@ -587,19 +502,23 @@ We then train the model using PyTorch's automatic differentiation to compute gra
 Here's the implementation:
 
 ```python
+# Define the loss function
 criterion = torch.nn.BCELoss()
 
 def train_model(model, X_train, y_train, X_val, y_val, alpha=0.01, n_steps=1000):
     for step in range(n_steps):
+        # Forward pass
         y_pred = model(X_train)
         loss = criterion(y_pred.squeeze(), y_train)
         
+        # Backward pass
         loss.backward()
         
-        with torch.no_grad():
+        # Update parameters
+        with torch.no_grad(): # Do not modify the computational graph
             for param in model.parameters():
-                param -= alpha * param.grad
-                param.grad.zero_()
+                param -= alpha * param.grad # update the parameters
+                param.grad.zero_() # reset the gradient to zero to avoid accumulation
 ```
 
 The neural network achieves 92.40% test accuracy versus logistic regression's 87.30%. This gap results from the neural network's ability to learn nonlinear decision boundaries.
@@ -613,31 +532,3 @@ The neural network achieves 92.40% test accuracy versus logistic regression's 87
 
 Analysis of misclassified examples reveals patterns in model errors. The neural network performs better by learning features through its hidden layer to distinguish odd from even digits.
 
-## Summary
-
-This lecture explored how PyTorch's automatic differentiation system enables gradient computation for complex loss functions. Key takeaways include:
-
-1. **Automatic Differentiation Basics**
-   - PyTorch builds computational graphs during forward computation
-   - Gradients flow backward through these graphs
-   - The system computes exact gradients, matching manual calculations
-
-2. **Common Pitfalls and Solutions**
-   - Breaking computational graphs (solution: maintain tensor connections)
-   - In-place operations (solution: create new tensors)
-   - Gradient accumulation (solution: clear gradients between steps)
-   - Memory management (solution: use `torch.no_grad()` when appropriate)
-
-3. **From Simple to Complex Models**
-   - Started with 1D polynomial example
-   - Revisited least squares with automatic gradients
-   - Extended to nonlinear regression and neural networks
-   - Same principles apply across model complexity
-
-4. **Practical Gradient Descent**
-   - Four-step pattern: zero gradients → forward → backward → update
-   - Modular design: swap models, losses, and optimizers
-   - Important considerations: batching, learning rates, monitoring
-   - Validation prevents overfitting
-
-These tools form the foundation for modern deep learning. While we focused on relatively simple examples, the same principles scale to state-of-the-art models with millions of parameters. PyTorch's automatic differentiation makes this scaling possible by handling the complex task of gradient computation, letting practitioners focus on model design and optimization strategy.
