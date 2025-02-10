@@ -70,7 +70,7 @@ The top plot shows our function $f(x) = x^3 - 3x$, while the bottom plot compare
 
 To understand how PyTorch computes these gradients, we need to examine the computational graph it builds during the forward pass:
 
-![Computational Graph](figures/computational_graph.png)
+![Computational Graph](figures/polynomial_computation.png)
 
 Each node in this graph represents an operation:
 1. Input node stores our value $x$
@@ -280,7 +280,7 @@ print(f"PyTorch gradient: {w.grad}")
 
 Under the hood, PyTorch computes the gradient using the computational graph we discussed earlier:
 
-![Least Squares Computational Graph](figures/computational_graph_least_squares.png)
+![Least Squares Computational Graph](figures/least_squares_computation.png)
 
 This graph shows how PyTorch breaks down the least squares computation into elementary operations:
 1. Matrix multiplication to form predictions $Xw$
@@ -301,8 +301,6 @@ The figure shows the contours of the least squares loss function for a simple 2D
 
 While least squares provides a clean introduction to gradient computation, modern machine learning requires more sophisticated models. PyTorch's `torch.nn.Module` provides a structured way to build these models. Let's examine how PyTorch implements neural networks, focusing on a simple two-layer network.
 
-![Neural Network Structure](figures/neural_network_structure.png)
-*The diagram shows how PyTorch organizes computation in a neural network. The forward pass (blue) computes predictions through a series of linear transformations and activations. Each layer maintains its own parameters (W₁, b₁, w₂, b₂) and computes intermediate values (z₁, h, z₂). During the backward pass (red), PyTorch builds a dynamic computation graph and computes gradients for all parameters. The optimizer (not shown) then uses these gradients to update the parameters.*
 
 Key components of PyTorch's implementation:
 
