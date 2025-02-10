@@ -345,13 +345,12 @@ grad = w.grad
 
 For $f(w) = \frac{1}{2}\|Xw - y\|^2$, we build:
 1. Input nodes storing $\mathbf{w}$
-2. Matrix multiply node computing $\mathbf{z}_1 = \mathbf{X}\mathbf{w}$
-3. Subtract node computing $\mathbf{z}_2 = \mathbf{z}_1 - \mathbf{y}$
-4. Square norm node computing $z_3 = \|\mathbf{z}_2\|^2$
-5. Scale node forming $f = \frac{1}{2}z_3$
+2. Residual node computing $\mathbf{z}_1 = \mathbf{X}\mathbf{w} - \mathbf{y}$
+3. Square norm node computing $z_2 = \|\mathbf{z}_1\|^2$
+4. Scale node forming $f = \frac{1}{2}z_2$
 
 
----
+--- 
 
 # Least Squares: Gradient Flow Step 1
 
