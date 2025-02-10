@@ -12,14 +12,14 @@ title: Beyond Least Squares - Computing Gradients in PyTorch
 ## Table of contents
 1. [Introduction](#introduction)
 2. [Computing Gradients of Loss Functions](#computing-gradients-of-loss-functions)
-3. [Applying Gradient Descent](#applying-gradient-descent)
-4. [Summary](#summary)
+3. [Applying Gradient Descent to Least Squares](#applying-gradient-descent-to-least-squares)
+4. [More Complex Loss Functions: Building Neural Networks](#more-complex-loss-functions-building-neural-networks)
 
 ## Introduction
 
 In our previous lecture, we explored gradient descent for minimizing the least squares objective. We saw how following the negative gradient leads us to the optimal solution, even for large-scale problems where direct methods fail. But least squares is just one example of a loss function. Modern machine learning employs a vast array of loss functions, each designed for specific tasks: cross-entropy for classification, Huber loss for robust regression, contrastive loss for similarity learning.
 
-The power of PyTorch lies in its ability to compute gradients for any differentiable function constructed from its operations. This lecture explores how to harness this capability, starting with simple one-dimensional examples and building up to complex neural network losses. We'll see how PyTorch's automatic differentiation system tracks computations, computes gradients efficiently, and helps us avoid common pitfalls.
+The power of PyTorch lies in its ability to compute gradients for any differentiable function constructed from its operations. This lecture explores how to harness this capability, starting with simple one-dimensional examples and building up to complex neural network losses. We'll see how PyTorch's automatic differentiation system tracks computationscomputes gradients efficiently.
 
 ## Computing Gradients of Loss Functions
 
@@ -340,7 +340,7 @@ To verify that PyTorch computes the correct gradient, we can compare it with our
 
 The figure shows the contours of the least squares loss function for a simple 2D problem. At three different points (marked in red, blue, and green), we compute gradients using both manual calculation (left) and PyTorch's automatic differentiation (right). The arrows show the negative gradient direction at each point - the direction of steepest descent. The gradient computed by PyTorch matches the manual calculation, confirming that PyTorch computes the correct gradient.
 
-## Applying Gradient Descent
+## Applying Gradient Descent to Least Squares
 
 Now that we know how to compute gradients via autodifferentiation, let's use them to find the optimal weights in a least squares problem. First let's recall how we manually ran gradient descent on the least squares loss
 
