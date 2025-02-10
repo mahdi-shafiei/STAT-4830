@@ -31,7 +31,7 @@ This function has an analytical gradient:
 
 $$ \frac{d}{dx}f(x) = 3x^2 - 3 $$
 
-While we can compute this derivative by hand, PyTorch offers a powerful alternative - automatic differentiation. Here's how it works:
+While we can compute this derivative by hand, PyTorch offers a powerful alternative - automatic differentiation. Here's how you use it.
 
 ```python
 import torch
@@ -39,13 +39,14 @@ import torch
 # Create input tensor with gradient tracking
 x = torch.tensor([1.0], requires_grad=True)
 
-# Define and compute function
+# Define the function
 def f(x):
     return x**3 - 3*x
 
+# Forward pass: evaluating the function
 y = f(x)
 
-# Compute gradient
+# Backward pass: computing the gradient
 y.backward()
 
 print(f"At x = {x.item():.1f}")
@@ -56,87 +57,124 @@ print(f"f'(x) = {x.grad.item():.1f}")  # Should be 3(1)² - 3 = 0
 This simple example reveals the key components of automatic differentiation:
 
 1. **Gradient Tracking**: We mark tensors that need gradients with `requires_grad=True`
-2. **Forward Pass**: PyTorch records operations as we compute the function
+2. **Forward Pass**: PyTorch automatically records operations as we compute the function 
 3. **Backward Pass**: The `backward()` call computes gradients through the recorded operations
 4. **Gradient Access**: The computed gradient is stored in the `.grad` attribute
 
 
-Let's visualize how the function and its gradient behave:
+Let's visualize how the analytic gradient and the gradient computed by PyTorch match up:
 
 ![Polynomial and Gradient](figures/polynomial_gradient.png)
 The top plot shows our function $f(x) = x^3 - 3x$, while the bottom plot compares PyTorch's computed gradient (red solid line) with the analytical gradient $3x^2 - 3$ (green dashed line). They match perfectly, confirming that PyTorch computes exact gradients. To understand how PyTorch achieves this precision, we need to examine the machinery that powers its automatic differentiation system.
 
 ### The Computational Graph
 
-To understand how PyTorch computes these gradients, we need to examine the computational graph it builds during the forward pass:
+To understand how PyTorch computes these gradients, we need to examine the computational graph it builds during the **forward pass:**
 
 ![Computational Graph](figures/polynomial_computation.png)
 
+The computational graph is a directed acyclic graph (DAG) where nodes represent operations and edges represent data flow. Each node stores:
+
+- Its output value computed during the forward pass
+- A function to compute local gradients (derivatives with respect to its inputs)
+
 Each node in this graph represents an operation:
 1. Input node stores our value $x$
-2. Power node computes $x^3$
-3. Multiply node computes $-3x$
-4. Add node combines terms to form $x^3 - 3x$
-5. Gradient node computes derivatives during backward pass
+2. Power node computes $z_1 = x^3$
+3. Multiply node computes $z_2 = -3x$
+4. Add node combines terms to form $f(x) = z_1 + z_2$
 
+During the forward pass, PyTorch, records each operation in sequence, stores intermediate values, and maintains references between operations.
 
-During the forward pass, PyTorch:
-1. Records each operation in sequence
-2. Stores intermediate values
-3. Maintains references between operations
+During the **backward pass**, PyTorch uses an efficient implementation of the *chain rule* that processes these nodes in reverse dependency order - what's called a *reverse topological sort*. This means we start at the output and only process a node after we've handled all the nodes that depend on its result. 
 
-During the backward pass, it:
-1. Starts at the output node
-2. Applies the chain rule through the graph
-3. Accumulates gradients at each node
-4. Stores the final result in `x.grad`
+More specifically, to compute $\frac{\partial f}{\partial x}$ for output $f$ with respect to input $x$, we go through the following process:
 
-This graph structure explains a crucial requirement: we can only compute gradients through operations that PyTorch implements. The framework needs to know both:
-1. How to compute the operation (forward pass)
-2. How to compute its derivative (backward pass)
+**Starting State:**
+- Initialize gradient at output node to 1 ($\frac{\partial f}{\partial f} = 1$)
+- All other gradient accumulators start at $0$
 
-Common operations like addition (`+`), multiplication (`*`), and power (`**`) are all implemented by PyTorch. Even when we use Python's standard operators, we're actually calling PyTorch's overloaded versions that know how to handle both computation and differentiation.
+**Algorithm:** The system performs a reverse topological sort traversal of the graph. At each node:
 
-After constructing the computational graph, PyTorch provides two methods for gradient computation. Each serves distinct use cases in machine learning workflows.
+- Compute local gradients using stored forward-pass values
+- Multiply incoming gradient by local gradient (chain rule)
+- Add result to gradient accumulators of input nodes
 
-The standard `backward()` method integrates directly with PyTorch's training infrastructure:
+For the polynomial $f(x) = x^3 - 3x$, this process looks like this:
+
+**Output Node ($f = z_1 + z_2$):**
+- $\frac{\partial f}{\partial f} = 1$
+- Local gradients: $\frac{\partial f}{\partial z_1} = 1$, $\frac{\partial f}{\partial z_2} = 1$
+- Pass to $z_1$, $z_2$ nodes: $\frac{\partial f}{\partial z_1} = 1$, $\frac{\partial f}{\partial z_2} = 1$
+
+**Power Node ($z_1 = x^3$):**
+- Incoming gradient: 1
+- Local gradient: $\frac{\partial z_1}{\partial x} = 3x^2$
+- Pass to $x$ node: $\frac{\partial f}{\partial x} = (1)(3x^2)$
+
+**Multiply Node ($z_2 = -3x$):**
+- Incoming gradient: 1
+- Local gradient: $\frac{\partial z_2}{\partial x} = -3$
+- Pass to $x$ node: $\frac{\partial f}{\partial x} = (1)(-3)$
+
+**Input Node ($x$):**
+- Incoming gradients: $3x^2$ and $-3$
+- Final gradient: $\frac{\partial f}{\partial x} = 3x^2 - 3$
+
+From this example, it should be clear that the algorithm is completely mechanical - each node only needs to know its local gradient function, and the graph structure handles all gradient routing and accumulation. Moreover, the memory complexity is O(n) where n is the number of nodes, as we store one gradient accumulator per node. The time complexity is also O(n) as we visit each node exactly once and perform a fixed amount of work per node.
+
+While we state this result for a one function of a single variable, it should be clear that it generalizes. For example, to handle multiple inputs, we track separate gradient accumulators for each input. For vector-valued functions, gradients become Jacobian matrices. Higher derivatives can be computed by applying the same process to the gradient computation graph.
+
+**Important Requirement:** This graph structure explains a crucial requirement: we can only compute gradients through operations that PyTorch implements. The framework needs to know both (1) how to compute the operation (forward pass) and (2) how to compute its derivative (backward pass). Common operations like addition (`+`), multiplication (`*`), and power (`**`) are all implemented by PyTorch. Even when we use Python's standard operators, we're actually calling PyTorch's overloaded versions that know how to handle both computation and differentiation.
+
+### Two Methods for Gradient Computation: `backward()` and `autograd.grad()`
+
+PyTorch provides two ways to compute gradients, each designed for different use cases. Let's see how they work using our polynomial example:
 
 ```python
+# Our familiar polynomial f(x) = x³ - 3x
 x = torch.tensor([1.0], requires_grad=True)
-y = x**3 - 3*x
-y.backward()
-gradient = x.grad  # Gradient stored in tensor's grad attribute
+z1 = x**3           # First intermediate value
+z2 = -3*x          # Second intermediate value
+f = z1 + z2        # Final output
 ```
 
-This method stores gradients in the tensors themselves through the `.grad` attribute. The storage mechanism makes it efficient for training neural networks, where we repeatedly compute and apply gradients to the same parameters. The trade-off comes in memory usage - gradients persist in memory and accumulate across backward passes unless explicitly cleared.
+During this forward pass, PyTorch builds a computational graph dynamically. Each operation adds nodes and edges to the graph, tracking how values flow through the computation. The graph in our visualization shows exactly this process - from input x through intermediate values z₁ and z₂ to the final output f.
 
-For cases where persistent gradient storage isn't needed, PyTorch offers the functional `torch.autograd.grad`:
+The standard method uses `backward()`:
+```python
+f.backward()        # Compute gradient
+print(x.grad)       # Access gradient through .grad attribute
+```
+
+When you call `backward()`, PyTorch (1) creates a new graph for the gradient computation, (2) computes gradients by flowing backward through this graph, (3) stores results in the `.grad` attributes of input tensors, and (4) discards both graphs to free memory.
+
+You can inspect intermediate values during computation:
+```python
+print(z1.data)      # See value of x³
+print(z2.data)      # See value of -3x
+```
+
+By default, PyTorch only stores gradients for leaf tensors (inputs where we set `requires_grad=True`). This saves memory while still giving us the gradients we need for optimization. If you need gradients for intermediate values, you can request them:
 
 ```python
-x = torch.tensor([1.0], requires_grad=True)
-y = x**3 - 3*x
-gradient = torch.autograd.grad(y, x)[0]  # Gradient returned directly
+z1.retain_grad()    # Tell PyTorch to store this gradient
+f.backward()
+print(z1.grad)      # Now we can see how f changes with z₁
 ```
 
-This method computes and returns gradients without modifying tensor state. It uses less memory since gradients don't persist, but requires more explicit gradient management in training loops. The functional approach particularly suits scenarios like computing higher-order derivatives or when you need temporary gradient values.
+The second method, `torch.autograd.grad()`, gives us more direct control:
+```python
+x = torch.tensor([1.0], requires_grad=True)
+f = x**3 - 3*x
+grad = torch.autograd.grad(f, x)[0]  # Get gradient directly
+```
 
-The methods compute mathematically identical gradients but differ in how they handle the results:
+This method (1) returns the gradient immediately as a new tensor (2) lets you compute gradients with respect to any tensor in your computation (3) creates and discards the computational graph in one step
 
-- `backward()`: 
-  - Stores gradients in `.grad` attributes
-  - Integrates naturally with optimizers
-  - Requires gradient zeroing between steps
-  - Uses more memory due to gradient storage
+Both methods compute exactly the same gradients - they just offer different ways to access them. Use `backward()` when you want gradients stored in your tensors, and `autograd.grad()` when you want direct access to specific gradients.
 
-- `torch.autograd.grad`:
-  - Returns gradients without storage
-  - Provides cleaner functional interface
-  - Avoids gradient accumulation issues
-  - Requires manual gradient handling
-
-The choice between methods typically depends on your training setup. Use `backward()` for standard training loops where you update parameters repeatedly. Use `torch.autograd.grad` for one-off gradient computations or when you need more control over gradient flow.
-
-These gradient computation methods form the foundation for building neural networks in PyTorch. The framework provides `torch.nn.Module` as a structured way to combine these operations into reusable model components. Let's examine how this works.
+The computational graph we drew earlier shows exactly how these gradients are computed, combining the derivatives at each step using the chain rule. The power of PyTorch's automatic differentiation is that it handles this process automatically, letting us focus on designing our computations rather than deriving gradients by hand.
 
 ### Common Pitfalls in Automatic Differentiation
 
