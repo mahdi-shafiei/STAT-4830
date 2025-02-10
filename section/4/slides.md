@@ -160,7 +160,6 @@ print(f"f'(1) = {x.grad}") # Gradient Access
 # Building the Computational Graph
 
 
-
 Each node in the graph:
 - Stores output value from forward pass
 - Contains function for local gradients
@@ -171,7 +170,6 @@ For $f(x) = x^3 - 3x$, we build:
 2. Power node computing $z_1 = x^3$
 3. Multiply node computing $z_2 = -3x$
 4. Add node forming $f = z_1 + z_2$
-
 
 
 ---
@@ -331,9 +329,6 @@ grad = w.grad
 
 ---
 
-
----
-
 # Computational Graph
 
 ![bg 40%](figures/least_squares_computation.png)
@@ -342,115 +337,77 @@ grad = w.grad
 
 # Building the Least Squares Graph
 
-
 For $f(w) = \frac{1}{2}\|Xw - y\|^2$, we build:
 1. Input nodes storing $\mathbf{w}$
 2. Residual node computing $\mathbf{z}_1 = \mathbf{X}\mathbf{w} - \mathbf{y}$
 3. Square norm node computing $z_2 = \|\mathbf{z}_1\|^2$
 4. Scale node forming $f = \frac{1}{2}z_2$
 
-
 --- 
+
+# Computing Gradients: The Process
+
+
+**Starting State:**
+- Initialize $\frac{\partial f}{\partial f} = 1$ at output
+- All other gradients start at 0
+
+**Algorithm:**
+1. Process nodes in reverse order
+2. Compute local gradients
+3. Multiply by incoming gradient
+4. Add to input gradients
+---
 
 # Least Squares: Gradient Flow Step 1
 
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
-<div>
 
 **Output Node** ($f = \frac{1}{2}z_2$):
 - Incoming gradient: $\frac{\partial f}{\partial f} = 1$ (scalar)
 - Total derivative: $\frac{\partial f}{\partial z_2} = \frac{1}{2}$ (scalar)
 - Propagate to $z_2$ node: $\frac{\partial f}{\partial z_2} = \frac{1}{2}$ (1×1 matrix)
 
-</div>
-<div>
-
-Starting at output node:
-- Initialize gradient to 1
-- Compute local derivative
-- Pass to next node
-
-Key insight: The chain rule starts at the output and works backwards.
-
-</div>
-</div>
 
 ---
 
 # Least Squares: Gradient Flow Step 2
 
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
-<div>
 
 **Square Norm Node** ($z_2 = \|\mathbf{z}_1\|^2$):
 - Incoming total derivative: $\frac{\partial f}{\partial z_2} = \frac{1}{2}$ (1×1 matrix)
 - Local total derivative: $\frac{\partial z_2}{\partial \mathbf{z}_1} = 2\mathbf{z}_1^\top$ (1×n matrix)
 - Propagate to $\mathbf{z}_1$ node: $\frac{\partial f}{\partial \mathbf{z}_1} = \frac{\partial f}{\partial z_2}\frac{\partial z_2}{\partial \mathbf{z}_1} = \mathbf{z}_1^\top$ (1×n matrix)
 
-</div>
-<div>
 
-At square norm node:
-- Receive gradient from output
-- Compute derivative of squared norm
-- Multiply and propagate
-
-Key insight: Matrix calculus rules handle vector derivatives automatically.
-
-</div>
-</div>
 
 ---
 
 # Least Squares: Gradient Flow Step 3
 
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
-<div>
+
 
 **Residual Node** ($\mathbf{z}_1 = \mathbf{X}\mathbf{w} - \mathbf{y}$):
 - Incoming total derivative: $\frac{\partial f}{\partial \mathbf{z}_1} = \mathbf{z}_1^\top$ (1×n matrix)
 - Local total derivative: $\frac{\partial \mathbf{z}_1}{\partial \mathbf{w}} = \mathbf{X}$ (n×p matrix)
 - Total derivative to $\mathbf{w}$ node: $\frac{\partial f}{\partial \mathbf{w}} = \mathbf{z}_1^\top\mathbf{X}$ (1×p matrix)
 
-</div>
-<div>
 
-At residual node:
-- Receive gradient from norm
-- Compute matrix derivative
-- Chain rule through matrix multiply
-
-Key insight: Matrix dimensions ensure correct multiplication order.
-
-</div>
-</div>
 
 ---
 
 # Least Squares: Final Step
 
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
-<div>
+
 
 **Input Node** ($\mathbf{w}$):
 - Total derivative: $\frac{\partial f}{\partial \mathbf{w}} = \mathbf{z}_1^\top\mathbf{X}$ (1×p matrix)
 - Convert to gradient: $\nabla f = (\frac{\partial f}{\partial \mathbf{w}})^\top = \mathbf{X}^\top\mathbf{z}_1$ (p×1 matrix)
 
-Key insight:
-> The chain rule naturally produces a row vector, but we conventionally write the gradient as a column vector - hence the transpose!
-
-</div>
-<div>
 
 Final computation:
 $$ \nabla f = \mathbf{X}^\top(\mathbf{X}\mathbf{w} - \mathbf{y}) $$
 
-PyTorch handles all these steps automatically!
 
-Key insight: The final form matches our manual derivation exactly.
-
-</div>
-</div>
 
 ---
 
