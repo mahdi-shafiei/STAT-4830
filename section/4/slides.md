@@ -64,24 +64,13 @@ Key benefits:
 
 <div style="text-align: center; margin-top: 2em;">
 
-1. **Computational Graphs**
-   - Track operations and dependencies
-   - Store intermediate values
-   - Enable automatic differentiation
-
-2. **Reverse-Mode Differentiation**
-   - Flow gradients backward
-   - Implement chain rule efficiently
-   - Accumulate gradients automatically
-
-3. **Memory-Efficient Implementation**
-   - Never form large matrices
-   - Reuse computation
-   - Scale to complex networks
+1. **Computational Graph** 
+2. **Reverse-Mode Differentiation** 
+3. **Memory-Efficient Implementation** 
 
 </div>
 
----
+<!-- ---
 
 # Motivation: From Least Squares to Neural Networks
 
@@ -93,7 +82,7 @@ In Lecture 3, we minimized least squares using gradient descent:
 Today we'll see how PyTorch:
 - Automates gradient computation
 - Handles any differentiable function
-- Scales to complex neural networks
+- Scales to complex neural networks -->
 
 ---
 
@@ -106,9 +95,6 @@ Today we'll see how PyTorch:
 ```
 Function → Graph → Gradient
 ```
-- Automatic differentiation
-- Computational graphs
-- Chain rule implementation
 
 </div>
 <div>
@@ -117,9 +103,6 @@ Function → Graph → Gradient
 ```
 Gradient → Update → Repeat
 ```
-- Memory efficiency
-- Common pitfalls
-- Best practices
 
 </div>
 <div>
@@ -128,9 +111,6 @@ Gradient → Update → Repeat
 ```
 Features → Layers → Loss
 ```
-- Building blocks
-- Training process
-- MNIST example
 
 </div>
 </div> 
@@ -148,151 +128,107 @@ $$ \frac{d}{dx}f(x) = 3x^2 - 3 $$
 
 PyTorch automates this:
 ```python
-x = torch.tensor([1.0], requires_grad=True)
-y = x**3 - 3*x
-y.backward()
-print(f"f'(1) = {x.grad}")  # Prints 0
+x = torch.tensor([1.0], requires_grad=True) # Gradient Tracking
+y = x**3 - 3*x # Forward Pass
+y.backward() # Backward Pass
+print(f"f'(1) = {x.grad}") # Gradient Access
 ```
 
 ---
 
-# Key Components
+
+
+![bg 70%](figures/polynomial_gradient.png)
+
+
+
+---
+
+
+# How does PyTorch do this?
+
+- **Forward pass:** When you evaluate a function, PyTorch computes a *computational graph* that records all operations like addition, multiplication, powers, etc.
+- **Backward pass:** PyTorch traverses the graph in reverse order to compute the gradient, using what is essentially an efficient implementation of the chain rule.
+
+
+---
+# The graph 
+![bg 40%](figures/polynomial_computation.png)
+
+---
+
+# Building the Computational Graph
+
+
+
+Each node in the graph:
+- Stores output value from forward pass
+- Contains function for local gradients
+- Maintains references to inputs
+
+For $f(x) = x^3 - 3x$, we build:
+1. Input node storing $x$
+2. Power node computing $z_1 = x^3$
+3. Multiply node computing $z_2 = -3x$
+4. Add node forming $f = z_1 + z_2$
+
+
+
+---
+
+# Computing Gradients: The Process
+
+
+**Starting State:**
+- Initialize $\frac{\partial f}{\partial f} = 1$ at output
+- All other gradients start at 0
+
+**Algorithm:**
+1. Process nodes in reverse order
+2. Compute local gradients
+3. Multiply by incoming gradient
+4. Add to input gradients
+
+
+
+---
+
+# Gradient Flow: Step by Step
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
 <div>
 
-```python
-# 1. Gradient Tracking
-x = torch.tensor([1.0], requires_grad=True)
+**1. Output Node** ($f = z_1 + z_2$):
+- $\frac{\partial f}{\partial f} = 1$
+- $\frac{\partial f}{\partial z_1} = 1$, $\frac{\partial f}{\partial z_2} = 1$
+- Propagate to both input nodes
 
-# 2. Forward Pass
-y = x**3 - 3*x
+**2. Power Node** ($z_1 = x^3$):
+- Incoming gradient: 1
+- Local gradient: $\frac{\partial z_1}{\partial x} = 3x^2$
+- Contribute: $\frac{\partial f}{\partial x} \mathrel{+}= (1)3x^2$
 
-# 3. Backward Pass
-y.backward()
-
-# 4. Gradient Access
-print(x.grad)
-```
 
 </div>
 <div style="text-align: center;">
 
-![h:300](figures/polynomial_gradient.png)
+**3. Multiply Node** ($z_2 = -3x$):
+- Incoming gradient: 1
+- Local gradient: $\frac{\partial z_2}{\partial x} = -3$
+- Contribute: $\frac{\partial f}{\partial x} \mathrel{+}= (1)(-3)$
 
-PyTorch's gradient (red) matches
-analytical solution (green)
+**4. Input Node** ($x$):
+- Accumulates from both paths
+- ($-3$) from multiply node
+- ($3x^2$) from power node
+- Final gradient: $\frac{\partial f}{\partial x} = 3x^2 - 3$
+
 
 </div>
 </div>
 
 ---
 
-# Building a Computational Graph
-
-Let's see how PyTorch builds a graph for:
-$$ f(x) = x^3 - 3x $$
-
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
-<div>
-
-Step 1: Create input node
-```python
-x = torch.tensor([1.0], 
-                 requires_grad=True)
-```
-![h:150](figures/graph_step1.png)
-
-</div>
-<div>
-
-Key properties:
-- Tracks gradients
-- Stores value
-- Records operations
-
-</div>
-</div>
-
----
-
-# Building a Computational Graph
-
-Step 2: Power operation $z_1 = x^3$
-
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
-<div>
-
-```python
-z1 = x**3
-```
-
-Graph grows:
-- New operation node
-- Stores intermediate value
-- Records connection to input
-
-</div>
-<div style="text-align: center;">
-
-![h:300](figures/graph_step2.png)
-
-Each node stores:
-- Forward value
-- Gradient function
-- Input connections
-
-</div>
-</div>
-
----
-
-# Building a Computational Graph
-
-Step 3: Linear term $z_2 = -3x$
-
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
-<div>
-
-```python
-z2 = -3 * x
-```
-
-Note:
-- Reuses input node
-- Creates new operation
-- Stores scalar multiplier
-
-</div>
-<div style="text-align: center;">
-
-![h:300](figures/graph_step3.png)
-
-Multiple paths from x:
-- Through power node
-- Through multiply node
-- Will need accumulation
-
-</div>
-</div>
-
----
-
-# The Complete Computational Graph
-
-<div style="text-align: center;">
-
-Final step: Addition $f = z_1 + z_2$
-
-![bg 50%](figures/polynomial_computation.png)
-
-Key features:
-- Forward edges (blue): computation flow
-- Backward edges (red): gradient flow
-- Multiple paths: require accumulation
-- Each node: stores values and gradients
-
-</div>
 
 ---
 
