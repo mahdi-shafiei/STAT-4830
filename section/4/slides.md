@@ -230,132 +230,6 @@ For $f(x) = x^3 - 3x$, we build:
 ---
 
 
----
-
-# Forward Pass: Computing Values
-
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
-<div>
-
-For input $x = 1$:
-
-1. Power node:
-   $z_1 = 1^3 = 1$
-
-2. Multiply node:
-   $z_2 = -3(1) = -3$
-
-3. Add node:
-   $f = 1 + (-3) = -2$
-
-</div>
-<div>
-
-```python
-# Forward computation
-x = torch.tensor([1.0], 
-                 requires_grad=True)
-z1 = x**3
-z2 = -3 * x
-f = z1 + z2
-
-print(f"z1: {z1.item()}")  # 1.0
-print(f"z2: {z2.item()}")  # -3.0
-print(f"f: {f.item()}")    # -2.0
-```
-
-</div>
-</div>
-
----
-
-# Backward Pass: Computing Gradients
-
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
-<div>
-
-Starting from output:
-1. Initialize $\frac{\partial f}{\partial f} = 1$
-2. Flow through power path:
-   $\frac{\partial f}{\partial x} \mathrel{+}= 3x^2$
-3. Flow through multiply path:
-   $\frac{\partial f}{\partial x} \mathrel{+}= -3$
-
-</div>
-<div style="text-align: center;">
-
-![h:300](figures/graph_backward.png)
-
-Gradient accumulation:
-- Sum contributions
-- Multiple paths
-- Chain rule at each step
-
-</div>
-</div>
-
----
-
-# The Chain Rule: A Visual Guide
-
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
-<div>
-
-For a chain of operations:
-$$ x \xrightarrow{g} z \xrightarrow{h} y $$
-
-The chain rule states:
-$$ \frac{dy}{dx} = \frac{dy}{dz} \cdot \frac{dz}{dx} $$
-
-</div>
-<div style="text-align: center;">
-
-![h:300](figures/chain_rule.png)
-
-Gradient flows backward:
-1. Start at output
-2. Multiply derivatives
-3. Follow paths back
-
-</div>
-</div>
-
----
-
-# Chain Rule in PyTorch
-
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
-<div>
-
-```python
-# Forward pass
-z = g(x)  # First function
-y = h(z)  # Second function
-
-# Backward pass
-dy_dz = h.grad_fn(z)    # Local grad
-dz_dx = g.grad_fn(x)    # Local grad
-dy_dx = dy_dz * dz_dx   # Chain rule
-```
-
-</div>
-<div>
-
-Each node stores:
-1. Forward function
-2. Gradient function
-3. Input references
-
-PyTorch handles:
-- Function composition
-- Gradient computation
-- Memory management
-
-</div>
-</div>
-
----
-
 # Two Implementation Approaches
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
@@ -400,88 +274,16 @@ Best for:
 </div>
 </div>
 
----
-
-# Memory Management: Theory vs Practice
-
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
-<div>
-
-Manual gradient:
-```python
-# Forms huge matrices
-XtX = X.T @ X  # O(p²) memory
-grad = XtX @ w  # Matrix-vector
-```
-
-Problems:
-- Excessive memory use
-- Poor cache utilization
-- Limited scalability
-
-</div>
-<div>
-
-PyTorch gradient:
-```python
-# Matrix-vector only
-Xw = X @ w     # O(p) memory
-grad = X.T @ Xw  # Matrix-vector
-```
-
-Benefits:
-- Minimal memory use
-- Cache-friendly
-- Scales to large problems
-
-</div>
-</div>
 
 ---
 
-# Best Practices for Memory
-
-<div style="text-align: center; margin-top: 2em;">
-
-1. **During Training**
-   ```python
-   optimizer.zero_grad()  # Clear gradients
-   loss.backward()       # Compute gradients
-   optimizer.step()      # Update weights
-   ```
-
-2. **During Evaluation**
-   ```python
-   with torch.no_grad():  # No gradients needed
-       model.eval()       # Evaluation mode
-       predictions = model(data)
-   ```
-
-3. **Memory Management**
-   ```python
-   del intermediate      # Free memory
-   torch.cuda.empty_cache()  # GPU cleanup
-   ```
-
-</div>
-
----
 
 # From Simple to Complex: Least Squares
 
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
-<div>
 
 Manual gradient:
 $$ \nabla f = X^\top(Xw - y) $$
 
-Requires:
-- Matrix formation
-- Careful derivation
-- Memory allocation
-
-</div>
-<div>
 
 PyTorch gradient:
 ```python
@@ -491,15 +293,13 @@ loss.backward()
 grad = w.grad
 ```
 
-Benefits:
-- Automatic computation
-- Memory efficient
-- Scales naturally
-
-</div>
-</div>
-
 ---
+# Agreement between manual and PyTorch
+
+![](figures/least_squares_comparison.png)
+ 
+
+--- 
 
 # The Least Squares Graph: Step by Step
 
@@ -531,30 +331,124 @@ Benefits:
 
 ---
 
-# Gradient Flow in Least Squares
+
+---
+
+# Computational Graph
+
+![bg 40%](figures/least_squares_computation.png)
+
+---
+
+# Building the Least Squares Graph
+
+
+For $f(w) = \frac{1}{2}\|Xw - y\|^2$, we build:
+1. Input nodes storing $\mathbf{w}$
+2. Matrix multiply node computing $\mathbf{z}_1 = \mathbf{X}\mathbf{w}$
+3. Subtract node computing $\mathbf{z}_2 = \mathbf{z}_1 - \mathbf{y}$
+4. Square norm node computing $z_3 = \|\mathbf{z}_2\|^2$
+5. Scale node forming $f = \frac{1}{2}z_3$
+
+
+---
+
+# Least Squares: Gradient Flow Step 1
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
 <div>
 
-Total derivatives:
-1. $\frac{\partial f}{\partial z_3} = \frac{1}{2}$
-2. $\frac{\partial z_3}{\partial \mathbf{z}_2} = 2\mathbf{z}_2^\top$
-3. $\frac{\partial \mathbf{z}_2}{\partial \mathbf{w}} = \mathbf{X}$
-
-Chain rule:
-$$ \frac{\partial f}{\partial \mathbf{w}} = \frac{1}{2} \cdot 2\mathbf{z}_2^\top \cdot \mathbf{X} $$
+**Output Node** ($f = \frac{1}{2}z_2$):
+- Incoming gradient: $\frac{\partial f}{\partial f} = 1$ (scalar)
+- Total derivative: $\frac{\partial f}{\partial z_2} = \frac{1}{2}$ (scalar)
+- Propagate to $z_2$ node: $\frac{\partial f}{\partial z_2} = \frac{1}{2}$ (1×1 matrix)
 
 </div>
 <div>
 
-Key insights:
-1. Row vector gradients
-2. Matrix-vector products
-3. No matrix formation
-4. Memory efficient
+Starting at output node:
+- Initialize gradient to 1
+- Compute local derivative
+- Pass to next node
 
-Final gradient:
+Key insight: The chain rule starts at the output and works backwards.
+
+</div>
+</div>
+
+---
+
+# Least Squares: Gradient Flow Step 2
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
+<div>
+
+**Square Norm Node** ($z_2 = \|\mathbf{z}_1\|^2$):
+- Incoming total derivative: $\frac{\partial f}{\partial z_2} = \frac{1}{2}$ (1×1 matrix)
+- Local total derivative: $\frac{\partial z_2}{\partial \mathbf{z}_1} = 2\mathbf{z}_1^\top$ (1×n matrix)
+- Propagate to $\mathbf{z}_1$ node: $\frac{\partial f}{\partial \mathbf{z}_1} = \frac{\partial f}{\partial z_2}\frac{\partial z_2}{\partial \mathbf{z}_1} = \mathbf{z}_1^\top$ (1×n matrix)
+
+</div>
+<div>
+
+At square norm node:
+- Receive gradient from output
+- Compute derivative of squared norm
+- Multiply and propagate
+
+Key insight: Matrix calculus rules handle vector derivatives automatically.
+
+</div>
+</div>
+
+---
+
+# Least Squares: Gradient Flow Step 3
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
+<div>
+
+**Residual Node** ($\mathbf{z}_1 = \mathbf{X}\mathbf{w} - \mathbf{y}$):
+- Incoming total derivative: $\frac{\partial f}{\partial \mathbf{z}_1} = \mathbf{z}_1^\top$ (1×n matrix)
+- Local total derivative: $\frac{\partial \mathbf{z}_1}{\partial \mathbf{w}} = \mathbf{X}$ (n×p matrix)
+- Total derivative to $\mathbf{w}$ node: $\frac{\partial f}{\partial \mathbf{w}} = \mathbf{z}_1^\top\mathbf{X}$ (1×p matrix)
+
+</div>
+<div>
+
+At residual node:
+- Receive gradient from norm
+- Compute matrix derivative
+- Chain rule through matrix multiply
+
+Key insight: Matrix dimensions ensure correct multiplication order.
+
+</div>
+</div>
+
+---
+
+# Least Squares: Final Step
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
+<div>
+
+**Input Node** ($\mathbf{w}$):
+- Total derivative: $\frac{\partial f}{\partial \mathbf{w}} = \mathbf{z}_1^\top\mathbf{X}$ (1×p matrix)
+- Convert to gradient: $\nabla f = (\frac{\partial f}{\partial \mathbf{w}})^\top = \mathbf{X}^\top\mathbf{z}_1$ (p×1 matrix)
+
+Key insight:
+> The chain rule naturally produces a row vector, but we conventionally write the gradient as a column vector - hence the transpose!
+
+</div>
+<div>
+
+Final computation:
 $$ \nabla f = \mathbf{X}^\top(\mathbf{X}\mathbf{w} - \mathbf{y}) $$
+
+PyTorch handles all these steps automatically!
+
+Key insight: The final form matches our manual derivation exactly.
 
 </div>
 </div>
