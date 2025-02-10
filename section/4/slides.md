@@ -83,15 +83,6 @@ Key benefits:
 
 ---
 
-# Overview
-
-Three key ideas drive PyTorch's automatic differentiation:
-1. Computational graphs track operations and dependencies
-2. Chain rule flows gradients backward through the graph
-3. Memory-efficient implementation enables large-scale optimization
-
----
-
 # Motivation: From Least Squares to Neural Networks
 
 In Lecture 3, we minimized least squares using gradient descent:
@@ -289,9 +280,19 @@ Multiple paths from x:
 
 # The Complete Computational Graph
 
-<!-- Final step: Addition $f = z_1 + z_2$ -->
+<div style="text-align: center;">
+
+Final step: Addition $f = z_1 + z_2$
 
 ![bg 50%](figures/polynomial_computation.png)
+
+Key features:
+- Forward edges (blue): computation flow
+- Backward edges (red): gradient flow
+- Multiple paths: require accumulation
+- Each node: stores values and gradients
+
+</div>
 
 ---
 
@@ -465,7 +466,7 @@ Best for:
 
 ---
 
-# Memory Management Comparison
+# Memory Management: Theory vs Practice
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
 <div>
@@ -506,24 +507,24 @@ Benefits:
 
 <div style="text-align: center; margin-top: 2em;">
 
-1. **Clear Gradients**
+1. **During Training**
    ```python
-   optimizer.zero_grad()  # Before backward
+   optimizer.zero_grad()  # Clear gradients
+   loss.backward()       # Compute gradients
+   optimizer.step()      # Update weights
    ```
 
-2. **Use Context Managers**
+2. **During Evaluation**
    ```python
-   with torch.no_grad():  # During eval
+   with torch.no_grad():  # No gradients needed
+       model.eval()       # Evaluation mode
+       predictions = model(data)
    ```
 
-3. **Avoid Graph Creation**
+3. **Memory Management**
    ```python
-   torch.inference_mode()  # Even faster
-   ```
-
-4. **Release Memory**
-   ```python
-   del intermediate  # Free unused
+   del intermediate      # Free memory
+   torch.cuda.empty_cache()  # GPU cleanup
    ```
 
 </div>
@@ -842,11 +843,6 @@ Key differences:
 2. Nonlinear boundary
 3. Better capacity
 
-Common mistakes:
-- Ambiguous writing
-- Unusual styles
-- Poor image quality
-
 </div>
 </div>
 
@@ -862,88 +858,18 @@ Common mistakes:
    - Handles any differentiable function
    - Scales to complex networks
 
-2. **Implementation Best Practices**
-   - Track gradients selectively
-   - Clear accumulators regularly
-   - Use context managers
-   - Manage memory actively
+2. **Memory Efficiency**
+   - Never forms large matrices
+   - Uses matrix-vector products
+   - Enables large-scale optimization
+   - Scales to deep networks
 
-3. **From Theory to Practice**
-   - Simple polynomials → Neural nets
-   - Manual → Automatic gradients
-   - Small scale → Large scale
-   - Theory guides implementation
+3. **PyTorch Implementation**
+   - Simple interface
+   - Automatic gradients
+   - Memory management
+   - Production ready
 
-</div>
-
----
-
-# Practical Guidelines
-
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
-<div>
-
-Memory Management:
-```python
-# During training
-optimizer.zero_grad()
-loss.backward()
-optimizer.step()
-
-# During evaluation
-with torch.no_grad():
-    model.eval()
-    predictions = model(data)
-```
-
-</div>
-<div>
-
-Graph Management:
-```python
-# Track selectively
-x.requires_grad = True
-y.requires_grad = False
-
-# Clear when done
-del intermediate
-torch.cuda.empty_cache()
-
-# Use inference mode
-@torch.inference_mode()
-def evaluate():
-    pass
-```
-
-</div>
-</div>
-
----
-
-# Try it yourself!
-
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
-<div>
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/4/notebook.ipynb)
-
-Experiment with:
-1. Building computational graphs
-2. Training neural networks
-3. Visualizing gradients
-4. Memory management
-
-</div>
-<div>
-
-Key exercises:
-1. Implement polynomial gradient
-2. Train MNIST classifier
-3. Compare memory usage
-4. Profile performance
-5. Visualize results
-
-</div>
 </div>
 
 ---
@@ -962,10 +888,8 @@ Key exercises:
    - Custom loss functions
    - Training strategies
 
-3. **System Design**
-   - Memory optimization
-   - Distributed training
-   - Hardware acceleration
+3. **Try it yourself!**
+   [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/4/notebook.ipynb)
 
 </div>
 
