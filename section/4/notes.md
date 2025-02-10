@@ -17,9 +17,9 @@ title: Beyond Least Squares - Computing Gradients in PyTorch
 
 ## Introduction
 
-In our previous lecture, we explored gradient descent for minimizing the least squares objective. We saw how following the negative gradient leads us to the optimal solution, even for large-scale problems where direct methods fail. But least squares is just one example of a loss function. Modern machine learning employs a vast array of loss functions, each designed for specific tasks: cross-entropy for classification, Huber loss for robust regression, contrastive loss for similarity learning.
+In our previous lecture, we explored gradient descent for minimizing the least squares objective. We saw how following the negative gradient leads us to the optimal solution, even for large-scale problems where direct methods fail. But least squares is just one example of a loss function. Modern machine learning employs many loss functions, each designed for specific tasks: cross-entropy for classification, Huber loss for robust regression, contrastive loss for similarity learning.
 
-The power of PyTorch lies in its ability to compute gradients for any differentiable function constructed from its operations. This lecture explores how to harness this capability, starting with simple one-dimensional examples and building up to complex neural network losses. We'll see how PyTorch's automatic differentiation system tracks computationscomputes gradients efficiently.
+PyTorch provides a powerful system for computing gradients of any differentiable function built from its operations. This capability forms the foundation of modern deep learning, enabling automatic computation of gradients for complex neural networks. In this lecture, we examine how PyTorch's automatic differentiation system works, starting with simple one-dimensional examples and building up to neural networks. We'll see how the same principles that let us optimize least squares problems extend naturally to more complex settings.
 
 ## Computing Gradients of Loss Functions
 
@@ -520,15 +520,9 @@ def train_model(model, X_train, y_train, X_val, y_val, alpha=0.01, n_steps=1000)
                 param -= alpha * param.grad # update the parameters
                 param.grad.zero_() # reset the gradient to zero to avoid accumulation
 ```
-
-The neural network achieves 92.40% test accuracy versus logistic regression's 87.30%. This gap results from the neural network's ability to learn nonlinear decision boundaries.
+The neural network achieves 92.40% test accuracy versus logistic regression's 87.30%. This gap results from the neural network's ability to learn 
+nonlinear decision boundaries.
 
 ![MNIST Training Curves](figures/mnist_training_curves.png)
 *Training curves for logistic regression (blue) and neural network (red). The neural network learns faster and reaches higher accuracy.*
-
-
-![MNIST Common Mistakes](figures/mnist_misclassified.png)
-*Examples misclassified by both models.*
-
-Analysis of misclassified examples reveals patterns in model errors. The neural network performs better by learning features through its hidden layer to distinguish odd from even digits.
 
