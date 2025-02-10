@@ -105,23 +105,23 @@ For the polynomial $f(x) = x^3 - 3x$, this process looks like this:
 **Output Node ($f = z_1 + z_2$):**
 - $\frac{\partial f}{\partial f} = 1$
 - Local gradients: $\frac{\partial f}{\partial z_1} = 1$, $\frac{\partial f}{\partial z_2} = 1$
-- Pass to $z_1$, $z_2$ nodes: $\frac{\partial f}{\partial z_1} = 1$, $\frac{\partial f}{\partial z_2} = 1$
+- Propagate to $z_1$, $z_2$ nodes: $\frac{\partial f}{\partial z_1} = 1$, $\frac{\partial f}{\partial z_2} = 1$
 
 **Power Node ($z_1 = x^3$):**
 - Incoming gradient: 1
 - Local gradient: $\frac{\partial z_1}{\partial x} = 3x^2$
-- Pass to $x$ node: $\frac{\partial f}{\partial x} = (1)(3x^2)$
+- Contribute to x's gradient accumulator: $\frac{\partial f}{\partial x} \mathrel{+}= (1)(3x^2)$
 
 **Multiply Node ($z_2 = -3x$):**
 - Incoming gradient: 1
 - Local gradient: $\frac{\partial z_2}{\partial x} = -3$
-- Pass to $x$ node: $\frac{\partial f}{\partial x} = (1)(-3)$
+- Contribute to x's gradient accumulator: $\frac{\partial f}{\partial x} \mathrel{+}= (1)(-3)$
 
-**Input Node ($x$):**
-- Incoming gradients: $3x^2$ and $-3$
-- Final gradient: $\frac{\partial f}{\partial x} = 3x^2 - 3$
+**Input Node ($x$):** [accumulation needed because x has two outgoing edges]
+- Accumulated gradients from both paths: $3x^2$ and $-3$
+- Final gradient (sum of all paths): $\frac{\partial f}{\partial x} = 3x^2 - 3$
 
-From this example, it should be clear that the algorithm is completely mechanical - each node only needs to know its local gradient function, and the graph structure handles all gradient routing and accumulation. Moreover, the memory complexity is O(n) where n is the number of nodes, as we store one gradient accumulator per node. The time complexity is also O(n) as we visit each node exactly once and perform a fixed amount of work per node.
+From this example, it should be clear that the algorithm is completely mechanical - each node only needs to know its local gradient function, and the graph structure determines where accumulation is needed (at nodes with multiple outgoing edges). The memory complexity is O(n) where n is the number of nodes, as we store one gradient accumulator per node. The time complexity is also O(n) as we visit each node exactly once and perform a fixed amount of work per node.
 
 While we state this result for a one function of a single variable, it should be clear that it generalizes. For example, to handle multiple inputs, we track separate gradient accumulators for each input. For vector-valued functions, gradients become Jacobian matrices. Higher derivatives can be computed by applying the same process to the gradient computation graph.
 
@@ -178,7 +178,7 @@ The computational graph we drew earlier shows exactly how these gradients are co
 
 ### Common Pitfalls in Automatic Differentiation
 
-While PyTorch's automatic differentiation is powerful, several common mistakes can break gradient computation or lead to unexpected behavior. Let's examine these pitfalls and their solutions:
+Several common mistakes can break gradient computation or lead to unexpected behavior.
 
 
 #### 1. Breaking the Computational Graph
@@ -199,7 +199,6 @@ y = x * 2
 w = y * 3
 w.backward()  # x.grad will be 6
 ```
-![Common Pitfalls](figures/pitfalls.png)
 
 
 The `detach()` method creates a new tensor that shares the same data but detaches it from the computation history. This breaks the chain of operations needed for gradient computation. The top diagram shows correct gradient flow, while the middle diagram shows how `detach()` breaks this flow.
@@ -246,25 +245,7 @@ print(x.grad)  # Prints 2
 
 This behavior is actually useful for accumulating gradients over multiple batches, but you need to be aware of it to avoid unintended accumulation.
 
-#### 4. Scalar vs Vector Backward
-
-PyTorch expects scalar outputs for `backward()` by default. For vector outputs, you need gradients of the same shape:
-
-```python
-# Wrong: vector output without gradient
-x = torch.tensor([[1.0, 2.0]], requires_grad=True)
-y = x * 2
-y.backward()  # Error: grad can be implicitly created only for scalar outputs
-
-# Right: provide gradient for vector output
-x = torch.tensor([[1.0, 2.0]], requires_grad=True)
-y = x * 2
-y.backward(torch.ones_like(y))  # Works!
-```
-
-This requirement ensures that gradient computation is well-defined - for vector outputs, we need to specify how to weight each component's contribution to the gradient.
-
-#### 5. Memory Management
+#### 4. Memory Management
 
 Keeping computational graphs in memory can consume significant RAM. Use `torch.no_grad()` when you don't need gradients:
 
@@ -289,7 +270,52 @@ These pitfalls highlight important aspects of PyTorch's automatic differentiatio
 
 Understanding these issues helps write correct and efficient code for gradient-based optimization. With this foundation in automatic differentiation, we can now apply these concepts to practical machine learning problems, starting with the familiar least squares optimization we encountered in the previous lecture.
 
-### Beyond One Dimension: Revisiting Least Squares
+### Beyond Single Variables: Least Squares
+
+Let's examine how PyTorch handles gradient computation for the least squares problem, where we minimize $f(\mathbf{w}) = \frac{1}{2}\|\mathbf{X}\mathbf{w} - \mathbf{y}\|^2$ for data matrix $\mathbf{X} \in \mathbb{R}^{n \times p}$ and observations $\mathbf{y} \in \mathbb{R}^n$. Like our polynomial example, PyTorch builds and traverses a computational graph to compute gradients automatically.
+
+The computational graph for least squares reveals how PyTorch decomposes this multivariate optimization into elementary operations. Each node performs a specific computation in the chain that leads to our final loss:
+
+![Least Squares Computational Graph](figures/least_squares_computation.png)
+
+During the forward pass, the graph computes:
+1. Input node stores parameter vector $\mathbf{w}$
+2. Residual node computes $\mathbf{z}_1 = \mathbf{X}\mathbf{w} - \mathbf{y}$
+3. Square norm node computes $z_2 = \|\mathbf{z}_1\|^2$
+4. Scale node produces final loss $f = \frac{1}{2}z_2$
+
+In this multidimensional case, we follow the same algorithm for computing the gradient of $f$ as we did in the 1d case, but with a slight twist. As we traverse the graph in reverse order we compute and store the *total derivatives* or *Jacobians* of the intermediate nodes and multiply them out. In particular, we compute the Jacobians $\frac{\partial f}{\partial z_2}, \frac{\partial z_2}{\partial \mathbf{z}_1}, \frac{\partial \mathbf{z}_1}{\partial \mathbf{w}}$ and multiply them out to get the total derivative $\frac{\partial f}{\partial \mathbf{w}}$, which is a $1 \times p$ row matrix. The connection with the gradient of $f$ is that the total derivative is simply the tranpose of the gradient. More specifically, we have:
+
+**Output Node ($f = \frac{1}{2}z_2$):**
+- Incoming gradient: $\frac{\partial f}{\partial f} = 1$ (scalar)
+- Total derivative: $\frac{\partial f}{\partial z_2} = \frac{1}{2}$ (scalar)
+- Propagate to $z_2$ node: $\frac{\partial f}{\partial z_2} = \frac{1}{2}$ (1×1 matrix)
+
+**Square Norm Node ($z_2 = \|\mathbf{z}_1\|^2$):**
+- Incoming total derivative: $\frac{\partial f}{\partial z_2} = \frac{1}{2}$ (1×1 matrix)
+- Local total derivative: $\frac{\partial z_2}{\partial \mathbf{z}_1} = 2\mathbf{z}_1^\top$ (1×n matrix)
+- Propagate to $\mathbf{z}_1$ node: $\frac{\partial f}{\partial \mathbf{z}_1} = \frac{\partial f}{\partial z_2}\frac{\partial z_2}{\partial \mathbf{z}_1} = \mathbf{z}_1^\top$ (1×n matrix)
+
+**Residual Node ($\mathbf{z}_1 = \mathbf{X}\mathbf{w} - \mathbf{y}$):**
+- Incoming total derivative: $\frac{\partial f}{\partial \mathbf{z}_1} = \mathbf{z}_1^\top$ (1×n matrix)
+- Local total derivative: $\frac{\partial \mathbf{z}_1}{\partial \mathbf{w}} = \mathbf{X}$ (n×p matrix)
+- Total derivative to $\mathbf{w}$ node: $\frac{\partial f}{\partial \mathbf{w}} = \frac{\partial f}{\partial \mathbf{z}_1}\frac{\partial \mathbf{z}_1}{\partial \mathbf{w}} = \mathbf{z}_1^\top\mathbf{X}$ (1×p matrix)
+
+**Input Node ($\mathbf{w}$):**
+- Total derivative: $\frac{\partial f}{\partial \mathbf{w}} = \mathbf{z}_1^\top\mathbf{X}$ (1×p matrix)
+- Convert to gradient: $\nabla f = (\frac{\partial f}{\partial \mathbf{w}})^\top = \mathbf{X}^\top\mathbf{z}_1$ (p×1 matrix)
+
+This computation reveals why the transpose appears: the chain rule naturally produces the total derivative $\frac{\partial f}{\partial \mathbf{w}}$ as a row vector (1×p matrix), but we conventionally write the gradient $\nabla f$ as a column vector (p×1 matrix). The transpose converts between these representations.
+
+The full chain rule expansion shows how the total derivative combines all computations:
+
+$$ \frac{\partial f}{\partial \mathbf{w}} = \frac{\partial f}{\partial z_2} \frac{\partial z_2}{\partial \mathbf{z}_1} \frac{\partial \mathbf{z}_1}{\partial \mathbf{w}} = \frac{1}{2} \cdot 2\mathbf{z}_1^\top \cdot \mathbf{X} = \mathbf{z}_1^\top\mathbf{X} $$
+
+And the gradient is its transpose:
+
+$$ \nabla f = \frac{\partial f}{\partial \mathbf{w}}^\top = \mathbf{X}^\top\mathbf{z}_1 = \mathbf{X}^\top(\mathbf{X}\mathbf{w} - \mathbf{y})$$
+
+This computation happens automatically in PyTorch through the computational graph structure, with each node computing its local total derivatives. The graph structure determines where accumulation is needed (at nodes with multiple outgoing edges), and the mechanical process of backpropagation handles the rest.
 
 Our one-dimensional example demonstrated PyTorch's automatic differentiation on a simple function. Now let's return to the least squares problem we solved in the previous lecture, but this time using PyTorch's automatic differentiation. Given a data matrix $X \in \mathbb{R}^{n \times p}$ and observations $y \in \mathbb{R}^n$, we differentiate the least squares loss:
 
