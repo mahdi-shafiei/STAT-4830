@@ -178,97 +178,99 @@ The computational graph we drew earlier shows exactly how these gradients are co
 
 ### Common Pitfalls in Automatic Differentiation
 
-Several common mistakes can break gradient computation or lead to unexpected behavior.
+Several common mistakes can break gradient computation or cause memory issues:
 
+#### 1. In-place Operations
 
-#### 1. Breaking the Computational Graph
-
-The most common mistake occurs when accidentally breaking the chain of computation that PyTorch uses to track gradients:
-
-```python
-# Wrong: breaks computational graph
-x = torch.tensor([1.0], requires_grad=True)
-y = x * 2
-z = y.detach()  # Breaks the graph!
-w = z * 3
-w.backward()  # x.grad will be None
-
-# Right: maintain computational graph
-x = torch.tensor([1.0], requires_grad=True)
-y = x * 2
-w = y * 3
-w.backward()  # x.grad will be 6
-```
-
-
-The `detach()` method creates a new tensor that shares the same data but detaches it from the computation history. This breaks the chain of operations needed for gradient computation. The top diagram shows correct gradient flow, while the middle diagram shows how `detach()` breaks this flow.
-
-#### 2. In-Place Operations
-
-In-place operations (modifying a tensor directly) can break gradient computation, as shown in the bottom diagram:
+In-place operations can break gradient computation by modifying values needed for the backward pass:
 
 ```python
-# Wrong: in-place operation
-x = torch.tensor([1.0], requires_grad=True)
-y = x * 2
-y += 1  # In-place operation breaks graph
-y.backward()  # Error!
+# Create a tensor with gradients enabled
+x = torch.tensor([4.0], requires_grad=True)
 
-# Right: create new tensor
-x = torch.tensor([1.0], requires_grad=True)
-y = x * 2
-y = y + 1  # Creates new tensor
-y.backward()  # Works correctly
+# Compute the square root. For sqrt, the backward pass needs the original output
+y = torch.sqrt(x)  # y is 2.0, and sqrt's backward uses this value
+
+# Show the gradient function before modification
+print("Before in-place op, y.grad_fn:", y.grad_fn)
+
+# Define another operation that uses y
+z = 3 * y
+
+try:
+    # In-place modify y. This alters the saved value needed by the sqrt backward
+    y.add_(1)  # Now y becomes 3.0
+    print("After in-place op, y.grad_fn:", y.grad_fn)  # The grad_fn is now None
+    
+    # Attempt to compute gradients. This will trigger a RuntimeError
+    z.backward()
+    print("This line won't be reached")
+except RuntimeError as e:
+    print(f"Error with in-place operation: {e}")
+
+print("\nWhy did this happen?")
+print("The in-place operation (y.add_(1)) modified sqrt's output")
+print("This invalidated the saved value needed to compute the gradient:")
+print("d/dx sqrt(x) = 1/(2*sqrt(x))")
+
+# Correct way: use out-of-place operations
+x = torch.tensor([4.0], requires_grad=True)
+y = torch.sqrt(x)
+# Instead of modifying y in-place, create a new tensor
+y = y + 1
+z = 3 * y
+z.backward()  # This works fine
+print("\nCorrect gradient:", x.grad)
 ```
 
-In-place operations modify the tensor's memory directly, which can invalidate the computational graph. Instead, create a new tensor to store the result.
+#### 2. Memory Management
+
+The `torch.no_grad()` context manager is crucial for memory efficiency:
+
+```python
+# Create large tensors
+X = torch.randn(1000, 1000, requires_grad=True)
+y = torch.randn(1000)
+
+def compute_loss(X, y):
+    return ((X @ X.t() @ y - y)**2).sum()
+
+# Memory inefficient: tracks all computations
+loss1 = compute_loss(X, y)
+
+# Memory efficient: no gradient tracking during evaluation
+with torch.no_grad():
+    loss2 = compute_loss(X, y)
+
+print(f"Gradient tracking: {loss1.requires_grad}")
+print(f"No gradient tracking: {loss2.requires_grad}")
+```
 
 #### 3. Gradient Accumulation
 
-Gradients accumulate by default - if you don't clear them, multiple backward passes add up:
+When training with multiple backward passes, remember to zero gradients:
 
 ```python
 x = torch.tensor([1.0], requires_grad=True)
-for _ in range(3):
-    y = x * 2
-    y.backward()  # Gradients accumulate!
-print(x.grad)  # Prints 6 (2 + 2 + 2)
+optimizer = torch.optim.SGD([x], lr=0.1)
 
-# Solution: Clear gradients between computations
-x = torch.tensor([1.0], requires_grad=True)
-for _ in range(3):
-    x.grad = None  # Clear gradients
-    y = x * 2
+for _ in range(2):
+    y = x**2
+    
+    # Wrong: gradients accumulate
+    y.backward(retain_graph=True)  # Need retain_graph=True for multiple backward passes
+    print(f"Accumulated gradient: {x.grad}")
+    
+    # Correct: zero gradients before backward
+    optimizer.zero_grad()
+    y = x**2  # Need to recompute y since previous backward consumed the graph
     y.backward()
-print(x.grad)  # Prints 2
+    print(f"Clean gradient: {x.grad}")
+    
+    optimizer.step()
 ```
 
-This behavior is actually useful for accumulating gradients over multiple batches, but you need to be aware of it to avoid unintended accumulation.
-
-#### 4. Memory Management
-
-Keeping computational graphs in memory can consume significant RAM. Use `torch.no_grad()` when you don't need gradients:
-
-```python
-# Wasteful: tracks gradients during evaluation
-def evaluate(model, data):
-    return model(data)
-
-# Efficient: disables gradient tracking
-def evaluate(model, data):
-    with torch.no_grad():
-        return model(data)
-```
-
-The `no_grad()` context manager temporarily disables gradient computation, reducing memory usage and speeding up computation when gradients aren't needed (like during model evaluation).
-
-These pitfalls highlight important aspects of PyTorch's automatic differentiation:
-1. The computational graph must remain connected
-2. Operations must preserve gradient information
-3. Memory management requires explicit consideration
-4. Gradient computation needs well-defined scalar objectives
-
-Understanding these issues helps write correct and efficient code for gradient-based optimization. With this foundation in automatic differentiation, we can now apply these concepts to practical machine learning problems, starting with the familiar least squares optimization we encountered in the previous lecture.
+These patterns become especially important when training deep networks where mistakes can be harder to debug.
 
 ### Beyond Single Variables: Least Squares
 
