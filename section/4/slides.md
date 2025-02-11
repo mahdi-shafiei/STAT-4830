@@ -541,6 +541,8 @@ Subtlety: Total derivative vs gradient (more next time)
 Final computation:
 $$ \nabla f = \left(\frac{\partial z_1}{\partial w} \frac{\partial z_2}{\partial z_1}\frac{\partial f}{\partial z_2} \right)^\top = \mathbf{X}^\top(\mathbf{X}\mathbf{w} - \mathbf{y}) $$
 
+More on this formula next time....
+
 
 ---
 
