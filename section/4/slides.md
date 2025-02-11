@@ -15,20 +15,16 @@ size: 16:9
 
 ---
 
-# The Problem: Manual Gradient Computation
+# Manual Gradient Computation
 
 Consider computing this gradient by hand:
 $$ f(w) = \frac{1}{2}\|\tanh(W_2\text{ReLU}(W_1x + b_1) + b_2) - y\|^2 $$
 
-Challenges:
-- Complex chain rule applications
-- Error-prone derivations
-- Time-consuming process
-- Limited to simple functions
+**annoying** 
 
 ---
 
-# The Solution: Automatic Differentiation
+# Automatic Differentiation
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
 <div>
@@ -414,7 +410,7 @@ $$ \nabla f = \left(\frac{\partial z_1}{\partial w} \frac{\partial z_2}{\partial
 # Applying Gradient Descent
 
 Minimize least squares loss:
-$$ f(w) = \frac{1}{2}\|Xw - y\|_2^2 $$
+$$ f(w) = \frac{1}{2}\|Xw - y\|^2 $$
 
 Manual implementation:
 ```python
@@ -468,7 +464,8 @@ $$ \mathbf{y} = \mathbf{X}\mathbf{w} $$
 
 Neural Network:
 $$ \mathbf{h} = \tanh(\mathbf{W}_1\mathbf{x} + \mathbf{b}_1) $$
-$$ p = \sigma(\mathbf{w}_2^\top\mathbf{h} + b_2) $$
+$$ P(y=1 \mid x) = \sigma(\mathbf{w}_2^\top\mathbf{h} + b_2) $$
+
 
 </div>
 <div>
@@ -665,7 +662,7 @@ def train_model(model, X_train, y_train, X_val, y_val, alpha=0.01, n_steps=1000)
 
 
 
-![h:300](figures/mnist_training_curves.png)
+![h:400](figures/mnist_training_curves.png)
 
 
 Final Results:
