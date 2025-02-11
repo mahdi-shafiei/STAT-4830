@@ -411,7 +411,54 @@ $$ \nabla f = \left(\frac{\partial z_1}{\partial w} \frac{\partial z_2}{\partial
 
 ---
 
-# Building Neural Networks: The Architectureß
+# Applying Gradient Descent
+
+Minimize least squares loss:
+$$ f(w) = \frac{1}{2}\|Xw - y\|_2^2 $$
+
+Manual implementation:
+```python
+def manual_gradient(X, y, w):
+    return X.T @ (X @ w - y)  
+
+w = torch.zeros(p)  # Initialize
+for step in range(max_iters):
+    grad = manual_gradient(X, y, w)
+    w = w - alpha * grad
+```
+
+---
+
+# PyTorch Implementation
+
+Same algorithm, automatic gradients:
+```python
+w = torch.zeros(p, requires_grad=True) # Initialize weights and require gradients
+
+for step in range(max_iters):
+    # Forward pass
+    pred = X @ w
+    loss = 0.5 * ((pred - y)**2).sum()
+    
+    # Backward pass
+    loss.backward()
+    
+    # Update
+    with torch.no_grad(): # Do not modify the computational graph
+        w -= alpha * w.grad # update the weights
+        w.grad.zero_() # reset the gradient to zero to avoid accumulation
+```
+
+---
+
+# Comparison of Approaches
+
+
+![h:500](figures/linear_regression_comparison.png)
+
+---
+
+# Building Neural Networks: The Architectures
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
 <div>
