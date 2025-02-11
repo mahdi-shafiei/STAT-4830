@@ -221,6 +221,17 @@ y = y + 1
 z = 3 * y
 z.backward()  # This works fine
 print("\nCorrect gradient:", x.grad)
+
+# Before in-place op, y.grad_fn: <SqrtBackward0 object at 0x107e174f0>
+# After in-place op, y.grad_fn: <AddBackward0 object at 0x107eb24d0>
+# Error with in-place operation: one of the variables needed for gradient computation has been modified by an inplace operation: [torch.FloatTensor [1]], which is output 0 of SqrtBackward0, is at version 1; expected version 0 instead. Hint: enable anomaly detection to find the operation that failed to compute its gradient, with torch.autograd.set_detect_anomaly(True).
+
+# Why did this happen?
+# The in-place operation (y.add_(1)) modified sqrt's output
+# This invalidated the saved value needed to compute the gradient:
+# d/dx sqrt(x) = 1/(2*sqrt(x))
+
+# Correct gradient: tensor([0.7500])
 ```
 
 #### 2. Memory Management
@@ -244,6 +255,9 @@ with torch.no_grad():
 
 print(f"Gradient tracking: {loss1.requires_grad}")
 print(f"No gradient tracking: {loss2.requires_grad}")
+
+# Gradient tracking: True
+# No gradient tracking: False
 ```
 
 #### 3. Gradient Accumulation
@@ -268,6 +282,10 @@ for _ in range(2):
     print(f"Clean gradient: {x.grad}")
     
     optimizer.step()
+# Accumulated gradient: tensor([2.])
+# Clean gradient: tensor([2.])
+# Accumulated gradient: tensor([3.6000])
+# Clean gradient: tensor([1.6000])    
 ```
 
 These patterns become especially important when training deep networks where mistakes can be harder to debug.
