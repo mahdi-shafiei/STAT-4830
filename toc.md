@@ -16,3 +16,6 @@ title: Table of Contents
 
 [3. Linear Regression: Gradient Descent](section/3/notes.md) | [Slides](section/3/slides.pdf) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/3/notebook.ipynb)
    > Linear regression via gradient descent. 
+
+[4. How to compute gradients in PyTorch](section/4/notes.md) | [Slides](section/4/slides.pdf) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/4/notebook.ipynb)
+   > How to compute gradients in PyTorch: introduction to PyTorch's automatic differentiation system.

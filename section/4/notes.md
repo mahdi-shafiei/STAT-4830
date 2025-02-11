@@ -1,9 +1,9 @@
 ---
 layout: course_page
-title: Beyond Least Squares - Computing Gradients in PyTorch
+title: How to compute gradients in PyTorch
 ---
 
-# Beyond Least Squares: Computing Gradients in PyTorch
+# How to compute gradients in PyTorch
 
 ## Notebooks and Slides
 - [Lecture slides](slides.pdf)
