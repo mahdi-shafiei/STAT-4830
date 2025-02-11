@@ -9,8 +9,7 @@ size: 16:9
 <br><br> <br><br> 
 
 # STAT 4830: Numerical optimization for data science and ML
-## Lecture 4: Beyond Least Squares
-### From Manual to Automatic Differentiation
+## Lecture 4: How to compute gradients in PyTorch
 ### Professor Damek Davis
 
 ---
