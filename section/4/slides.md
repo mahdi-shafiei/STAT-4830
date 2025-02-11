@@ -191,7 +191,7 @@ For $f(x) = x^3 - 3x$, we build:
 
 ---
 
-# Gradient Flow: Step by Step
+# backward(): Step by Step
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
 <div>
@@ -360,7 +360,7 @@ Subtlety: Total derivative vs :
 4. Add to input total derivative
 ---
 
-# Least Squares: Gradient Flow Step 1
+# Least Squares: backward() Step 1
 
 
 **Output Node** ($f = \frac{1}{2}z_2$):
@@ -371,7 +371,7 @@ Subtlety: Total derivative vs :
 
 ---
 
-# Least Squares: Gradient Flow Step 2
+# Least Squares: backward() Step 2
 
 
 **Square Norm Node** ($z_2 = \|\mathbf{z}_1\|^2$):
@@ -383,7 +383,7 @@ Subtlety: Total derivative vs :
 
 ---
 
-# Least Squares: Gradient Flow Step 3
+# Least Squares: backward() Step 3
 
 
 
@@ -458,87 +458,104 @@ for step in range(max_iters):
 
 ---
 
-# Building Neural Networks: The Architectures
+# From Linear to Neural Networks
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
 <div>
 
-Layer composition:
-```
-Input → Linear₁ → Tanh → Linear₂ → Output
-ℝᵈ      ℝʰˣᵈ      ℝʰ     ℝ¹ˣʰ     [0,1]
-```
+Linear Model:
+$$ \mathbf{y} = \mathbf{X}\mathbf{w} $$
 
-Each layer:
-1. Linear transform
-2. Nonlinear activation
-3. Gradient tracking
+Neural Network:
+$$ \mathbf{h} = \tanh(\mathbf{W}_1\mathbf{x} + \mathbf{b}_1) $$
+$$ p = \sigma(\mathbf{w}_2^\top\mathbf{h} + b_2) $$
 
 </div>
-<div style="text-align: center;">
+<div>
 
-![h:300](figures/network_architecture.png)
-
-PyTorch handles:
-- Parameter management
-- Forward computation
-- Backward gradients
+Key differences:
+- Multiple transformations
+- Nonlinear activations
+- Learnable features
 
 </div>
 </div>
 
 ---
 
-# Neural Network Implementation
+# Neural Network Architecture
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
 <div>
 
+Layer composition:
+```
+Input → Linear₁ → Tanh → Linear₂ → Sigmoid
+ℝᵈ      ℝʰˣᵈ      ℝʰ     ℝ¹ˣʰ     [0,1]
+```
+
+Dimensions:
+- Input: $\mathbf{x} \in \mathbb{R}^d$
+- Hidden: $\mathbf{h} \in \mathbb{R}^h$
+- Output: $p \in [0,1]$
+
+</div>
+<div style="text-align: center;">
+
+![h:300](figures/network_architecture.png)
+
+Each layer adds:
+- Linear transform
+- Nonlinearity
+- Learnable parameters
+
+</div>
+</div>
+
+---
+
+# PyTorch Implementation
+
+
 ```python
 class BinaryClassifier(nn.Module):
-    def __init__(self, input_dim, 
-                 hidden_dim):
+    def __init__(self, d=784, h=32):
         super().__init__()
-        # First layer
-        self.linear1 = nn.Linear(
-            input_dim, hidden_dim
-        )
-        # Second layer
-        self.linear2 = nn.Linear(
-            hidden_dim, 1
-        )
+        # ℝᵈ → ℝʰ
+        self.linear1 = nn.Linear(d, h)
+        # ℝʰ → ℝ
+        self.linear2 = nn.Linear(h, 1)
     
     def forward(self, x):
         # Hidden features
         h = torch.tanh(self.linear1(x))
-        # Output probability
+        # Probability output
         return torch.sigmoid(
             self.linear2(h)
         )
 ```
 
-</div>
-<div>
 
-Key components:
-1. **Parameter Management**
-   - Automatic registration
-   - Gradient tracking
-   - Memory optimization
 
-2. **Layer Organization**
-   - Modular design
-   - Easy composition
-   - Clear data flow
+---
 
-3. **Activation Functions**
-   - Built-in nonlinearities
-   - Automatic gradients
-   - Efficient implementation
+# Training Loop
 
-</div>
-</div>
-
+```python
+def train_step(model, x, y, optimizer):
+    # 1. Forward: compute prediction and loss
+    pred = model(x)
+    loss = criterion(y_pred.squeeze(), y_train)
+    
+    # 2. Backward: compute gradients
+    optimizer.zero_grad()
+    loss.backward()
+    
+    # 3. Update: apply gradients
+    optimizer.step()
+    
+    return loss.item()
+```
 ---
 
 # MNIST Classification: The Task
@@ -626,107 +643,38 @@ class SimpleNN(nn.Module):
 # Training Process: Step by Step
 
 ```python
-def train_model(model, train_loader, optimizer, epochs=5):
-    criterion = nn.BCELoss()
-    for epoch in range(epochs):
-        for batch_idx, (data, target) in enumerate(train_loader):
-            # 1. Zero gradients
-            optimizer.zero_grad()
-            
-            # 2. Forward pass
-            output = model(data)
-            loss = criterion(output, target.float())
-            
-            # 3. Backward pass
-            loss.backward()
-            
-            # 4. Update weights
-            optimizer.step()
-            
-            # 5. Log progress
-            if batch_idx % 100 == 0:
-                print(f'Loss: {loss.item():.4f}')
+def train_model(model, X_train, y_train, X_val, y_val, alpha=0.01, n_steps=1000):
+    for step in range(n_steps):
+        # Forward pass
+        y_pred = model(X_train)
+        loss = criterion(y_pred.squeeze(), y_train)
+        
+        # Backward pass
+        loss.backward()
+        
+        # Update parameters
+        with torch.no_grad(): # Do not modify the computational graph
+            for param in model.parameters():
+                param -= alpha * param.grad # update the parameters
+                param.grad.zero_() # reset the gradient to zero to avoid accumulation
 ```
-
-PyTorch handles all gradient computation automatically.
 
 ---
 
 # Results Analysis
 
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
-<div style="text-align: center;">
+
 
 ![h:300](figures/mnist_training_curves.png)
 
-Training progress:
-- Faster neural net learning
-- Higher final accuracy
-- Better generalization
-
-</div>
-<div>
 
 Final Results:
 - Logistic: 87.30% accuracy
 - Neural Net: 92.40% accuracy
 
-Key differences:
-1. Feature learning
-2. Nonlinear boundary
-3. Better capacity
-
-</div>
-</div>
 
 ---
 
-# Key Takeaways
-
-<div style="text-align: center; margin-top: 2em;">
-
-1. **Automatic Differentiation**
-   - Builds computational graphs
-   - Implements chain rule efficiently
-   - Handles any differentiable function
-   - Scales to complex networks
-
-2. **Memory Efficiency**
-   - Never forms large matrices
-   - Uses matrix-vector products
-   - Enables large-scale optimization
-   - Scales to deep networks
-
-3. **PyTorch Implementation**
-   - Simple interface
-   - Automatic gradients
-   - Memory management
-   - Production ready
-
-</div>
-
----
-
-# Next Steps
-
-<div style="text-align: center; margin-top: 2em;">
-
-1. **Advanced Optimization**
-   - Stochastic gradients
-   - Adaptive methods
-   - Second-order techniques
-
-2. **Deep Learning**
-   - Complex architectures
-   - Custom loss functions
-   - Training strategies
-
-3. **Try it yourself!**
-   [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/4/notebook.ipynb)
-
-</div>
-
----
 
 # Questions?
 
@@ -735,6 +683,5 @@ Key differences:
 - Course website: [https://damek.github.io/STAT-4830/](https://damek.github.io/STAT-4830/)
 - Office hours: Listed on course website
 - Email: [damek@wharton.upenn.edu](mailto:damek@wharton.upenn.edu)
-- Discord: Check email for invite
 
 </div> 
