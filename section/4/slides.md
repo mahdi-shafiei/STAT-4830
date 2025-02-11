@@ -276,7 +276,7 @@ Best for:
 ---
 
 
-# From Simple to Complex: Least Squares
+# Beyond 1d: Least Squares
 
 
 Manual gradient:
@@ -299,7 +299,7 @@ grad = w.grad
 
 --- 
 
-# The Least Squares Graph: Step by Step
+<!-- # The Least Squares Graph: Step by Step
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
 <div>
@@ -327,7 +327,7 @@ grad = w.grad
 </div>
 </div>
 
----
+--- -->
 
 # Computational Graph
 
@@ -347,6 +347,7 @@ For $f(w) = \frac{1}{2}\|Xw - y\|^2$, we build:
 
 # Computing Gradients: The Process
 
+Subtlety: Total derivative vs :
 
 **Starting State:**
 - Initialize $\frac{\partial f}{\partial f} = 1$ at output
@@ -355,8 +356,8 @@ For $f(w) = \frac{1}{2}\|Xw - y\|^2$, we build:
 **Algorithm:**
 1. Process nodes in reverse order
 2. Compute local gradients
-3. Multiply by incoming gradient
-4. Add to input gradients
+3. Multiply by incoming total derivative
+4. Add to input total derivative
 ---
 
 # Least Squares: Gradient Flow Step 1
@@ -405,13 +406,12 @@ For $f(w) = \frac{1}{2}\|Xw - y\|^2$, we build:
 
 
 Final computation:
-$$ \nabla f = \mathbf{X}^\top(\mathbf{X}\mathbf{w} - \mathbf{y}) $$
-
+$$ \nabla f = \left(\frac{\partial z_1}{\partial w} \frac{\partial z_2}{\partial z_1}\frac{\partial f}{\partial z_2} \right)^\top = \mathbf{X}^\top(\mathbf{X}\mathbf{w} - \mathbf{y}) $$
 
 
 ---
 
-# Building Neural Networks: The Architecture
+# Building Neural Networks: The Architectureß
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
 <div>
