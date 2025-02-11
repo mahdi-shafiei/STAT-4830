@@ -267,9 +267,147 @@ Best for:
 </div>
 </div>
 
+---
+
+# Common Pitfall 1: In-place Operations
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
+<div>
+
+Problem:
+- In-place operations can break gradient computation
+- They modify values needed for backward pass
+
+Example:
+```python
+x = torch.tensor([4.0], requires_grad=True)
+y = torch.sqrt(x)  # y is 2.0
+# Need y=2.0 to compute d/dx sqrt(x)=1/(2sqrt(x))
+
+try:
+    y.add_(1)  # In-place: y becomes 3.0
+    # Original y=2.0 is lost! Can't compute
+    # gradient of sqrt anymore
+    z = 3 * y
+    z.backward()  # Error: lost value needed
+except RuntimeError as e:
+    print("Error: sqrt needs original output")
+```
+
+</div>
+<div>
+
+Solution:
+```python
+x = torch.tensor([4.0], requires_grad=True)
+y = torch.sqrt(x)  # y is 2.0
+# Create new tensor, preserving y=2.0
+y = y + 1  # y_new is 3.0, but y=2.0 exists
+z = 3 * y
+z.backward()  # Works: can compute
+# d/dx sqrt(x) = 1/(2sqrt(x)) using y=2.0
+print(x.grad)  # tensor([0.7500])
+# = 3 * 1/(2sqrt(4)) = 3 * 1/4 = 0.75
+```
+
+Key point:
+- In-place ops destroy values needed for gradient
+- Create new tensors to preserve computation graph
+
+</div>
+</div>
 
 ---
 
+# Common Pitfall 2: Memory Management
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
+<div>
+
+Problem:
+- Tracking gradients uses memory
+- Not needed during evaluation
+
+Memory inefficient:
+```python
+# Create large tensors
+X = torch.randn(1000, 1000, 
+                requires_grad=True)
+y = torch.randn(1000)
+
+# Tracks all computations
+loss = ((X @ X.t() @ y - y)**2).sum()
+```
+
+</div>
+<div>
+
+Solution:
+```python
+# Disable gradient tracking
+with torch.no_grad():
+    # No computational graph built
+    loss = ((X @ X.t() @ y - y)**2).sum()
+```
+
+Key point:
+- Use `torch.no_grad()` for evaluation
+- Saves memory and computation
+
+</div>
+</div>
+
+---
+
+# Common Pitfall 3: Gradient Accumulation
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2em;">
+<div>
+
+Problem:
+- Gradients accumulate by default
+- Multiple backward passes add up
+
+Wrong:
+```python
+x = torch.tensor([1.0], requires_grad=True)
+for _ in range(2):
+    y = x**2  # grad = 2x
+    y.backward()  # Gradients add up!
+    x -= 0.1 * x.grad  # Wrong gradient
+    print(f"grad: {x.grad}")
+# First iter:  2x = 2(1.0) = 2.0
+# Second iter: 2x = 2(0.8) = 1.6
+#             BUT adds to previous 2.0
+#             giving 2.0 + 1.6 = 3.6!
+```
+
+</div>
+<div>
+
+Solution:
+```python
+x = torch.tensor([1.0], requires_grad=True)
+for _ in range(2):
+    y = x**2  # grad = 2x
+    y.backward()
+    with torch.no_grad():
+        x -= 0.1 * x.grad
+        x.grad.zero_()  # Clear gradients
+    print(f"grad: {x.grad}")
+# First iter:  2x = 2(1.0) = 2.0
+# Second iter: 2x = 2(0.8) = 1.6
+#             Clean gradient!
+```
+
+Key point:
+- Zero gradients between updates
+- Use `zero_grad()` in training loops
+
+</div>
+</div>
+
+---
 
 # Beyond 1d: Least Squares
 
@@ -342,7 +480,7 @@ For $f(w) = \frac{1}{2}\|Xw - y\|^2$, we build:
 
 # Computing Gradients: The Process
 
-Subtlety: Total derivative vs :
+Subtlety: Total derivative vs gradient (more next time)
 
 **Starting State:**
 - Initialize $\frac{\partial f}{\partial f} = 1$ at output
