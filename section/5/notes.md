@@ -153,7 +153,7 @@ so the derivative of $f \circ g$ at $x$ is $f'(g(x))\,g'(x)$.
 
 
 
-*Special cases of the chain rule in 1D include common differentiation rules:* 
+<!-- *Special cases of the chain rule in 1D include common differentiation rules:*  -->
 
 <!-- **Constant multiple and sum rules:** $(c\cdot f(x))' = c\,f'(x)$ and $(f(x)+g(x))' = f'(x) + g'(x)$. These hold because differentiation is a linear operation.  
 
