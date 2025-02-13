@@ -18,7 +18,9 @@ title: How to think about calculus
 
 ## Introduction
 
-In this lecture, we explore a simple perspective on calculus: the derivative (or Jacobian in higher dimensions) is the best linear approximation of a function at a point. This viewpoint unifies single-variable and multivariable calculus, while revealing why the chain rule works - it's simply the composition of these best linear approximations.
+In this lecture, we explore a simple perspective on calculus: the derivative (or Jacobian in higher dimensions) is the best linear approximation of a function at a point. This viewpoint unifies single-variable and multivariable calculus, while revealing why the chain rule works - it's simply the composition of these best linear approximations. 
+
+Why teach this? Because autodifferentiation is essentially an efficient way to implement the chain rule. We'll touch on this at the end.
 
 
 ## 1. Derivative in 1D
@@ -427,7 +429,37 @@ which is exactly the product rule. In multivariable settings, there is a product
 
 **Quotient rule:** Similarly, $f(x)/g(x)$ can be treated as $Q(u,v) = u/v$ composed with $u=f(x)$, $v=g(x)$. The partial derivatives of $Q(u,v)$ are $\partial Q/\partial u = 1/v$ and $\partial Q/\partial v = -u/v^2$. Applying the chain rule yields the standard quotient rule formula given earlier.
   
-### Autodiff and backpropagation (chain rule in action)
+## Autodiff and the chain rule
 
 The chain rule is the backbone of **automatic differentiation (AD)**, especially the *backpropagation* algorithm used to train neural networks. In a computational graph (a series of composed operations), the gradient of the final output with respect to any intermediate quantity is obtained by iteratively applying the chain rule. For example, if a network’s output (loss) $L$ ultimately depends on a weight $w$ through many layers of composed functions, the gradient $\frac{\partial L}{\partial w}$ is computed by traversing the graph from $L$ back to $w$, multiplying gradients along the way as dictated by the chain rule. Each node applies the chain rule formula to propagate the influence of $w$ on $L$. In code, this means each operation knows how to compute its output given inputs (forward pass) and also how to compute the *gradient of its output with respect to its inputs* given the gradient of its output (backward pass). These backward-pass rules are precisely the partial derivatives required by the chain rule. By the end of backpropagation, one obtains the gradient of $L$ with respect to all parameters. The entire process is a direct application of the chain rule, just organized efficiently. As an example, PyTorch’s autograd engine builds a graph of $F$ and $G$ compositions and then calls backward, effectively performing the matrix multiplications $J_G \cdot J_F$ for all such compositions to get the final result.
+
+### A quick example: the least squares loss
+
+![Least Squares Computational Graph](../4/figures/least_squares_computation.png)
+
+In [section 4](../4/notes.md), we saw how PyTorch computed the gradient of the least     squares loss by forming a computational graph and traversing it in reverse. In essenece this is simply a way to compute the Jacobian (or it's transpose, the gradient) for the composition $H = h \circ g \circ f$ of the three operations: 
+
+$$
+\mathbb{R}^n \stackrel{f(w) = Xw - y}{\longrightarrow} \mathbb{R}^n \stackrel{g(z) = \|z\|^2}{\longrightarrow} \mathbb{R} \stackrel{h(a) = 1/2}{\longrightarrow} \mathbb{R}
+$$
+
+Now let's think through each of these operations: 
+
+- The mapping $f(w) = Xw - y$ is linear, so its Jacobian is simply $X$. 
+- The mapping $g(z) = \|z\|^2$ has gradient $2z$, so it's Jacobian is $2z^\top$.
+- The mapping $h(a) = (1/2) a$ has jacobian $1/2$. 
+
+Composing these, we get 
+
+$$
+J_H(w) = J_h(g(f(w))) J_g(f(w)) J_f(w) = \frac{1}{2} 2 (Xw - y)^\top X = (X^\top (Xw - y))^\top.
+$$
+
+which is exactly the process of traversing the graph in reverse order and multiplying out it's Jacobians. This is the backpropagation algorithm.
+
+
+Someone kinda won a nobel prize for popularizing it.
+
+
+
 
