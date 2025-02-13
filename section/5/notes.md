@@ -78,11 +78,11 @@ $$
 f(a+h) = f(a) + L(h) + o(h);
 $$
 
-in that case $c = f'(a)$ is unique. Intuitively, among all linear functions, $y = f(a) + c\,h$, the choice $c = f'(a)$ makes $f(a) + c\,h$ the closest to $f(a+h)$ for small $h$ (If you don't see why, check out [this stackoverflow post](https://math.stackexchange.com/questions/1784262/how-is-the-derivative-truly-literally-the-best-linear-approximation-near-a-po#:~:text=,function%20for%20values%20near%20x)). In summary, $f'(a)$ captures the *instantaneous rate of change* of $f$ at $a$, and $f'(a)\,h$ is the best linear prediction of the change in $f$ when the input changes by $h$.
+in that case $c = f'(a)$ is unique. Intuitively, among all linear functions, $y = f(a) + c\,h$, the choice $c = f'(a)$ makes $f(a) + c\,h$ the closest to $f(a+h)$ for small $h$. (If you don't see why, check out [this stackoverflow post](https://math.stackexchange.com/questions/1784262/how-is-the-derivative-truly-literally-the-best-linear-approximation-near-a-po#:~:text=,function%20for%20values%20near%20x)). In summary, $f'(a)$ captures the *instantaneous rate of change* of $f$ at $a$, and $f'(a)\,h$ is the best linear prediction of the change in $f$ when the input changes by $h$.
 
 ### Visualization (tangent line):
 
-Imagine a smooth curve representing $y=f(x)$. At the point $(a, f(a))$, draw the tangent line with slope $f'(a)$. This line touches the curve at $x=a$ and for points $x$ very close to $a$, the tangent line’s $y$-values are almost the same as the curve’s $y$-values.* This geometric picture underlies the notion of best linear approximation. If one zooms in sufficiently close to a differentiable curve, it becomes nearly indistinguishable from its tangent line. (Figure: *Tangent line approximating the curve near $x=a$*).
+Imagine a smooth curve representing $y=f(x)$. At the point $(a, f(a))$, draw the tangent line with slope $f'(a)$. This line touches the curve at $x=a$ and for points $x$ very close to $a$, the tangent line’s $y$-values are almost the same as the curve’s $y$-values. This geometric picture underlies the notion of best linear approximation. If one zooms in sufficiently close to a differentiable curve, it becomes nearly indistinguishable from its tangent line. 
 
 ![Best Linear Approximation](figures/best_linear_approximation-1.png)
 
