@@ -5,9 +5,6 @@ title: How to think about calculus
 
 # How to think about derivatives through best linear approximation
 
-## Notebooks and Slides
-- [Lecture slides](slides.pdf)
-
 ## Table of contents
 1. [Introduction](#introduction)
 2. [Derivative in 1D](#derivative-in-1d)
