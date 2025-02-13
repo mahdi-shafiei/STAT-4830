@@ -106,7 +106,7 @@ $$
 (f \circ g)'(x) \;=\; f'\!\big(g(x)\big)\,\cdot\,g'(x).
 $$
  
-In Leibniz notation, if $y=f(u)$ and $u=x$, this is $\frac{dy}{dx} = \frac{dy}{du}\frac{du}{dx}$. The chain rule follows from the a simple argument using the best linear approximation, which we state below since we will prove a multivariable version later: 
+In Leibniz notation, if $y=f(u)$ and $u=x$, this is $\frac{dy}{dx} = \frac{dy}{du}\frac{du}{dx}$. The chain rule follows from a simple argument using the best linear approximation. We go through the argument bleow since we will prove a multivariable version with a very similar argument later: 
 
 The main ideas is that since $f$ and $g$ are differentiable, we can write
 $$
