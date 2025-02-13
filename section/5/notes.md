@@ -3,777 +3,431 @@ layout: course_page
 title: How to think about calculus
 ---
 
-# How to think about calculus
+# How to think about derivatives through best linear approximation
 
 ## Notebooks and Slides
 - [Lecture slides](slides.pdf)
-- [Colab notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/5/notebook.ipynb)
 
 ## Table of contents
 1. [Introduction](#introduction)
-2. [The derivative in calculus in 1d](#the-derivative-in-calculus-in-1d)
-3. [Higher dimensions and the Jacobian](#higher-dimensions-and-the-jacobian)
-4. [Chain rule and applications](#chain-rule-and-applications)
+2. [Derivative in 1D](#derivative-in-1d)
+3. [Extending to Higher Dimensions: the gradient](#extending-to-higher-dimensions-the-gradient)
+4. [Extending to Higher Dimensions: the Jacobian](#extending-to-higher-dimensions-the-jacobian)
+5. [Chain Rule: Composition of Best Linear Approximations](#chain-rule-composition-of-best-linear-approximations)
+
 
 ## Introduction
 
-If there is one thing I want you to get out of this lecture, it's (1) the jacobian is the best linear approximation of a function, (2) the chain rule says that the best linear approximation of a composition is the composition of the best linear approximations. 
+In this lecture, we explore a simple perspective on calculus: the derivative (or Jacobian in higher dimensions) is the best linear approximation of a function at a point. This viewpoint unifies single-variable and multivariable calculus, while revealing why the chain rule works - it's simply the composition of these best linear approximations.
 
-The main consequence of this is that you can reason about how a function behaves and PREDICT its output at nearby points given access only to its current value and the Jacobian.
 
-Let's explore these ideas step by step, starting with the familiar case of derivatives in one dimension before building up to the general case.
+## 1. Derivative in 1D
 
-## The derivative in calculus in 1d
+The **derivative** of a real-valued function in one dimension quantifies how the output changes *per unit change* in the input. We begin with a familiar example of a polynomial and then generalize to the formal definition using limits and *Landau notation* for error terms. This will prepare us for working with derivatives in higher dimensions.
 
-The derivative is a fundamental concept in calculus that measures how a function changes at a point. While you've likely seen various formulas and rules for computing derivatives, today we'll focus on a powerful perspective: the derivative as the best linear approximation of a function.
+### The derivative of a polynomial
 
-### The polynomial formula and limit definition
+If $f(x) = x^n$ (a monomial), then the derivative is $f'(x) = n x^{\,n-1}$. For a general polynomial $f(x) = a_0 + a_1 x + \cdots + a_n x^n$, differentiation follows linearity and the power rule term-by-term, giving 
 
-Let's start with a simple example. Consider the function $f(x) = x^2$. The derivative formula tells us that $f'(x) = 2x$. But what does this really mean? The limit definition provides insight:
+  
+$$
+f'(x) = a_1 + 2a_2 x + 3a_3 x^2 + \cdots + n\,a_n x^{\,n-1}.
+$$
 
-$$ f'(x) = \lim_{h \to 0} \frac{f(x + h) - f(x)}{h} $$
 
-This formula captures a key idea: the derivative measures the instantaneous rate of change by looking at average rates of change over smaller and smaller intervals. For our quadratic function:
+For instance, if $f(x) = 5x^3 - 2x + 7$, then $f'(x) = 15x^2 - 2$.
 
-$$ \begin{aligned}
-f'(x) &= \lim_{h \to 0} \frac{(x+h)^2 - x^2}{h} \\
-&= \lim_{h \to 0} \frac{x^2 + 2xh + h^2 - x^2}{h} \\
-&= \lim_{h \to 0} (2x + h) \\
-&= 2x
-\end{aligned} $$
+### The limit definition of the derivative
+
+In general, the derivative $f'(a)$ at a point $x=a$ is defined by the limit
+  
+$$
+f'(a) \;=\; \lim_{h \to 0} \frac{f(a+h) - f(a)}{h},
+$$
+ 
+provided this limit exists. This is the *difference quotient* approach: it measures the average rate of change of $f$ over an interval of length $h$, then takes the limit as $h$ shrinks to $0$. When the limit exists, we say $f$ is *differentiable* at $x=a$. The derivative $f'(a)$ equals the slope of the line connecting $(a, f(a))$ and $(a+h, f(a+h))$ in the limit of small $h$.
+
+### Landau’s little-$o$ notation
+
+If $f$ is differentiable at $x=a$, we can write the change in $f$ for a small increment $h$ as: 
+  
+$$
+f(a+h) = f(a) + f'(a)\,h + o(h) \qquad (h \to 0).
+$$
+ 
+This equation formalizes the idea that **the linear term $f'(a)\,h$ is the dominant term** in the increment of $f$ for small $h$. The notation $o(h)$ means *some function of $h$ that goes to 0 faster than $h$ itself* (precisely, $\lim_{h\to0} \frac{o(h)}{h} = 0$). In other words, as $h\to0$, the error term $o(h)$ becomes negligible compared to the linear term $f'(a)\,h$. Thus, 
+  
+$$
+f(a+h) = f(a) + f'(a)\,h + \text{(smaller order terms)}.
+$$
+
 
 ### The best linear approximation
 
-But there's a deeper way to think about derivatives. Instead of focusing on the limit process, consider what the derivative tells us about the function near a point. At any point $x$, the derivative gives us the slope of the best linear approximation to our function.
+The derivative provides the **best linear approximation** to the function near $x=a$. Geometrically, the line 
+  
+$$
+L(x) = f(a) + f'(a)\,(x - a)
+$$
+ 
+is the *tangent line* to $y=f(x)$ at $x=a$. For values of $x$ close to $a$, $L(x)$ is very close to $f(x)$. No other line can approximate $f(x)$ near $a$ as well as this tangent line does. Indeed, one way to phrase the definition of differentiability is: $f$ is differentiable at $a$ if there exists a linear function $L(h) = c\,h$ such that 
 
-![Best Linear Approximation](figures/best_linear_approximation.png)
+$$
+f(a+h) = f(a) + L(h) + o(h);
+$$
 
-The figure shows $f(x) = x^2$ (blue) and its linear approximation at $x=1$ (red). This linear approximation has slope $f'(1) = 2$ and is given by:
+in that case $c = f'(a)$ is unique. Intuitively, among all linear functions, $y = f(a) + c\,h$, the choice $c = f'(a)$ makes $f(a) + c\,h$ the closest to $f(a+h)$ for small $h$ (If you don't see why, check out [this stackoverflow post](https://math.stackexchange.com/questions/1784262/how-is-the-derivative-truly-literally-the-best-linear-approximation-near-a-po#:~:text=,function%20for%20values%20near%20x)). In summary, $f'(a)$ captures the *instantaneous rate of change* of $f$ at $a$, and $f'(a)\,h$ is the best linear prediction of the change in $f$ when the input changes by $h$.
 
-$$ L(x) = f(1) + f'(1)(x-1) = 1 + 2(x-1) = 2x - 1 $$
+### Visualization (tangent line):
 
-What makes this the "best" linear approximation? Two key properties:
-1. It matches the function's value at $x=1$: $L(1) = f(1) = 1$
-2. It matches the function's rate of change at $x=1$: $L'(1) = f'(1) = 2$
+Imagine a smooth curve representing $y=f(x)$. At the point $(a, f(a))$, draw the tangent line with slope $f'(a)$. This line touches the curve at $x=a$ and for points $x$ very close to $a$, the tangent line’s $y$-values are almost the same as the curve’s $y$-values.* This geometric picture underlies the notion of best linear approximation. If one zooms in sufficiently close to a differentiable curve, it becomes nearly indistinguishable from its tangent line. (Figure: *Tangent line approximating the curve near $x=a$*).
 
-More precisely, the error in our approximation is "small" in a very specific sense. Using Landau notation:
+![Best Linear Approximation](figures/best_linear_approximation-1.png)
 
-$$ f(x) = f(a) + f'(a)(x-a) + o(|x-a|) $$
 
-where $o(|x-a|)$ means the error term shrinks faster than $|x-a|$ as $x \to a$. In other words:
+### Relationship to Taylor series:
 
-$$ \lim_{x \to a} \frac{|f(x) - [f(a) + f'(a)(x-a)]|}{|x-a|} = 0 $$
+The linear approximation is actually the first-order truncation of the Taylor series. If $f$ is twice differentiable, one can write 
+  
+$$
+f(a+h) = f(a) + f'(a)\,h + \frac{f''(a)}{2}h^2 + \cdots.
+$$
+ 
+Truncating after the linear term gives the same formula as above, $f(a+h) \approx f(a) + f'(a)h$, with a quadratic (or higher order) error term. In the differentiable case (even without a second derivative), $f(a+h) = f(a) + f'(a)h + o(h)$ is essentially saying *“$f(a+h)$ equals its first-order Taylor expansion plus a smaller error”*. 
 
-This is a stronger statement than just having the right value and slope at $a$. It tells us that near $a$, the linear approximation becomes arbitrarily accurate relative to how far we've moved from $a$.
+### Geometric interpretation and optimization:
 
-### Relationship to Taylor series
+The derivative $f'(a)$ has a clear geometric meaning: it is the slope of the tangent line at $x=a$. If $f'(a) = 0$, the tangent is horizontal – this often indicates a local extremum (minimum or maximum) or a saddle point for $f$. This fact is fundamental in optimization: to find optimal points of a differentiable function, we often solve $f'(x)=0$. The sign of $f'(x)$ indicates the direction of steepest increase/decrease: if $f'(a) > 0$, $f$ increases as $x$ increases past $a$; if $f'(a) < 0$, $f$ decreases as $x$ increases past $a$. Gradient-based optimization methods (like gradient descent in one dimension) use the derivative to iteratively adjust $x$ in the direction that decreases $f(x)$ (for minimizing $f$). Because $f'(a)h$ approximates the change in $f$, one can choose a small step $h$ with opposite sign to $f'(a)$ to decrease the function’s value.
 
-The linear approximation we just discussed is actually the first-order Taylor polynomial. The full Taylor series provides increasingly accurate polynomial approximations by including higher-order terms:
 
-$$ f(x) = f(a) + f'(a)(x-a) + \frac{f''(a)}{2!}(x-a)^2 + \frac{f'''(a)}{3!}(x-a)^3 + \cdots $$
+### The chain rule in 1D
 
-For example, for $f(x) = \sin(x)$ around $a = 0$:
-$$ \sin(x) = x - \frac{x^3}{3!} + \frac{x^5}{5!} - \frac{x^7}{7!} + \cdots $$
 
-The linear approximation (first-order Taylor polynomial) keeps just the first two terms:
-$$ f(x) \approx f(a) + f'(a)(x-a) $$
+The chain rule describes how to differentiate *compositions* of functions. If $y = f(u)$ and $u = g(x)$ are differentiable (with $y$ depending on $x$ through $u$), then the derivative of the composite $y = f(g(x))$ is 
+  
+$$
+(f \circ g)'(x) \;=\; f'\!\big(g(x)\big)\,\cdot\,g'(x).
+$$
+ 
+In Leibniz notation, if $y=f(u)$ and $u=x$, this is $\frac{dy}{dx} = \frac{dy}{du}\frac{du}{dx}$. The chain rule follows from the a simple argument using the best linear approximation, which we state below since we will prove a multivariable version later: 
 
-This gives us a stronger error bound than our previous $o(|x-a|)$:
-$$ |f(x) - [f(a) + f'(a)(x-a)]| \leq \frac{M}{2}|x-a|^2 $$
-where $M$ is the maximum value of $|f''|$ near $a$. This quadratic error bound explains why the linear approximation works so well for small steps - the error shrinks quadratically with step size.
+The main ideas is that since $f$ and $g$ are differentiable, we can write
+$$
+\begin{aligned}
+f(u+h) &= f(u) + f'(u)\,h + o(h), \\
+g(x+k) &= g(x) + g'(x)\,k + o(k).
+\end{aligned}
+$$
 
-In optimization, this quadratic error bound has important consequences:
-1. Small steps are more accurate than large ones
-2. The error in our linear model grows quadratically with step size
-3. We can estimate appropriate step sizes using second derivative information
+Now, if we let $u = g(x)$ and $h = k$, we get
+$$
+\begin{aligned}
+f(g(x+k)) &= f(g(x)) + f'(g(x))\,(g(x+k) - g(x)) + o(g(x+k) - g(x))\\
+&= f(g(x)) + f'(g(x))\,(g'(x)\,k + o(k)) + o(g'(x)\,k + o(k))\\
+&= f(g(x)) + f'(g(x))\,g'(x)\,k + o(k).
+\end{aligned}
+$$
 
-For example, in gradient descent, we often choose step sizes inversely proportional to the second derivative (or its matrix analogue, the Hessian) to ensure our linear approximation remains valid.
+Notice that this formula is equivalent to saying that 
+$$
+\lim_{k\to 0} \frac{f(g(x+k)) - f(g(x)) - f'(g(x))\,g'(x)\,k}{k} = 0, 
+$$
+so the derivative of $f \circ g$ at $x$ is $f'(g(x))\,g'(x)$.
 
-### Geometric interpretation: Why the tangent line is optimal
 
-The claim that our linear approximation is "best" might seem arbitrary. After all, couldn't we draw other lines through the point $(1,1)$ that might work better? Let's see why the tangent line is truly optimal:
 
-![Tangent Line Optimality](figures/tangent_line_optimality.png)
+*Special cases of the chain rule in 1D include common differentiation rules:* 
 
-The figure shows our function $f(x) = x^2$ (blue), the tangent line at $x=1$ (red), and another candidate line through $(1,1)$ with a different slope (orange, dashed). Notice:
+**Constant multiple and sum rules:** $(c\cdot f(x))' = c\,f'(x)$ and $(f(x)+g(x))' = f'(x) + g'(x)$. These hold because differentiation is a linear operation.  
 
-1. **Near the point**: Both lines pass through $(1,1)$, but the tangent line stays closer to the function in a neighborhood around this point.
+**Product rule:** 
+$$(f(x)\cdot g(x))' = f'(x)\,g(x) + f(x)\,g'(x).$$ 
+This can be derived from the chain rule by viewing the product as a two-variable function composed with each function’s output. For example, define $H(u,v) = u \cdot v$ (so $\partial H/\partial u = v$, $\partial H/\partial v = u$). If $u = f(x)$ and $v = g(x)$, then by the multivariable chain rule (explained later), $dH/dx = \frac{\partial H}{\partial u}u'(x) + \frac{\partial H}{\partial v}v'(x) = v \cdot f'(x) + u \cdot g'(x)$, which is exactly the product rule.  
 
-2. **Error comparison**: The vertical distances (dashed lines) show the approximation error at various points. The tangent line's errors are consistently smaller near $x=1$.
+**Quotient rule:**   $$(f(x)/g(x))' = \frac{f'(x)g(x) - f(x)g'(x)}{[g(x)]^2},$$ provided $g(x)\neq 0$. This can be derived similarly or by writing $f/g = f \cdot g^{-1}$ and using the product rule and chain rule ($d(g^{-1})/dx = -g^{-2} g'$). These 1D concepts set the stage: the derivative $f'(a)$ gives a linear function $h \mapsto f'(a)\,h$ that best approximates $f(a+h)$ for small $h$. Next, we extend this idea to higher dimensions, where **Jacobians** and **gradients** play the role of the derivative.
 
-3. **Optimality**: Any other line through $(1,1)$ will have larger errors in some direction. If its slope is too small (like our orange line), it underestimates the function's growth. If too large, it overestimates.
+## Extending to Higher Dimensions: The gradient
 
-We can prove this optimality mathematically. For any line $L(x) = f(1) + m(x-1)$ through $(1,1)$ with slope $m$, the error at a nearby point $x$ is:
+When dealing with functions of several variables, the derivative generalizes to the **Jacobian matrix** (for vector-valued functions) and the **gradient vector** (for scalar-valued functions). The Jacobian encapsulates all first-order partial derivatives and provides the best linear approximation in multiple dimensions, just as $f'(a)$ did in 1D.
 
-$$ \begin{aligned}
-|f(x) - L(x)| &= |x^2 - (1 + m(x-1))| \\
-&= |x^2 - 1 - m(x-1)| \\
-&= |(x+1)(x-1) - m(x-1)| \\
-&= |x-1||x+1 - m|
-\end{aligned} $$
+### From slope to gradient
 
-When $m = f'(1) = 2$, this error is $|x-1||x-1| = |x-1|^2$, which is the smallest possible order of magnitude for the error. Any other slope $m$ gives an error of order $|x-1|$, which is larger than $|x-1|^2$ for $x$ close to 1.
+Consider a function $f:\mathbb{R}^n \to \mathbb{R}$ (one output, $n$ inputs). The *partial derivative* of $f$ with respect to the $j$-th input $x_j$ at point $x$ is defined as 
+  
+$$
+\frac{\partial f}{\partial x_j}(x) = \lim_{h\to0} \frac{f(x_1,\dots,x_j+h,\dots,x_n) - f(x_1,\dots,x_n)}{h}.
+$$
+ 
+  This measures the sensitivity of $f$ to small changes in $x_j$, holding the other coordinates fixed. The **gradient** of $f$ at $x$, denoted $\nabla f(x)$, is the vector of all partials: 
+  
+$$
+\nabla f(x) = \Big(\frac{\partial f}{\partial x_1}(x), \; \frac{\partial f}{\partial x_2}(x), \; \dots, \; \frac{\partial f}{\partial x_n}(x)\Big).
+$$
+ 
+  We can think of $\nabla f(x)$ as an $n\times 1$ column vector or a $1\times n$ row vector; by convention in optimization, $\nabla f(x)$ is often treated as a column vector. The gradient is the higher-dimensional analog of the derivative (slope): it points in the direction of steepest increase of $f$ and its components are the slopes along each coordinate axis.
 
-This geometric understanding - that the tangent line minimizes approximation error near the point of tangency - is fundamental to calculus. It explains why derivatives are so useful for optimization (they tell us which direction to move) and why linear approximations work so well for small perturbations (the error is quadratically small).
 
-### Connection to gradient descent
+### An alternative definition of the gradient via best linear approximation in $\mathbb{R}^n$
 
-The fact that derivatives give us the best linear approximation has profound implications for optimization. Consider trying to minimize our function $f(x) = x^2$. At any point $x$, the derivative $f'(x) = 2x$ tells us:
-1. The direction of steepest increase ($+f'(x)$)
-2. The direction of steepest decrease ($-f'(x)$)
-3. How quickly the function changes in these directions
+In multivariable calculus, you probably learned to define the gradient of a function in terms of its partial derivatives as we did above. This is not the most useful definition in higher dimensions. Instead, it's more convenient to **define the gradient** via the concept of the *best linear approximation*. More specifically, we say that $f \colon \mathbb{R}^n \to \mathbb{R}$ is differentiable at $x$ if there exists a vector $c \in \mathbb{R}^n$ such that for all $h \in \mathbb{R}^n$ we have 
 
-![Gradient Descent Optimization](figures/gradient_descent_optimization.png)
+$$
+f(x+h) = f(x) + c^\top h + o(\|h\|).
+$$
 
-The figure shows how we can use this information to systematically find the minimum of $f$:
+where $o(\|h\|)$ is a function that goes to zero faster than $\|h\|$ as $h\to 0$, i.e., $\lim_{h\to 0} \frac{o(\|h\|)}{\|h\|} = 0$. Note that the above is just a restatement of the following limit formula: 
 
-1. Start at some point (say $x=1.5$)
-2. Compute the derivative $f'(1.5) = 3$
-3. Take a step in the negative gradient direction
-4. Repeat until we reach the minimum
+$$
+\lim_{h\to 0} \frac{f(x+h) - f(x) - c^\top h}{\|h\|} = 0.
+$$
 
-This process, called gradient descent, works because:
-- The derivative gives us the direction of steepest descent
-- The size of the derivative tells us how big our steps should be
-- When we reach a point where $f'(x) = 0$, we've found a critical point
+In turns out any such $c$ is unique and we call it the *gradient of $f$ at $x$*, i.e., $\nabla f(x) = c$. 
 
-In our example:
-- At $x=1.5$: $f'(1.5) = 3$ tells us to move left
-- At $x=1.2$: $f'(1.2) = 2.4$ says keep moving left, but smaller steps
-- At $x=0.9$: $f'(0.9) = 1.8$ continues guiding us left
-- At $x=0$: $f'(0) = 0$ tells us we've reached the minimum
+When such a ``gradient" exists it satisfies the familiar formula in terms of partial derivatives (check!), but it turns out the converse is not true! For example, the function 
 
-The connection to linear approximation is key: at each step, we use the derivative to build a linear model of how the function will change, then move in the direction that model predicts will decrease the function most rapidly. This works because our linear approximation becomes increasingly accurate as we take smaller steps.
+$$
+f(x,y) = \begin{cases}
+    \frac{xy}{x^2 + y^2} & \text{if } (x,y) \neq (0,0) \\
+    0 & \text{if } (x,y) = (0,0)
+\end{cases}
+$$
 
-### Connection to PyTorch backward()
-
-PyTorch's backward() function computes derivatives by building and traversing a computational graph. Let's see how this works with our quadratic function:
-
-```python
-import torch
-
-# Create input tensor with gradient tracking
-x = torch.tensor([1.5], requires_grad=True)
-
-# Define quadratic function
-def f(x):
-    return x**2
-
-# Forward pass: build computational graph
-y = f(x)
-
-# Backward pass: compute gradient
-y.backward()
-
-print(f"At x = {x.item():.1f}")
-print(f"f(x) = {y.item():.1f}")
-print(f"f'(x) = {x.grad.item():.1f}")  # Should be 2x = 3.0
-```
-
-Output:
-```
-At x = 1.5
-f(x) = 2.3
-f'(x) = 3.0
-```
+has partial derivatives that exist at the origin, but the best linear approximation formula does not hold at the origin (check!). In other words, there are directions $h$ in which which we have:
 
-For a more complex example:
-```python
-def complex_function(x):
-    return torch.sin(x**2) * torch.exp(-x)
-
-x = torch.tensor([1.0], requires_grad=True)
-y = complex_function(x)
-y.backward()
-print(f"Gradient at x=1: {x.grad.item():.3f}")
-```
+$$
+\lim_{h\to 0} \frac{f(x+h) - f(x) - \nabla f(x)^\top h}{\|h\|} \neq 0.
+$$
 
-Output:
-```
-Gradient at x=1: -0.423
-```
+This is because the existence of the partial derivative only buys us approximation in the directions of the coordinate vectors $e_i$, meaning: 
 
-Testing the chain rule special cases:
-```python
-# Test product rule
-x = torch.tensor([2.0], requires_grad=True)
-f = torch.sin(x)
-g = torch.exp(x)
-product = f * g
-product.backward()
+$$
+f(x + \lambda e_i) = f(x) + \lambda \frac{\partial f}{\partial x_i}(x) + o(\lambda), \quad \forall i \in [n].
+$$
 
-# Manual calculation
-manual_grad = torch.sin(x) * torch.exp(x) + torch.cos(x) * torch.exp(x)
-print(f"Product rule at x=2:")
-print(f"PyTorch gradient: {x.grad.item():.3f}")
-print(f"Manual gradient: {manual_grad.item():.3f}")
+This is not enough to guarantee that the best linear approximation formula holds in ALL directions $h$. 
 
-# Reset gradient
-x.grad.zero_()
+ 
+From both geometric and analytic perspectives it's actually much more convenient to work with the best linear approximation definition. On the one hand, we'll later see how it let's us derive the chain rule in multivariable calculus in an analytic way. On the other hand, it conforms to our geometric intuition that the set of points $\{ (x,f(x) + \nabla f(x)^\top h) \colon  h \in \mathbb{R}^n \}$ is a hyperplane tangent to the graph of $f$ at $x$. The gradient $\nabla f(x)$ is then perpendicular (normal) to that tangent hyperplane.
 
-# Test quotient rule
-x = torch.tensor([2.0], requires_grad=True)
-f = torch.sin(x)
-g = torch.exp(x)
-quotient = f / g
-quotient.backward()
 
-# Manual calculation
-manual_grad = (torch.cos(x) * torch.exp(x) - torch.sin(x) * torch.exp(x)) / torch.exp(x)**2
-print(f"\nQuotient rule at x=2:")
-print(f"PyTorch gradient: {x.grad.item():.3f}")
-print(f"Manual gradient: {manual_grad.item():.3f}")
-```
 
-Output:
-```
-Product rule at x=2:
-PyTorch gradient: 4.814
-Manual gradient: 4.814
+## Extending to higher dimensions: the Jacobian
 
-Quotient rule at x=2:
-PyTorch gradient: -0.416
-Manual gradient: -0.416
-```
+When extending from the scalar-valued setting $f: \mathbb{R}^n \to \mathbb{R}$ to the more general vector-valued setting $F: \mathbb{R}^n \to \mathbb{R}^m$, it is also useful to focus on the **best linear approximation** viewpoint. Relying purely on coordinate-wise partial derivatives can obscure what is happening in all directions simultaneously and can lead to situations where the partial derivatives exist but *no* single linear map approximates the function well in every direction.
 
-These special cases illustrate key principles:
-1. The chain rule is fundamental - other rules derive from it
-2. PyTorch handles derivative rules automatically
-3. Complex derivatives can be built from simple ones
+### Jacobians as partial derivative matrices
 
-This idea generalizes beautifully to higher dimensions, where the gradient (a vector of partial derivatives) plays the role of the derivative, and the Jacobian matrix provides the best linear approximation for vector-valued functions. We'll explore these generalizations next.
+The conventional multivariable-calculus way to define the **Jacobian** of
 
-## Higher dimensions and the Jacobian
+$$
+F(x) \;=\; \bigl(f_1(x),\; f_2(x),\; \ldots,\; f_m(x)\bigr)
+$$
 
-Just as the derivative provides the best linear approximation in one dimension, the Jacobian matrix serves this role in higher dimensions. The key insight is that for vector-valued functions, we need a matrix to capture how each output component varies with respect to each input component.
+relies on partial derivatives:
 
-### The Jacobian as a best linear approximation
+$$
+J_F(x) \;=\;
+\begin{pmatrix}
+\frac{\partial f_1}{\partial x_1}(x) & \cdots & \frac{\partial f_1}{\partial x_n}(x)\\
+\vdots & \ddots & \vdots \\
+\frac{\partial f_m}{\partial x_1}(x) & \cdots & \frac{\partial f_m}{\partial x_n}(x)
+\end{pmatrix}.
+$$
 
-Consider a function $f: \mathbb{R}^n \to \mathbb{R}^m$ that maps points in n-dimensional space to points in m-dimensional space. The Jacobian matrix $J_f(x)$ or $Df(x)$ contains all partial derivatives:
+Equivalently, each row of $J_F(x)$ is $\nabla f_i(x)^\top$. But as with the gradient in the scalar case, **the existence of all these partial derivatives does *not* guarantee** that $F$ has a well-defined *global* linear approximation in every direction near $x$. Partial derivatives only ensure linear approximation along the coordinate axes. In higher dimensions, that is insufficient to ensure overall differentiability if different directions misbehave.
 
-$$ J_f(x) = \begin{bmatrix}
-\frac{\partial f_1}{\partial x_1} & \frac{\partial f_1}{\partial x_2} & \cdots & \frac{\partial f_1}{\partial x_n} \\
-\frac{\partial f_2}{\partial x_1} & \frac{\partial f_2}{\partial x_2} & \cdots & \frac{\partial f_2}{\partial x_n} \\
-\vdots & \vdots & \ddots & \vdots \\
-\frac{\partial f_m}{\partial x_1} & \frac{\partial f_m}{\partial x_2} & \cdots & \frac{\partial f_m}{\partial x_n}
-\end{bmatrix} $$
+### Best Linear Approximation approach
 
-Just as the derivative tells us how small changes in $x$ affect $f(x)$ in one dimension, the Jacobian tells us how small changes in each input dimension affect each output dimension:
+A more fundamental, and more powerful, definition of differentiability of a function $F: \mathbb{R}^n \to \mathbb{R}^m$ insists that there exist a linear map $A: \mathbb{R}^n \to \mathbb{R}^m$ such that
 
-![Jacobian Visualization](figures/jacobian_visualization.png)
+$$
+F(x + h)
+\;=\;
+F(x) \;+\; A\,h \;+\; o\!\bigl(\|h\|\bigr),
+$$
 
-The figure shows how the Jacobian transforms a small region near a point:
-1. Left: Input space with a grid of points
-2. Right: Output space showing how the grid is transformed
-3. The Jacobian matrix describes this transformation locally
+for *all* directions $h \in \mathbb{R}^n$. Equivalently:
 
-More precisely, just as in one dimension, the Jacobian gives us the best linear approximation:
+$$
+\lim_{h\to0} \;\frac{\|F(x+h) - F(x) - A\,h\|}{\|h\|}
+\;=\;
+0.
+$$
 
-$$ f(x + h) = f(x) + J_f(x)h + o(\|h\|) $$
+When such a linear map $A$ exists, it is *unique* and we call it the **Jacobian** of $F$ at $x$. We often write $A = J_F(x)$. This definition naturally extends the notion of “best linear approximation” we used in the scalar case:
 
-where:
-- $f(x)$ is the base point
-- $J_f(x)h$ is the linear approximation
-- $o(\|h\|)$ is an error term that shrinks faster than $\|h\|$
+- $\\|F(x+h) - F(x) - A\,h\\|$ is the error of approximating $F(x+h)$ by $F(x) + A\,h$.
+- Saying it’s $o(\\|h\\|)$ means the linear approximation outperforms any constant or sublinear approximation as $\|h\|\to0$, i.e., $\lim_{h\to0} \frac{o(\\|h\\|)}{\\|h\\|} = 0$.
 
-This means that near any point $x$:
-1. The Jacobian matrix $J_f(x)$ transforms vectors just like $f$ does
-2. The approximation error is quadratically small
-3. No other linear approximation can do better
+This approach clarifies what it means to be *differentiable* in multiple dimensions: **there is exactly one linear transformation** $A$ that can approximate the change in $F$ for small $\|h\|$. Having partial derivatives in the sense of each coordinate direction is not enough unless these partials piece together into a consistent linear map across *all* directions.
 
-### Multiple outputs and Jacobian rows
 
-When $f$ has multiple outputs, each row of the Jacobian is the gradient of one output component. For example, if $f(x_1, x_2) = (x_1^2 + x_2, x_1x_2)$, then:
+### Parallel to the Gradient
 
-$$ J_f(x) = \begin{bmatrix}
-2x_1 & 1 \\
-x_2 & x_1
-\end{bmatrix} $$
+When $m=1$, the map $J_F(x)$ is just $\nabla f(x)^\top$. This is precisely the best linear approximation in the scalar-to-scalar case, generalized to the vector input scenario:
 
-The first row $[2x_1 \quad 1]$ is $\nabla f_1$, telling us how $x_1^2 + x_2$ changes.
-The second row $[x_2 \quad x_1]$ is $\nabla f_2$, telling us how $x_1x_2$ changes.
+$$
+f(x + h)
+\;=\;
+f(x) \;+\; \bigl(\nabla f(x)\bigr)^\top h \;+\; o(\|h\|).
+$$
 
-This structure makes it easy to compute directional derivatives. For a direction vector $v$, the directional derivative is simply $J_f(x)v$, giving the rates of change of all outputs in direction $v$.
+Here, $\nabla f(x)$ is an $n$ dimensional vector whose dot product with $h$ gives the linear approximation in each direction. 
 
-### Best linear approximation in higher dimensions
 
-Just as we proved that the tangent line gives the best linear approximation in one dimension, we can show that the Jacobian provides the best linear approximation in higher dimensions. The key is to understand what "best" means in this context.
 
-For a function $f: \mathbb{R}^n \to \mathbb{R}^m$, a linear approximation at point $a$ is a linear map $L$ satisfying:
+### Jacobian matrix vs. Jacobian-vector products: Equivalent but more efficient
 
-$$ f(x) = f(a) + L(x-a) + o(\|x-a\|) $$
+In high dimensions, forming the entire Jacobian matrix explicitly is usually impractical due to memory and computational cost. Instead, one often computes **Jacobian-vector products (JVPs)** or **vector-Jacobian products (VJPs)** on the fly. For example, if we want to apply the chain rule (discussed next) to propagate a gradient through a network, we don’t explicitly construct the Jacobian of each layer. Instead, we multiply the current gradient (as a row vector) by the Jacobian of the next layer (a process often called a *backpropagation step*). This yields the new gradient for the preceding layer. By doing this recursively, we obtain the gradient of the overall function with respect to all inputs without ever storing large Jacobian matrices. The idea is: use linearity $J_F(x) h$ or $u^T J_F(x)$ as needed, rather than storing $J_F(x)$ itself. Modern autodiff frameworks are built around this principle – they *compose linear maps* rather than materializing them. We’ll expand on this idea in the context of the chain rule below.
 
-where $o(\|x-a\|)$ means the error term shrinks faster than $\|x-a\|$ as $x \to a$. In other words:
+#### Aside: if you can multiply by a matrix, you know every entry
 
-$$ \lim_{x \to a} \frac{\|f(x) - [f(a) + L(x-a)]\|}{\|x-a\|} = 0 $$
+Suppose that $A \in \mathbf{R}^{m \times n}$ and that we know how to multiply by $A$. Then we can compute every entry of $A$ by "testing" it's value on the standard basis vectors $e_1, \ldots, e_n$. Indeed, since $A e_j$ is just the $jth$ column of $A$, we can can access 
 
-The Jacobian $J_f(a)$ gives us this best linear approximation. To see why, consider any other linear map $M$. The error in using $M$ instead of $J_f(a)$ is:
+$$A_{ij} = (Ae_j)_i$$
 
-$$ \begin{aligned}
-\|f(x) - [f(a) + M(x-a)]\| &= \|f(x) - [f(a) + J_f(a)(x-a) + (M-J_f(a))(x-a)]\| \\
-&= \|o(\|x-a\|) + (M-J_f(a))(x-a)\| \\
-&\geq |(M-J_f(a))(x-a)| - |o(\|x-a\|)|
-\end{aligned} $$
+This fact tells us that there is usually no point of ever writing down all the entries of a matrix if one can easily multiply by $A$. We won't dwell on them here, but this has tremendous consequences for numerical algorithms. For now, we just show in the next section that it enables to determine the Jacobian of a function of matrices without ever writing down all the entries of the Jacobian.
 
-Since $M \neq J_f(a)$, there's some direction where they differ, making the first term linear in $\|x-a\|$ while the second term shrinks faster. Thus, no linear map can give a better approximation than the Jacobian.
 
-This optimality has practical consequences:
-1. When linearizing a function, use the Jacobian
-2. The error is quadratically small near the point
-3. The approximation becomes arbitrarily accurate for small steps
+### Computing complex jacobians using best linear approximation definition
 
-For example, in neural networks, this explains why small parameter updates work better than large ones - the linear approximation becomes more accurate as step sizes decrease.
+In machine learning and optimization, we often encounter mappings that take **matrices as inputs**. For example, the parameters of a model might be organized in matrices (weight matrices in neural networks). Mathematically, a matrix can be thought of as a point in $\mathbb{R}^N$ (with $N$ equal to the number of entries this can cause more confusion than clarity. Here we will work directly with the coordinate-free approach to derive the Jacobian of a function of matrices.
 
-### Chain rule in higher dimensions
+Let's consider the function of a variable $W \in \mathbb{R}^{n \times m}$:
 
-The chain rule in higher dimensions states that the Jacobian of a composition is the product of Jacobians. For functions $f: \mathbb{R}^n \to \mathbb{R}^m$ and $g: \mathbb{R}^m \to \mathbb{R}^p$, their composition $h = g \circ f$ has Jacobian:
+$$
+F(W) = W^T W
+$$
 
-$$ J_h(x) = J_g(f(x))J_f(x) $$
+The Jacobian of this function is a linear map $J_F(W) \colon \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$. Now we could go through the whole process of flattening W and computing each entry of the Jacobian, but this would be overkill (there are $(nm)^2$ entries). What we will do instead is figure out how $J_F(W)$ acts on an arbitrary direction $V \in \mathbb{R}^{n \times m}$. As we just saw, this will be enough to fully specify the jacobian.
 
-This is a beautiful statement about best linear approximations: the best linear approximation of a composition is the composition of the best linear approximations. To see why this makes sense:
+To see how the Jacobian acts on an arbitrary direction $V \in \mathbb{R}^{n \times m}$, we simply expand the RHS 
 
-1. $J_f(x)$ approximates how $f$ changes near $x$
-2. $J_g(f(x))$ approximates how $g$ changes near $f(x)$
-3. Their product captures how changes flow through both functions
+$$
+\begin{aligned}
+F(W + V) &= (W + V)^T (W + V) \\
+&= W^T W + W^T V + V^T W + V^T V \\
+&= F(W) + \underbrace{W^T V + V^T W}_{J_F(W) V} + o(\|V\|).
+\end{aligned}
+$$
 
-For example, consider $f(x_1, x_2) = (x_1^2, x_2^2)$ and $g(y_1, y_2) = y_1y_2$. Then $h(x_1, x_2) = x_1^2x_2^2$ has Jacobian:
+Thus, given a matrix $V$, the Jacobian $J_F(W) \in \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$ satisfies
 
-$$ \begin{aligned}
-J_f(x) &= \begin{bmatrix} 2x_1 & 0 \\ 0 & 2x_2 \end{bmatrix} \\
-J_g(y) &= \begin{bmatrix} y_2 & y_1 \end{bmatrix} \\
-J_h(x) &= J_g(f(x))J_f(x) = \begin{bmatrix} x_2^2 & x_1^2 \end{bmatrix} \begin{bmatrix} 2x_1 & 0 \\ 0 & 2x_2 \end{bmatrix} \\
-&= \begin{bmatrix} 2x_1x_2^2 & 2x_1^2x_2 \end{bmatrix}
-\end{aligned} $$
+$$
+J_F(W) V = W^T V + V^T W.
+$$
 
-This matches what we'd get by directly differentiating $h(x_1, x_2) = x_1^2x_2^2$:
-$$ \frac{\partial h}{\partial x_1} = 2x_1x_2^2, \quad \frac{\partial h}{\partial x_2} = 2x_1^2x_2 $$
+This is all we need to know about the Jacobian of $F$! 
 
-The chain rule is particularly powerful because:
-1. It breaks complex derivatives into simpler pieces
-2. Each piece can be computed independently
-3. Matrix multiplication combines the pieces
 
-This is the foundation of backpropagation in neural networks. Consider a simple network:
-```python
-def network(x, W1, W2):
-    h = torch.tanh(W1 @ x)      # Hidden layer
-    return torch.sigmoid(W2 @ h)  # Output layer
-```
+#### Exercise
 
-The chain rule tells us how to compute gradients with respect to weights:
-1. First layer: $J_{W1} = J_{\text{sigmoid}}(W_2h)J_{W2}J_{\text{tanh}}(W_1x)J_{W1}$
-2. Second layer: $J_{W2} = J_{\text{sigmoid}}(W_2h)J_{W2}$
+To test your intuition, try to compute the Jacobian of the mapping $F\colon \mathbf{R}^{n \times m} \to \mathbf{R}^{n \times m} \rightarrow \mathbf{R}^{n \times n}$ given by $F(U,V) = UV^T$ using the best linear approximation defintion. Again, you only need to figure out how $J_F(U,V)$ acts on an arbitrary direction $(H,K) \in \mathbf{R}^{n \times m} \times \mathbf{R}^{n \times m}$, rather than each entry of the Jacobian.
 
-PyTorch's autograd system implements this efficiently by:
-1. Building a computational graph during the forward pass
-2. Applying the chain rule in reverse during backpropagation
-3. Accumulating the final gradient in x.grad
 
-This automatic handling of the chain rule is what makes deep learning possible - manually computing these derivatives would be impractical for large networks.
 
-## Chain rule and applications
 
-### Easy formula examples
 
-Let's build intuition by working through some common examples. These patterns appear frequently in machine learning and optimization.
 
-#### Functions from $\mathbb{R}^n$ to $\mathbb{R}$
 
-1. **Squared norm**: For $f(x) = \|x\|^2 = x^\top x$
-   $$ \nabla f(x) = 2x^\top $$
-   This gradient points in the direction of steepest increase of the squared distance from the origin.
 
-2. **Dot product with fixed vector**: For $f(x) = x^\top y$ with fixed $y$
-   $$ \nabla f(x) = y^\top $$
-   The gradient is constant - the function increases most rapidly in direction $y$.
 
-3. **Quadratic form**: For $f(x) = x^\top A x$ with symmetric matrix $A$
-   $$ \nabla f(x) = 2x^\top A $$
-   When $A$ is positive definite, this measures a weighted sum of squared components.
+### Existence of Partials vs. True Differentiability
 
-#### Functions from $\mathbb{R}^n$ to $\mathbb{R}^m$
+The example $F(x,y) = \tfrac{xy}{x^2 + y^2}$ at $(0,0)$ illustrates that existence of partial derivatives does not imply differentiability. Thus, for vector-valued functions: partial derivatives might exist, yet no *single* linear map approximates the function in *every* direction near $x$. 
 
-1. **Linear transformation**: For $f(x) = Ax$ with matrix $A \in \mathbb{R}^{m \times n}$
-   $$ J_f(x) = A $$
-   The Jacobian is constant - the transformation is the same everywhere.
+Hence the coordinate-free definition is *strictly stronger*. It tells us whether, in *all* directions in $\mathbb{R}^n$, the difference $F(x+h) - F(x) - A h$ is negligible in norm compared to $\|h\|$. If that criterion holds, we have a well-defined Jacobian matrix $J_F(x)$ that acts on a direction $h$ to predict how $F$ changes in that direction.
 
-2. **Elementwise square**: For $f(x) = (x_1^2, \ldots, x_n^2)$
-   $$ J_f(x) = \begin{bmatrix}
-   2x_1 & 0 & \cdots & 0 \\
-   0 & 2x_2 & \cdots & 0 \\
-   \vdots & \vdots & \ddots & \vdots \\
-   0 & 0 & \cdots & 2x_n
-   \end{bmatrix} $$
-   The Jacobian is diagonal since each output depends on only one input.
 
-3. **Composition with linear map**: For $f(x) = A(x^2)$ where $x^2$ means elementwise square
-   $$ J_f(x) = A \cdot \text{diag}(2x) $$
-   The chain rule (which we'll explore in detail) tells us to multiply the Jacobians.
 
-These examples illustrate key patterns:
-1. For scalar outputs, we get row vector gradients
-2. For vector outputs, each row is a gradient
-3. When components are independent, we get diagonal or block matrices
-4. Compositions combine via matrix multiplication
 
-Understanding these patterns helps us build intuition for more complex functions. For instance, in neural networks, we often compose many such transformations, and the chain rule tells us how to compute their derivatives efficiently.
 
-### Matrix variables and their derivatives
 
-When our variables are matrices rather than vectors, we need to think carefully about derivatives. The key insight is that matrix derivatives follow the same principles as vector derivatives - they give us the best linear approximation - but we need to be precise about how we represent them.
+## Chain Rule: Composition of Best Linear Approximations
 
-![Matrix Derivatives](figures/matrix_derivatives.png)
+The **chain rule** is a fundamental result that describes how the derivative (Jacobian) of a composite function is the product of the derivatives (Jacobians) of the constituent functions. In the language of linear approximations: *the best linear approximation to a composition is the composition of the best linear approximations.* This is intuitive! 
 
-Consider a function $f(X) = X^\top X$ that maps $n \times d$ matrices to $d \times d$ matrices. To find its derivative, we need to:
-1. Understand what kind of object the derivative should be
-2. Figure out how it acts on small perturbations
-3. Express this action in a way that's easy to compute with
+We present the formal statement, verify it with a calculation, and then discuss various applications and interpretations, including its role in automatic differentiation.
 
-The derivative $\frac{\partial}{\partial X}(X^\top X)$ should be a linear map that:
-- Takes as input a direction matrix $V$ (same size as $X$)
-- Outputs a matrix telling us how $f(X)$ changes in direction $V$
-- Satisfies $f(X + tV) = f(X) + t\frac{\partial f}{\partial X}(V) + o(t)$
+### Formal statement (multi-dimensional chain rule)
 
-For our example $f(X) = X^\top X$, we can find this derivative by expanding:
 
-$$ \begin{aligned}
-f(X + tV) &= (X + tV)^\top(X + tV) \\
-&= X^\top X + t(X^\top V + V^\top X) + t^2V^\top V \\
-&= f(X) + t(X^\top V + V^\top X) + o(t)
-\end{aligned} $$
+Consider two differentiable functions $F$ and $G$ mapping as follows:
+$$
+\mathbb{R}^{p} \stackrel{\mathbf{G}}{\longrightarrow} \mathbb{R}^{m} \stackrel{\mathbf{F}}{\longrightarrow} \mathbb{R}^{n}
+$$
+Then the Jacobian of their composition $H = F \circ G$ is given by the product of the Jacobians of $F$ and $G$:
 
-Therefore, the derivative is the linear map:
-$$ \frac{\partial f}{\partial X}(V) = X^\top V + V^\top X $$
+$$
+J_H(x) = J_F(G(x)) \cdot J_G(x)
+$$
 
-This tells us that for any direction $V$:
-1. The change in $f$ is linear in $V$ (first-order term)
-2. The $t^2V^\top V$ term becomes negligible for small $t$
-3. The derivative combines $V$ with $X$ in a natural way
+The proof of this is actually identical to the proof of the single-variable chain rule. Indeed, we know that 
+- $F(x+h) = F(x) + J_F(x) h + o(\|h\|)$
+- $G(y+k) = G(y) + J_G(y) k + o(\|k\|)$
 
-For a concrete example, consider $2 \times 2$ matrices:
-$$ X = \begin{bmatrix} a & b \\ c & d \end{bmatrix} \implies X^\top X = \begin{bmatrix} a^2+c^2 & ab+cd \\ ab+cd & b^2+d^2 \end{bmatrix} $$
+Therefore, the composition satisfies 
 
-If we perturb $X$ in direction:
-$$ V = \begin{bmatrix} \delta_a & \delta_b \\ \delta_c & \delta_d \end{bmatrix} $$
+$$
+\begin{aligned}
+H(x+k) &= F(G(x+k)) \\
+&= F(G(x) + \underbrace{(G(x+k) - G(x))}_{:=h})\\
+&= F(G(x)) + J_F(G(x))h + o(\|h\|).
+\end{aligned}
+$$
 
-The derivative tells us the first-order change in $X^\top X$:
-$$ \frac{\partial f}{\partial X}(V) = \begin{bmatrix} 2a\delta_a + 2c\delta_c & a\delta_b + b\delta_a + c\delta_d + d\delta_c \\ a\delta_b + b\delta_a + c\delta_d + d\delta_c & 2b\delta_b + 2d\delta_d \end{bmatrix} $$
+Noting that 
 
-This matrix derivative perspective is crucial in deep learning, where we often need to:
-1. Compute gradients of matrix operations efficiently
-2. Understand how parameters affect outputs
-3. Design better optimization algorithms
+$$
+h = G(x+k) - G(x) = J_G(x)k + o(\|k\|)
+$$ 
 
-For example, in neural networks, weight matrices transform features between layers. Understanding matrix derivatives helps us:
-- Compute gradients for backpropagation
-- Design better initialization schemes
-- Analyze convergence properties
+We have 
+$$
+J_F(G(x))h = J_F(G(x))(J_G(x)k + o(\|k\|)) = J_F(G(x))J_G(x)k + o(\|k\|)
+$$
 
-### Detailed Example: Matrix Quadratic Form
+Putting it all together, we have 
 
-Let's work through a detailed example of matrix derivatives that appears frequently in machine learning: the matrix quadratic form $f(X) = X^TX$ where $X$ is an $n \times d$ matrix.
+$$
+H(x+k) = H(x) + J_F(G(x))J_G(x)k + o(\|k\|)
+$$
 
-#### Step 1: Understanding the Function
+which is exactly the chain rule.
 
-First, let's understand what this function does:
-- Input: Matrix $X \in \mathbb{R}^{n \times d}$
-- Output: Matrix $X^TX \in \mathbb{R}^{d \times d}$
-- Each entry $(X^TX)_{ij} = \sum_k X_{ki}X_{kj}$
 
-This appears in many contexts:
-1. Computing Gram matrices in kernel methods
-2. Covariance estimation in statistics
-3. Neural network weight regularization
 
-#### Step 2: Computing the Derivative
+### Immediate applications of the chain rule
 
-To find $\frac{\partial}{\partial X}(X^TX)$, we:
-1. Consider a perturbation $X + tV$
-2. Expand to first order in $t$
-3. Identify the linear term as our derivative
+The chain rule is very general, and many familiar differentiation rules in single-variable calculus can be viewed as special cases or direct consequences:
 
-$$ \begin{aligned}
-(X + tV)^T(X + tV) &= (X^T + tV^T)(X + tV) \\
-&= X^TX + t(V^TX + X^TV) + t^2V^TV \\
-&= X^TX + t(X^TV + V^TX) + O(t^2)
-\end{aligned} $$
-
-Therefore:
-$$ \frac{\partial}{\partial X}(X^TX)[V] = X^TV + V^TX $$
-
-This means that for any direction matrix $V$:
-1. The change in $X^TX$ is linear in $V$
-2. The change combines $V$ with $X$ symmetrically
-3. Higher-order terms become negligible for small perturbations
-
-#### Step 3: Implementation in PyTorch
-
-Let's verify this computationally:
-
-```python
-import torch
-
-def matrix_quadratic(X):
-    return X.T @ X
-
-# Create random matrix and direction
-X = torch.randn(3, 2, requires_grad=True)
-V = torch.randn(3, 2)
-eps = 1e-6
-
-# Compute derivative two ways:
-# 1. Finite differences
-fd_deriv = (matrix_quadratic(X + eps*V) - matrix_quadratic(X))/eps
-
-# 2. Automatic differentiation
-Y = matrix_quadratic(X)
-Y.backward(torch.eye(2))  # Compute full Jacobian
-auto_deriv = X.grad @ V
-
-print("Finite difference:")
-print(fd_deriv)
-print("\nAutodiff result:")
-print(auto_deriv)
-```
-
-Output:
-```
-Finite difference:
-tensor([[ 0.2314,  0.1892],
-        [ 0.1892,  0.4231]])
-
-Autodiff result:
-tensor([[ 0.2314,  0.1892],
-        [ 0.1892,  0.4231]])
-```
-
-For regularization:
-```python
-def regularized_loss(X, y_true):
-    y_pred = model(X)
-    return mse_loss(y_pred, y_true) + 0.1 * torch.sum(X.T @ X)
-
-# Example with random data
-X = torch.randn(10, 5, requires_grad=True)
-y_true = torch.randn(10)
-loss = regularized_loss(X, y_true)
-loss.backward()
-print(f"Gradient shape: {X.grad.shape}")
-print(f"Gradient norm: {torch.norm(X.grad):.3f}")
-```
-
-Output:
-```
-Gradient shape: torch.Size([10, 5])
-Gradient norm: 2.314
-```
-
-For numerical computation with matrices:
-```python
-def f(x):
-    return x.T @ x
-
-x = torch.randn(1000, 100, requires_grad=True)
-y = f(x)
-v = torch.randn_like(y)  # Vector to multiply with Jacobian
-y.backward(v)  # Computes v^T J_f(x)
-vjp = x.grad   # Result has same shape as x
-
-print(f"Input shape: {x.shape}")
-print(f"Output shape: {y.shape}")
-print(f"VJP shape: {vjp.shape}")
-print(f"Memory usage: {x.element_size() * x.numel() / 1024**2:.1f} MB")
-```
-
-Output:
-```
-Input shape: torch.Size([1000, 100])
-Output shape: torch.Size([100, 100])
-VJP shape: torch.Size([1000, 100])
-Memory usage: 0.4 MB
-```
-
-For JVP computation:
-```python
-from torch.autograd.functional import jvp
-
-def f(x):
-    return x.T @ x
-
-x = torch.randn(1000, 100)
-v = torch.randn_like(x)
-y, jvp_result = jvp(f, x, v)
-
-print(f"JVP shape: {jvp_result.shape}")
-print(f"JVP norm: {torch.norm(jvp_result):.3f}")
-```
-
-Output:
-```
-JVP shape: torch.Size([100, 100])
-JVP norm: 142.876
-```
-
-For neural network training:
-```python
-# Forward pass
-def forward(x, W1, W2):
-    h = torch.tanh(W1 @ x)
-    return torch.sigmoid(W2 @ h)
-
-# Loss function
-def loss(y_pred, y_true):
-    return torch.mean((y_pred - y_true)**2)
-
-# Training loop
-x = torch.randn(100, 10)
-y_true = torch.randn(100, 1)
-W1 = torch.randn(50, 10, requires_grad=True)
-W2 = torch.randn(1, 50, requires_grad=True)
-
-# Forward pass
-y_pred = forward(x, W1, W2)
-l = loss(y_pred, y_true)
-
-# Backward pass - computes VJPs efficiently
-l.backward()
-
-print("W1 grad shape:", W1.grad.shape)  # 50x10
-print("W2 grad shape:", W2.grad.shape)  # 1x50
-print("W1 grad norm:", torch.norm(W1.grad).item())
-print("W2 grad norm:", torch.norm(W2.grad).item())
-```
-
-Output:
-```
-W1 grad shape: torch.Size([50, 10])
-W2 grad shape: torch.Size([1, 50])
-W1 grad norm: 0.423
-W2 grad norm: 0.187
-```
-
-### Historical Context: Autodiff and Deep Learning
-
-The story of automatic differentiation in deep learning is fascinating, with key contributions from many researchers. Let's explore how our modern understanding evolved.
-
-#### Early Days: Backpropagation
-
-While the chain rule had been known for centuries, its efficient implementation for neural networks wasn't obvious. Key developments included:
-
-1. **1960s**: Early work on automatic differentiation by Wengert and others
-2. **1970s**: Seppo Linnainmaa develops reverse-mode AD
-3. **1986**: Rumelhart, Hinton, and Williams popularize backpropagation
-
-Hinton's key insight was recognizing that reverse-mode AD could efficiently train neural networks. The 1986 Nature paper "Learning representations by back-propagating errors" showed:
-1. How to compute gradients efficiently
-2. Why this enables learning internal representations
-3. The connection to biological learning
-
-#### Modern Autodiff Systems
-
-Today's systems build on these foundations but add crucial improvements:
-```python
-# 1986: Manual gradient computation
-def backward_1986(network, error):
-    # Compute layer by layer
-    for layer in reversed(network.layers):
-        error = layer.backward(error)
-    return error
-
-# 2012: Theano-style symbolic computation
-def backward_2012(expression):
-    # Build symbolic graph
-    graph = create_computation_graph(expression)
-    # Derive symbolic gradients
-    gradients = graph.gradients()
-    return compile(gradients)
-
-# 2016+: PyTorch dynamic computation
-def backward_modern(loss):
-    # Build graph dynamically
-    loss.backward()
-    # Gradients automatically populated
-```
-
-Key improvements include:
-1. Dynamic computation graphs
-2. Automatic memory management
-3. GPU acceleration
-4. Higher-order derivatives
-
-#### The Deep Learning Revolution
-
-This efficient gradient computation enabled:
-1. Training deeper networks
-2. Handling larger datasets
-3. Exploring more complex architectures
-
-For example, modern transformers use:
-```python
-class TransformerLayer(nn.Module):
-    def forward(self, x):
-        # Multi-head attention
-        attn = self.attention(x)
-        # Add & normalize
-        x = self.norm1(x + attn)
-        # Feed-forward
-        ff = self.ff_network(x)
-        # Add & normalize
-        x = self.norm2(x + ff)
-        return x
-```
-
-Computing gradients through this would be impractical without modern autodiff!
-
-#### Theoretical Insights
-
-The connection between backpropagation and calculus provides deep insights:
-
-1. **Information Flow**:
-   - Forward pass: Compose functions
-   - Backward pass: Compose derivatives
-   - Both are chain rule applications
-
-2. **Optimization Landscape**:
-   - Gradients give local information
-   - Architecture affects landscape smoothness
-   - This guides network design
-
-3. **Biological Plausibility**:
-   - Local update rules
-   - Credit assignment problem
-   - Connection to neuroscience
-
-#### Future Directions
-
-Current research explores:
-1. More efficient gradient computation
-2. Alternative optimization approaches
-3. Biologically inspired learning rules
-
-For example, newer techniques include:
-```python
-# Gradient checkpointing
-def forward_with_checkpoint(model, x):
-    with torch.no_grad():
-        # Store some activations
-        activations = []
-        for layer in model.layers[::2]:
-            x = layer(x)
-            activations.append(x)
+**Derivative along a curve:** If $x(t)$ is a parametric curve in $\mathbb{R}^n$ (i.e. $x: \mathbb{R} \to \mathbb{R}^n$) and $f:\mathbb{R}^n \to \mathbb{R}$ is a scalar field, then the composite $h(t) = f(x(t))$ is a single-variable function. The chain rule says 
     
-    # Recompute others during backward
-    return x, activations
+$$
+h'(t) = \nabla f(x(t)) \cdot x'(t).
+$$
+ 
+Here $\nabla f(x(t))$ is a $1 \times n$ row vector and $x'(t)$ is an $n \times 1$ column vector (the time-derivative of each coordinate of $x$). Their product is scalar, equal to $\sum_{j=1}^n \frac{\partial f}{\partial x_j}(x(t))\,\frac{dx_j}{dt}$. This is intuitively the *rate of change of $f$ along the trajectory $x(t)$*, and is often called the **directional derivative** of $f$ in the direction $x'(t)$. For example, if $x(t)$ describes a path a particle takes through space, and $f(x)$ is a temperature field, then $h'(t)$ gives the rate at which temperature changes for the moving particle.
 
-# Neural ODE approach
-class NeuralODE(nn.Module):
-    def forward(self, x, t):
-        # Continuous dynamics
-        return self.net(x, t)
+**Sum rule:** For $h(x) = f(x) + g(x)$, we can consider $h$ as the composition of a simple addition function $A(u,v)=u+v$ with the tuple $(f(x), g(x))$. The Jacobian of $A(u,v)$ with respect to $(u,v)$ is $[1\;\;1]$ (since $\partial (u+v)/\partial u = 1$ and $\partial (u+v)/\partial v = 1$). By chain rule, 
     
-    def integrate(self, x0, t):
-        # Solve ODE
-        return odeint(self.forward, x0, t)
-```
+$$
+h'(x) = [1\;\;1] \begin{pmatrix}f'(x) \\ g'(x)\end{pmatrix} = f'(x) + g'(x).
+$$
+ 
+This works similarly in higher dimensions: $\nabla (f+g)(x) = \nabla f(x) + \nabla g(x)$. The sum rule is essentially a reflection of the linearity of differentiation.
 
-These developments continue to expand what's possible with neural networks, building on the fundamental insights about gradient computation that Hinton and others provided. 
+**Product rule:** As mentioned earlier, one can derive the single-variable product rule via a two-variable chain rule. Let $u(x)=f(x)$ and $v(x)=g(x)$, and $P(u,v) = u \cdot v$. The Jacobian of $P(u,v)$ with respect to $(u,v)$ is $[\;v \;\;,\; u\;]$ (a $1\times 2$ matrix, since $\frac{\partial}{\partial u}(uv)=v$ and $\frac{\partial}{\partial v}(uv)=u$). The chain rule gives 
+    
+$$
+\frac{d}{dx}[f(x)g(x)] = [\,v\;\;u\,] \begin{pmatrix} f'(x) \\ g'(x) \end{pmatrix} = v(x)\,f'(x) + u(x)\,g'(x),
+$$
+ 
+which is exactly the product rule. In multivariable settings, there is a product rule for gradients as well, but it requires distinguishing which variable is being differentiated (for instance, product rule for scalar fields vs. for dot products of vector fields). Nonetheless, all are consequences of linear approximation applied to product operations.
+
+**Quotient rule:** Similarly, $f(x)/g(x)$ can be treated as $Q(u,v) = u/v$ composed with $u=f(x)$, $v=g(x)$. The partial derivatives of $Q(u,v)$ are $\partial Q/\partial u = 1/v$ and $\partial Q/\partial v = -u/v^2$. Applying the chain rule yields the standard quotient rule formula given earlier.
+  
+### Autodiff and backpropagation (chain rule in action)
+
+The chain rule is the backbone of **automatic differentiation (AD)**, especially the *backpropagation* algorithm used to train neural networks. In a computational graph (a series of composed operations), the gradient of the final output with respect to any intermediate quantity is obtained by iteratively applying the chain rule. For example, if a network’s output (loss) $L$ ultimately depends on a weight $w$ through many layers of composed functions, the gradient $\frac{\partial L}{\partial w}$ is computed by traversing the graph from $L$ back to $w$, multiplying gradients along the way as dictated by the chain rule. Each node applies the chain rule formula to propagate the influence of $w$ on $L$. In code, this means each operation knows how to compute its output given inputs (forward pass) and also how to compute the *gradient of its output with respect to its inputs* given the gradient of its output (backward pass). These backward-pass rules are precisely the partial derivatives required by the chain rule. By the end of backpropagation, one obtains the gradient of $L$ with respect to all parameters. The entire process is a direct application of the chain rule, just organized efficiently. As an example, PyTorch’s autograd engine builds a graph of $F$ and $G$ compositions and then calls backward, effectively performing the matrix multiplications $J_G \cdot J_F$ for all such compositions to get the final result.
+
