@@ -63,6 +63,25 @@ $$
 f(a+h) = f(a) + f'(a)\,h + \text{(smaller order terms)}.
 $$
 
+**Preservation of order $o$**: The little $o$ notation is useful because it is robust under addition and multiplication by constants (among other operations). For example,
+
+1. If $c_1$ and $c_2$ are constant then $c_1\,o(c_2 h) = o(h)$, meaning that 
+
+$$
+\begin{aligned}
+\lim_{h\to 0} \frac{c_1\,o(c_2 h)}{h} &= \lim_{c_2h\to 0} (c_1c_2) \cdot \frac{\,o(c_2 h)}{c_2 h}  \\
+&= 0.
+\end{aligned}
+$$
+
+2. If $f(h)$ and $g(h)$ are both $o(h)$ then $f(h) + g(h)$ is also $o(h)$, since 
+
+$$
+\lim_{h\to 0} \frac{f(h) + g(h)}{h} = \lim_{h\to 0} \frac{f(h)}{h} + \lim_{h\to 0} \frac{g(h)}{h} = 0 + 0 = 0.
+$$
+
+We will use these facts implicitly when applying the chain rule below.
+
 
 ### The best linear approximation
 
@@ -116,10 +135,11 @@ g(x+k) &= g(x) + g'(x)\,k + o(k).
 \end{aligned}
 $$
 
-Now, if we let $u = g(x)$ and $h = k$, we get
+Now, if we let $u = g(x)$ and $h = g(x+k) - g(x) = g'(x)\,k + o(k)$, we get
 $$
 \begin{aligned}
-f(g(x+k)) &= f(g(x)) + f'(g(x))\,(g(x+k) - g(x)) + o(g(x+k) - g(x))\\
+f(g(x+k)) &= f(g(x) + h) \\
+& =f(g(x)) + f'(g(x))\,h + o(h)\\
 &= f(g(x)) + f'(g(x))\,(g'(x)\,k + o(k)) + o(g'(x)\,k + o(k))\\
 &= f(g(x)) + f'(g(x))\,g'(x)\,k + o(k).
 \end{aligned}
@@ -135,13 +155,13 @@ so the derivative of $f \circ g$ at $x$ is $f'(g(x))\,g'(x)$.
 
 *Special cases of the chain rule in 1D include common differentiation rules:* 
 
-**Constant multiple and sum rules:** $(c\cdot f(x))' = c\,f'(x)$ and $(f(x)+g(x))' = f'(x) + g'(x)$. These hold because differentiation is a linear operation.  
+<!-- **Constant multiple and sum rules:** $(c\cdot f(x))' = c\,f'(x)$ and $(f(x)+g(x))' = f'(x) + g'(x)$. These hold because differentiation is a linear operation.  
 
 **Product rule:** 
 $$(f(x)\cdot g(x))' = f'(x)\,g(x) + f(x)\,g'(x).$$ 
 This can be derived from the chain rule by viewing the product as a two-variable function composed with each function’s output. For example, define $H(u,v) = u \cdot v$ (so $\partial H/\partial u = v$, $\partial H/\partial v = u$). If $u = f(x)$ and $v = g(x)$, then by the multivariable chain rule (explained later), $dH/dx = \frac{\partial H}{\partial u}u'(x) + \frac{\partial H}{\partial v}v'(x) = v \cdot f'(x) + u \cdot g'(x)$, which is exactly the product rule.  
 
-**Quotient rule:**   $$(f(x)/g(x))' = \frac{f'(x)g(x) - f(x)g'(x)}{[g(x)]^2},$$ provided $g(x)\neq 0$. This can be derived similarly or by writing $f/g = f \cdot g^{-1}$ and using the product rule and chain rule ($d(g^{-1})/dx = -g^{-2} g'$). These 1D concepts set the stage: the derivative $f'(a)$ gives a linear function $h \mapsto f'(a)\,h$ that best approximates $f(a+h)$ for small $h$. Next, we extend this idea to higher dimensions, where **Jacobians** and **gradients** play the role of the derivative.
+**Quotient rule:**   $$(f(x)/g(x))' = \frac{f'(x)g(x) - f(x)g'(x)}{[g(x)]^2},$$ provided $g(x)\neq 0$. This can be derived similarly or by writing $f/g = f \cdot g^{-1}$ and using the product rule and chain rule ($d(g^{-1})/dx = -g^{-2} g'$). These 1D concepts set the stage: the derivative $f'(a)$ gives a linear function $h \mapsto f'(a)\,h$ that best approximates $f(a+h)$ for small $h$. Next, we extend this idea to higher dimensions, where **Jacobians** and **gradients** play the role of the derivative. -->
 
 ## Extending to Higher Dimensions: The gradient
 
@@ -414,7 +434,7 @@ $$
  
 This works similarly in higher dimensions: $\nabla (f+g)(x) = \nabla f(x) + \nabla g(x)$. The sum rule is essentially a reflection of the linearity of differentiation.
 
-**Product rule:** As mentioned earlier, one can derive the single-variable product rule via a two-variable chain rule. Let $u(x)=f(x)$ and $v(x)=g(x)$, and $P(u,v) = u \cdot v$. The Jacobian of $P(u,v)$ with respect to $(u,v)$ is $[\;v \;\;,\; u\;]$ (a $1\times 2$ matrix, since $\frac{\partial}{\partial u}(uv)=v$ and $\frac{\partial}{\partial v}(uv)=u$). The chain rule gives 
+**Product rule:** One can derive the single-variable product rule via a two-variable chain rule. Let $u(x)=f(x)$ and $v(x)=g(x)$, and $P(u,v) = u \cdot v$. The Jacobian of $P(u,v)$ with respect to $(u,v)$ is $[\;v \;\;,\; u\;]$ (a $1\times 2$ matrix, since $\frac{\partial}{\partial u}(uv)=v$ and $\frac{\partial}{\partial v}(uv)=u$). The chain rule gives 
     
 $$
 \frac{d}{dx}[f(x)g(x)] = [\,v\;\;u\,] \begin{pmatrix} f'(x) \\ g'(x) \end{pmatrix} = v(x)\,f'(x) + u(x)\,g'(x),
