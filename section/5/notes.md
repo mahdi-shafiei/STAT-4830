@@ -20,7 +20,7 @@ title: How to think about calculus
 
 In this lecture, we explore a simple perspective on calculus: the derivative (or Jacobian in higher dimensions) is the best linear approximation of a function at a point. This viewpoint unifies single-variable and multivariable calculus, while revealing why the chain rule works - it's simply the composition of these best linear approximations. 
 
-Why teach this? Because autodifferentiation is essentially an efficient way to implement the chain rule. We'll touch on this at the end.
+Why teach this? Because autodifferentiation is essentially an efficient way to implement the chain rule. We'll touch on this at the end, revisiting the gradient of the least squares loss.
 
 
 ## 1. Derivative in 1D
