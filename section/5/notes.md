@@ -97,11 +97,6 @@ $$
  
 Truncating after the linear term gives the same formula as above, $f(a+h) \approx f(a) + f'(a)h$, with a quadratic (or higher order) error term. In the differentiable case (even without a second derivative), $f(a+h) = f(a) + f'(a)h + o(h)$ is essentially saying *“$f(a+h)$ equals its first-order Taylor expansion plus a smaller error”*. 
 
-### Geometric interpretation and optimization:
-
-The derivative $f'(a)$ has a clear geometric meaning: it is the slope of the tangent line at $x=a$. If $f'(a) = 0$, the tangent is horizontal – this often indicates a local extremum (minimum or maximum) or a saddle point for $f$. This fact is fundamental in optimization: to find optimal points of a differentiable function, we often solve $f'(x)=0$. The sign of $f'(x)$ indicates the direction of steepest increase/decrease: if $f'(a) > 0$, $f$ increases as $x$ increases past $a$; if $f'(a) < 0$, $f$ decreases as $x$ increases past $a$. Gradient-based optimization methods (like gradient descent in one dimension) use the derivative to iteratively adjust $x$ in the direction that decreases $f(x)$ (for minimizing $f$). Because $f'(a)h$ approximates the change in $f$, one can choose a small step $h$ with opposite sign to $f'(a)$ to decrease the function’s value.
-
-
 ### The chain rule in 1D
 
 
