@@ -298,10 +298,10 @@ The figure below shows the empirical variance of the SGD iterates compared to ou
 
 ## A curious fact: independence from $n$
 
-An especially striking aspect of our analysis is that **none of our convergence guarantees explicitly depend on the number of samples** $n$. In other words, the key theoretical results hold regardless of whether we have $n = 10$ or $n = 10^{10}$. All that matters is:
+An especially striking aspect of our analysis is that *none of our convergence guarantees explicitly depend on the number of samples* $n$. In other words, the key theoretical results hold regardless of whether we have $n = 10$ or $n = 10^{10}$. All that matters is:
 
-1. Our *initial distance* $(w_0 - \mu)$ to the true mean, and  
-2. The *variance* $\sigma^2$ of the distribution generating the samples.
+1. Our initial distance $(w_0 - \mu)$ to the true mean, and  
+2. The variance $\sigma^2$ of the distribution generating the samples.
 
 We initially framed the setting as having $n$ fixed data points $\{x_i\}$, each drawn from a uniform distribution over the indices $\{1,\dots,n\}$. However, if we interpret $\{x_i\}$ as i.i.d. samples from an underlying distribution $\mathcal{D}$, we can simply view $x_{i_k}$ as an independent draw from $\mathcal{D}$ at each SGD step. The mean of that distribution is $\mu$, and the variance is $\sigma^2$. The identical update analyses still apply as long as each step’s sample $x_{i_k}$ has expectation $\mu$ and variance $\sigma^2$. 
 
