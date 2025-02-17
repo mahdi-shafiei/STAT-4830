@@ -22,3 +22,6 @@ title: Table of Contents
 
 [5. How to think about derivatives through best linear approximation](section/5/notes.md)
    > How to think about derivatives through best linear approximation.
+
+[6. Stochastic gradient descent: A first look](section/6/notes.md)
+   > A first look at stochastic gradient descent through the mean estimation problem.
