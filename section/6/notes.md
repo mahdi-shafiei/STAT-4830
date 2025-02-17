@@ -295,4 +295,13 @@ The figure below shows the empirical variance of the SGD iterates compared to ou
 ![Variance Analysis](figures/s4_variance.png)
 *Figure: The of SGD iterates vs. number of iterations k (log-log scale). Solid lines show observed variance, dashed lines show theoretical bounds. Different colors represent different step sizes $\eta$.*
 
+## Final Reflections: Independence from $n$
 
+An especially striking aspect of our analysis is that **none of our convergence guarantees explicitly depend on the number of samples** $n$. In other words, the key theoretical results hold regardless of whether we have $n = 10$ or $n = 10^{10}$. All that matters is:
+
+1. Our *initial distance* $(w_0 - \mu)$ to the true mean, and  
+2. The *variance* $\sigma^2$ of the distribution generating the samples.
+
+We initially framed the setting as having $n$ fixed data points $\{x_i\}$, each drawn from a uniform distribution over the indices $\{1,\dots,n\}$. However, if we interpret $\{x_i\}$ as i.i.d. samples from an underlying distribution $\mathcal{D}$, we can simply view $x_{i_k}$ as an independent draw from $\mathcal{D}$ at each SGD step. The mean of that distribution is $\mu$, and the variance is $\sigma^2$. The identical update analyses still apply as long as each step’s sample $x_{i_k}$ has expectation $\mu$ and variance $\sigma^2$. 
+
+Hence, even if the sample space is continuous (e.g., $x_i\sim\mathcal{N}(\mu, \sigma^2)$), and we draw a fresh $x_{i_k}$ at every iteration from that continuous distribution, **the same proofs** hold. We never used anything special about the discrete nature or the finite size $n$. Our SGD update formulas and convergence in mean argument relied only on the unbiasedness of $\nabla \ell_{i_k}(w_k)$ and the boundedness of its variance. As a result, the entire analysis generalizes seamlessly to large-scale or infinite-sample scenarios—a fact that underscores the power of stochastic gradient approaches in real-world machine learning, where data can indeed be extremely large or even effectively unlimited.
