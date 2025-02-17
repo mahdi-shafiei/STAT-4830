@@ -10,6 +10,7 @@ title: Stochastic Gradient Descent - A first look
 2. [Stochastic gradient descent for large $n$ problems](#stochastic-gradient-descent-for-large-n-problems)
 3. [Convergence in mean](#convergence-in-mean)
 4. [Variance of the estimator](#variance-of-the-estimator)
+5. [A curious fact: independence from $n$](#a-curious-fact-independence-from-n)
 
 ## Introduction
 
@@ -295,7 +296,7 @@ The figure below shows the empirical variance of the SGD iterates compared to ou
 ![Variance Analysis](figures/s4_variance.png)
 *Figure: The of SGD iterates vs. number of iterations k (log-log scale). Solid lines show observed variance, dashed lines show theoretical bounds. Different colors represent different step sizes $\eta$.*
 
-## Final Reflections: Independence from $n$
+## A curious fact: independence from $n$
 
 An especially striking aspect of our analysis is that **none of our convergence guarantees explicitly depend on the number of samples** $n$. In other words, the key theoretical results hold regardless of whether we have $n = 10$ or $n = 10^{10}$. All that matters is:
 
