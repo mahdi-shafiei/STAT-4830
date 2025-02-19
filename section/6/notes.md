@@ -375,13 +375,13 @@ The equivalence between the sample complexity of minibatched and vanilla SGD is 
 Generally, minibatched when moving from a batch of size $1$ to $B$, we should asymptotically increase the stepsize by a factor of $B$. This can be gleaned from the formula above for the expected squared error, which is a sum of $(1-\eta)^{2k}$ and $\frac{\eta\,\sigma^2}{B\,(2-\eta)}$. If we intend to run $k$ iterations, then the fixed stepsize that minimizes the above expression will be proportional to $B\ln(2k)/k$.  -->
 
 
-<!-- **Numerical experiment with two plots**  
+**Numerical experiment with two plots**  
 Below is a Python script (`s5_minibatch_experiment.py`) that demonstrates minibatch mean estimation under a Gaussian distribution $\mathcal{N}(\mu,\sigma^2)$. It produces **two figures**:
 
 1. **MSE vs. iteration index** $(k)$, on a log-log scale.  
 2. **MSE vs. total sample usage** $(k \times B)$, also on a log-log scale.
 
-In each figure, we compare different batch sizes $B$ and overlay a dashed line indicating the theoretical bound.
+In both figures, we compare batch size $1$ with batchsize $B = 1000$ and overlay a dashed line indicating the theoretical bound. For batch size $1000$, we use a stepsize of $\eta = 5e-2$. For batch size $1$, we use a stepsize of $\eta = 5e-2/B = 5e-5$.
 
 ![MSE vs Iterations](figures/s5_minibatch_k.png)
 *Figure: MSE vs. iteration k (log scale) for different batch sizes B. Solid lines show observed MSE, dashed lines show theoretical bounds.*
@@ -392,12 +392,11 @@ In each figure, we compare different batch sizes $B$ and overlay a dashed line i
 **Interpretation**:
 
 - In the **first figure**, larger batch sizes $B$ converge in *fewer iterations* to a small variance floor.
-- In the **second figure**, we re-plot that same MSE curve against the total sample usage $k \times B$. Here, curves for different $B$ often appear closer. Indeed, mini-batching achieves fewer *iterations*, but each iteration processes more samples.  
-
-In practice, parallel computing can make a large batch almost as fast per iteration as a small batch, hence the popularity of mini-batching.
+- In the **second figure**, we re-plot that same MSE curve against the total sample usage $k \times B$. Here, curves for batch size $1$ and batch size $1000$ are nearly identical. Indeed, mini-batching achieves fewer *iterations*, but each iteration processes more samples.  
 
 
 
 
 
- -->
+
+
