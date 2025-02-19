@@ -11,10 +11,11 @@ title: Stochastic Gradient Descent - A first look
 3. [Convergence in mean](#convergence-in-mean)
 4. [Variance of the estimator](#variance-of-the-estimator)
 5. [A curious fact: independence from $n$](#a-curious-fact-independence-from-n)
+6. [Mini-batching as a variance reduction technique](#mini-batching-as-a-variance-reduction-technique)
 
 ## Introduction
 
-In this lecture, we address the computational challenges of solving a least squares problem when the number of samples $n$ is extremely large (often called the "big $n$" scenario). In previous lectures, we successfully applied full-batch gradient descent and even derived a closed-form solution for least squares. However, as $n$ grows into the millions or billions, naïve approaches break down due to memory and runtime constraints. To illustrate:
+In this lecture, we address the computational challenges of solving a least squares problem when the number of samples $n$ is extremely large (or even infinite). In previous lectures, we successfully applied full-batch gradient descent and even derived a closed-form solution for least squares. However, as $n$ grows into the millions or billions, naïve approaches break down due to memory and runtime constraints. To illustrate:
 
 **Memory limitations:** Storing all $n$ samples in memory can be infeasible. For example, attempting to load a dataset of size $n = 10^{10}$ (10 billion samples) on a MacBook Pro with 64GB RAM results in an out-of-memory error. Even if each sample is simply an 8-byte float, the total memory required is $80$GB, which exceeds available RAM.
 
