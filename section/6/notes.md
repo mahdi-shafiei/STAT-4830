@@ -289,7 +289,7 @@ The main takeaway is that the first term decays exponentially fast, while the se
 - A larger $\eta$ makes $(1-\eta)^k$ shrink faster, so the bias term $(1-\eta)^{2k}(w_0-\mu)^2$ disappears quickly – meaning $w_k$ in expectation reaches near $\mu$ in just a few iterations. However, a large $\eta$ inflates the noise term $\eta\,\sigma^2$, leading to higher variance in $w_k$. The iterates will fluctuate significantly around $\mu$ and never settle.
 - A smaller $\eta$ reduces the variance injected each step – in the limit $\eta\to0$, the noise term is negligible and $w_k$ would concentrate tightly (eventually $w_k$ would converge to $\mu$). But too small $\eta$ means $(1-\eta)^k$ decays very slowly, so the convergence to the optimum in expectation is extremely slow.
 
-In practice, one must choose $\eta$ to balance this trade-off: we want $\eta$ large enough for quick progress, but not so large that the solution is overly noisy. For fixed $\eta$, SGD will *not* fully converge to the exact optimum $\mu$; it will hover around it with some variance. To actually get arbitrarily close to $\mu$, a common strategy is to *decrease $\eta$ over time*. For example, using a step size that decays as $\eta_k \sim \frac{\log k}{k}$ (approximately on the order of $1/k$) is known to achieve convergence: the diminishing $\eta_k$ ensures that $\mathbb{E}[(w_k-\mu)^2] \to 0$ as $k\to\infty$ (the noise floor vanishes). However, decreasing step sizes complicate the analysis, so for now we focused on constant $\eta$ to illustrate the basic phenomena.
+In practice, one must choose $\eta$ to balance this trade-off: we want $\eta$ large enough for quick progress, but not so large that the solution is overly noisy. For fixed $\eta$, SGD will *not* fully converge to the exact optimum $\mu$; it will hover around it with some variance. To actually get arbitrarily close to $\mu$, a common strategy is to *decrease $\eta$ over time*. For example, using a step size that decays as $\eta_k \sim \frac{\log k}{k}$ (approximately on the order of $1/k$) is known to convergence of the form $\mathbb{E}[(w_k-\mu)^2] = O(\log(k)/k)$ as $k\to\infty$ (the noise floor vanishes). However, decreasing step sizes complicate the analysis, so for now we focused on constant $\eta$ to illustrate the basic phenomena.
 
 The figure below shows the empirical variance of the SGD iterates compared to our theoretical bounds:
 
@@ -303,6 +303,101 @@ An especially striking aspect of our analysis is that *none of our convergence g
 1. Our initial distance $(w_0 - \mu)$ to the true mean, and  
 2. The variance $\sigma^2$ of the distribution generating the samples.
 
-We initially framed the setting as having $n$ fixed data points $\{x_i\}$, each drawn from a uniform distribution over the indices $\{1,\dots,n\}$. However, if we interpret $\{x_i\}$ as i.i.d. samples from an underlying distribution $\mathcal{D}$, we can simply view $x_{i_k}$ as an independent draw from $\mathcal{D}$ at each SGD step. The mean of that distribution is $\mu$, and the variance is $\sigma^2$. The identical update analyses still apply as long as each step’s sample $x_{i_k}$ has expectation $\mu$ and variance $\sigma^2$. 
+We initially framed the setting as having $n$ fixed data points $\{x_i\}$, each drawn from a uniform distribution over the indices $\{1,\dots,n\}$. However, if we interpret $\{x_i\}$ as i.i.d. samples from an underlying distribution $\mathcal{D}$, we can simply view $x_{i_k}$ as an independent draw from $\mathcal{D}$ at each SGD step. The mean of that distribution is $\mu$, and the variance is $\sigma^2$. The identical update analyses still apply as long as each step's sample $x_{i_k}$ has expectation $\mu$ and variance $\sigma^2$. 
 
 Hence, even if the sample space is continuous (e.g., $x_i\sim\mathcal{N}(\mu, \sigma^2)$), and we draw a fresh $x_{i_k}$ at every iteration from that continuous distribution, the same proofs hold. We never used anything special about the discrete nature or the finite size $n$. Our SGD update formulas and convergence in mean argument relied only on the unbiasedness of $\nabla \ell_{i_k}(w_k)$ and the boundedness of its variance. As a result, the entire analysis generalizes seamlessly to large-scale or infinite-sample scenarios—a fact that underscores the power of stochastic gradient approaches in real-world machine learning, where data can indeed be extremely large or even effectively unlimited.
+
+### Mini-batching as a variance reduction technique
+
+To reduce variance in the updates, one can *average* multiple samples at each step. Concretely, at iteration $k$, sample a mini-batch of size $B$, say $\{ x_{i_k^1}, \dots, x_{i_k^B} \}$, each drawn from $\mathcal{D}$. Then:
+
+
+$$
+
+w_{k+1}
+\;=\;
+(1 - \eta)\,w_k 
+\;+\;
+\eta\,\frac{1}{B}\sum_{b=1}^{B} x_{i_k^b}.
+
+$$
+
+
+Because the variance of $\frac{1}{B}\sum x_{i_k^b}$ is $\frac{\sigma^2}{B}$, the variance floor of $\\|w_k - \mu\\|$ shrinks by a factor of $B$. Indeed, to see why, note that for any iid sequence $X_1, \ldots, X_B$ of a random variable $X$, we have:
+
+
+$$
+
+\mathrm{Var}\left(\frac{1}{B}\sum_{b=1}^{B} X_b\right) = \frac{1}{B^2} \sum_{b=1}^{B} \mathrm{Var}(X_b) = \frac{1}{B^2} \cdot B \cdot \mathrm{Var}(X) = \frac{\mathrm{Var}(X)}{B}, 
+
+$$
+
+where we used the fact that the variance distributes across sums of iid random variables and the variance of each term is $\mathrm{Var}(X)$.
+
+Taking this reduction into account, the corresponding bound becomes:
+
+
+$$
+
+\mathbb{E}[\|w_k - \mu\|^2]
+\;\le\;
+(1-\eta)^{2k}\,\|w_0 - \mu\|^2
+\;+\;
+\frac{\eta\,\sigma^2}{B\,(2-\eta)}.
+
+$$
+
+Thus, increasing the batch size $B$ can reduce the limiting variance floor. However, each iteration now costs roughly $B$ times more sampling/gradient-computation effort. In practice, parallelism can mitigate this overhead, but the sample usage per iteration does scale with $B$.  
+
+This is why one considers the notion of *sample complexity* in machine learning. Sample complexity is the number of samples required to achieve a certain accuracy. When one cares about sample complexity, one should track the *total number of samples drawn* throughout the entire run. For example, if each iteration uses batch size $B$, then after $k$ steps we have used $k  B$ samples. 
+
+So then how do we compare the result of running SGD with batch size $B$ with batch size $1$? Suppose that we run SGD with batch size $B$ and stepsize $\eta$ for $k$ iterations. Let $w_k^{(B)}$ be the final iterate. On the other hand, suppose that we run vanilla SGD with stepsize $\eta/B$ for $k B$ iterations. Let $w_{k  B}^{(1)}$ be the final iterate. Then our bounds are 
+$$
+\begin{aligned}
+\mathbb{E}[\|w_k^{(B)} - \mu\|^2] &\leq (1-\eta)^{2k}\,\|w_0 - \mu\|^2 + \frac{\eta\,\sigma^2}{B\,(2-\eta)} \\
+\mathbb{E}[\|w_{k  B}^{(1)} - \mu\|^2] &\leq (1-\eta/B)^{2k  B}\,\|w_0 - \mu\|^2 + \frac{\eta\,\sigma^2}{B\,(2-\eta/B)}.
+\end{aligned}
+$$
+
+Since $\eta < 1$, the variance floor of both methods is roughly the same. On the other hand, since 
+
+$$
+(1-\eta/B)^{2k  B} \approx (1-\eta)^{2k}
+$$
+
+the initialization dependence is also the same. So really, there is no free lunch in terms of raw sample complexity even though the wall clock time can be different. 
+
+<!-- Empirically, one often sees that using a batch of size $B$ may converge in $1/B$ times fewer *iterations* to the same accuracy, but each iteration is more expensive by a factor of $B$. The net sample usage is thus similar. Still, mini-batching can be valuable when hardware parallelization allows simultaneous processing of each batch element. Thus, the *sample complexity* of both methods will be the same, but the *wall clock time* can be different given access to parallel computing.
+
+The equivalence between the sample complexity of minibatched and vanilla SGD is only true when the stepsize is set correctly. For example, if one chooses the stepsize as $\eta = 1/B$
+
+
+Generally, minibatched when moving from a batch of size $1$ to $B$, we should asymptotically increase the stepsize by a factor of $B$. This can be gleaned from the formula above for the expected squared error, which is a sum of $(1-\eta)^{2k}$ and $\frac{\eta\,\sigma^2}{B\,(2-\eta)}$. If we intend to run $k$ iterations, then the fixed stepsize that minimizes the above expression will be proportional to $B\ln(2k)/k$.  -->
+
+
+<!-- **Numerical experiment with two plots**  
+Below is a Python script (`s5_minibatch_experiment.py`) that demonstrates minibatch mean estimation under a Gaussian distribution $\mathcal{N}(\mu,\sigma^2)$. It produces **two figures**:
+
+1. **MSE vs. iteration index** $(k)$, on a log-log scale.  
+2. **MSE vs. total sample usage** $(k \times B)$, also on a log-log scale.
+
+In each figure, we compare different batch sizes $B$ and overlay a dashed line indicating the theoretical bound.
+
+![MSE vs Iterations](figures/s5_minibatch_k.png)
+*Figure: MSE vs. iteration k (log scale) for different batch sizes B. Solid lines show observed MSE, dashed lines show theoretical bounds.*
+
+![MSE vs Total Samples](figures/s5_minibatch_samples.png)
+*Figure: MSE vs. total sample usage k×B (log scale) for different batch sizes B. Solid lines show observed MSE, dashed lines show theoretical bounds.*
+
+**Interpretation**:
+
+- In the **first figure**, larger batch sizes $B$ converge in *fewer iterations* to a small variance floor.
+- In the **second figure**, we re-plot that same MSE curve against the total sample usage $k \times B$. Here, curves for different $B$ often appear closer. Indeed, mini-batching achieves fewer *iterations*, but each iteration processes more samples.  
+
+In practice, parallel computing can make a large batch almost as fast per iteration as a small batch, hence the popularity of mini-batching.
+
+
+
+
+
+ -->
