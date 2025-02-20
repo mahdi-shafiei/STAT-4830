@@ -62,7 +62,7 @@ The SGD update is:
 
 $$
  
-w_{k+1} \;=\; w_k \;-\; \eta\, \nabla \ell_{i_k}(w_k) \;= \;=\; w_k - \eta\,(w_k - x_{i_k})\,. 
+w_{k+1} \;=\; w_k \;-\; \eta\, \nabla \ell_{i_k}(w_k) \;= \; w_k - \eta\,(w_k - x_{i_k})\,. 
 
 $$
  
