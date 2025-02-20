@@ -377,12 +377,12 @@ Generally, minibatched when moving from a batch of size $1$ to $B$, we should as
 
 
 **Numerical experiment with two plots**  
-Below is a Python script (`s5_minibatch_experiment.py`) that demonstrates minibatch mean estimation under a Gaussian distribution $\mathcal{N}(\mu,\sigma^2)$. It produces **two figures**:
+Below we demonstrate minibatch mean estimation under a Gaussian distribution $\mathcal{N}(\mu,\sigma^2)$ through two figures:
 
 1. **MSE vs. iteration index** $(k)$, on a log-log scale.  
 2. **MSE vs. total sample usage** $(k \times B)$, also on a log-log scale.
 
-In both figures, we compare batch size $1$ with batchsize $B = 1000$ and overlay a dashed line indicating the theoretical bound. For batch size $1000$, we use a stepsize of $\eta = 5e-2$. For batch size $1$, we use a stepsize of $\eta = 5e-2/B = 5e-5$.
+In both figures, we compare batch size $1$ with batchsize $B = 1000$ and overlay a dashed line indicating the theoretical bound. For batch size $1000$, we use a stepsize of $\eta = 5\times 10^{-2}$. For batch size $1$, we use a stepsize of $\eta = 5\times 10^{-2}/B = 5\times 10^{-5}$.
 
 ![MSE vs Iterations](figures/s5_minibatch_k.png)
 *Figure: MSE vs. iteration k (log scale) for different batch sizes B. Solid lines show observed MSE, dashed lines show theoretical bounds.*
