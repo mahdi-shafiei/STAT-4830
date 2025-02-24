@@ -177,6 +177,14 @@ This formula has two key terms:
 
 We can see that minibatching (increasing $B$) reduces the steady-state variance by a factor of $B$, just as we observed in the one-dimensional case from the previous lecture.
 
+### Stability condition: Why η > 1/h₁ leads to divergence
+
+It's important to note that our analysis above depends critically on the condition that $\eta h_i < 2$ for all dimensions. When this condition is violated, SGD can become unstable and diverge.
+
+In particular, for the larger eigenvalue $h_1$, if we choose $\eta > 1/h_1$, the convergence factor $(1-\eta h_1)$ becomes negative with magnitude greater than 1, causing oscillations that grow in amplitude with each step. This divergence happens first in the direction of the largest eigenvalue (component 1 in our model), even while other directions might still be converging.
+
+To maintain stability, we must choose $\eta < 1/h_1$, which means the learning rate is constrained by the largest eigenvalue. This can significantly slow down convergence for components with smaller eigenvalues.
+
 ## Higher-dimensional challenges
 
 In the one-dimensional case we studied previously, we only had to consider a single convergence rate and a single noise level. In higher dimensions, each component may converge at a different rate and experience different levels of noise. This introduces several challenges:
@@ -198,6 +206,9 @@ To ensure convergence, we need $\eta < 2/h_i$ for all $i$. This means the larges
 ### The balancing act
 
 Ideally, we would choose a step size $\eta$ that balances the convergence rates and steady-state variances across all dimensions. However, this is generally impossible when the eigenvalues $h_i$ differ significantly.
+
+![Component convergence](figures/component_convergence.png)
+*Figure: Component-wise convergence in SGD with parameters h₁=1.0, h₂=0.1, σ₁=σ₂=1.0, η=0.1, batch size=10. The component with larger eigenvalue (h₁=1.0) converges much faster (blue line) compared to the component with smaller eigenvalue (h₂=0.1, orange line). Both components have similar initialization but their convergence trajectories differ significantly due to eigenvalue disparity.*
 
 In the next sections, we'll explore three strategies to mitigate these issues:
 1. Momentum: helps with the convergence rate disparity
@@ -254,8 +265,8 @@ Momentum provides two key benefits:
 
 However, momentum also increases the steady-state variance by a factor of approximately $\frac{1+\beta}{1-\beta}$. With $\beta = 0.9$ (a common value), this means the variance is about 19 times higher! This is the price we pay for faster convergence.
 
-![Momentum convergence](figures/momentum.pdf)
-*Figure: Convergence rate and steady state risk as a function of momentum for a single dimension with $\alpha h = 0.0005$. Higher momentum values accelerate convergence but increase steady-state variance.*
+![Momentum convergence](figures/momentum_convergence.png)
+*Figure: Trade-off between convergence rate and steady-state risk as a function of momentum coefficient (β). Parameters: η×h=0.0005. The blue line shows how increasing momentum improves convergence rate (lower is better), while the red line shows how it increases steady-state risk (lower is better). This illustrates the fundamental trade-off when using momentum: faster convergence comes at the cost of higher steady-state variance.*
 
 ### When momentum helps most
 
@@ -263,7 +274,10 @@ Momentum is most beneficial when:
 1. The batch size $B$ is large (to counteract the variance increase)
 2. The condition number is large (so the acceleration benefit outweighs the variance cost)
 
-This explains why momentum often shows little benefit for small batch sizes but significant gains for large batch sizes, as observed in practice. As shown in Figure 1 from the paper, momentum SGD (solid lines) has no benefit over plain SGD (dashed lines) at small batch sizes, but extends the perfect scaling to larger batch sizes.
+This explains why momentum often shows little benefit for small batch sizes but significant gains for large batch sizes, as observed in practice.
+
+![Momentum effect](figures/momentum_effect.png)
+*Figure: Effect of momentum on component-wise convergence with parameters h₁=1.0, h₂=0.1, σ₁=σ₂=1.0, η=0.1, β=0.9, batch size=10. Plain SGD (solid lines) vs SGD+Momentum (dashed lines) for both component 1 (blue) and component 2 (red). Momentum significantly accelerates convergence of the slower component 2, but also increases the noise level in steady-state for both components.*
 
 ## Exponential moving averages
 
@@ -301,8 +315,8 @@ where $r_1 = 1-\eta h_i$ and $r_2 = \gamma$.
 
 EMA reduces the steady-state variance without affecting the convergence rate of the mean. By properly choosing an averaging coefficient $\gamma < 1 - \alpha h_d$ (so that $r_1 > r_2$), the colored term in Theorem 2 becomes strictly less than 1. This means EMA reduces the steady-state risk compared to plain SGD, without sacrificing convergence speed.
 
-![EMA effect](figures/ema-nqm.pdf)
-*Figure: Effects of exponential moving average. Solid lines are SGD with EMA while dashed lines are plain SGD. EMA reduces the number of steps required, especially at small batch sizes.*
+![EMA effect](figures/ema_effect.png)
+*Figure: Effect of exponential moving average on component-wise convergence with parameters h₁=1.0, h₂=0.1, σ₁=σ₂=1.0, η=0.1, γ=0.99, batch size=10. Plain SGD (solid lines) vs SGD+EMA (dashed lines) for both component 1 (blue) and component 2 (red). EMA significantly reduces the variance in the steady state for both components, creating much smoother convergence paths. The initial convergence rate is preserved, but the final error is substantially lower with EMA.*
 
 ### When EMA helps most
 
@@ -310,7 +324,10 @@ EMA is most beneficial when:
 1. The batch size is small (high variance in updates)
 2. The step size is relatively large (high steady-state variance)
 
-This is complementary to momentum, which works best for large batch sizes. The figure shows that EMA reduces the steps required, especially for plain SGD, and becomes redundant in the large-batch regime. Another important observation is that EMA reduces the critical batch size, allowing the same acceleration with less computation.
+This is complementary to momentum, which works best for large batch sizes. The figure below shows how EMA reduces the number of steps required to reach a target error, especially at small batch sizes:
+
+![EMA steps to target](figures/ema_effect_steps.png)
+*Figure: Steps required to reach a target error (0.01) versus batch size, comparing SGD (blue) and SGD+EMA (green) with parameters h₁=1.0, h₂=0.1, σ₁=σ₂=1.0, η=0.1, γ=0.99. The y-axis shows steps on a log scale, and batch sizes range from 1 to 1000. EMA provides significant benefits at small batch sizes (reducing steps by ~2×), while the benefit diminishes at larger batch sizes where gradient estimates are already less noisy. This graph clearly illustrates why EMA is especially valuable for small-batch training.*
 
 ## Preconditioning
 
@@ -348,8 +365,13 @@ Preconditioning has two key effects:
 
 2. **Transformation of the steady-state risk**: Preconditioning changes the steady-state risk term. For ill-conditioned problems (where $h_1 \gg h_2$), the steady-state risk becomes approximately $\frac{h_i^{2-p}\sigma_i^2}{2Bh_1}\frac{(h_i/h_1)^{-p}}{1-(h_i/h_1)^{1-p}}$, which increases with $p$.
 
-![Preconditioning powers](figures/sgd_momentum.pdf)
-*Figure: Effects of momentum and preconditioning. Steps required to reach target loss as a function of batch size under different preconditioning power. Solid lines are momentum SGD while dashed lines are plain SGD. The black dashed line is the information theoretic lower bound.*
+![Preconditioning effect](figures/preconditioning_effect.png)
+*Figure: Effect of preconditioning on component-wise convergence with parameters h₁=1.0, h₂=0.1, σ₁=σ₂=1.0, η=0.1, p=0.5, batch size=10. Plain SGD (solid lines) vs SGD+Preconditioning (dashed lines) for both component 1 (blue) and component 2 (red). Preconditioning with p=0.5 dramatically equalizes the convergence rates of both components. The slower component 2 converges much faster with preconditioning, while component 1's convergence remains similar. This shows how preconditioning can effectively address the convergence rate disparity caused by different eigenvalues.*
+
+The figure below shows how different preconditioning powers affect the steps required to reach a target loss:
+
+![Preconditioning powers](figures/preconditioning_powers.png)
+*Figure: Steps to target error versus batch size for different preconditioning powers (p values). Parameters: h₁=1.0, h₂=0.1, σ₁=σ₂=1.0, η=0.1, target error=0.01. Different colors represent different preconditioning powers: p=0.0 (blue, equivalent to SGD), p=0.25 (cyan), p=0.5 (green), p=0.75 (orange), and p=1.0 (red, optimal preconditioning). As p increases toward 1.0, the steps needed decrease substantially, especially at larger batch sizes. More aggressive preconditioning (higher p) allows perfect scaling to extend to larger batch sizes, showing how preconditioning enables efficient large-batch training.*
 
 ### When preconditioning helps most
 
@@ -357,24 +379,22 @@ Preconditioning is most beneficial when:
 1. The condition number is large (disparity in convergence rates)
 2. The batch size is large (so the potential increase in variance is mitigated)
 
-This aligns with empirical findings that preconditioned methods like Adam and K-FAC often outperform vanilla SGD, especially for large batch sizes. The figure shows that higher preconditioning powers extend perfect scaling to larger batch sizes, and preconditioning combined with momentum is particularly effective.
+This aligns with empirical findings that preconditioned methods like Adam and K-FAC often outperform vanilla SGD, especially for large batch sizes.
 
 ## Experimental comparisons
 
-The paper validates these theoretical insights on real neural networks. Let's examine some key findings from their experiments:
+The paper validates these theoretical insights on real neural networks through extensive experiments. Let's examine the overall comparison of different optimization methods:
 
-![Large-scale experiments](figures/large-scale.png)
-*Figure: Empirical relationship between batch size and steps to result for various neural network architectures and optimization methods. Key observations: 1) momentum SGD has no benefit over plain SGD at small batch sizes, but extends the perfect scaling to larger batch sizes; 2) preconditioning also extends perfect scaling to larger batch sizes, i.e., K-FAC > Adam > momentum SGD; 3) preconditioning (particularly K-FAC) reduces the number of steps needed to reach the target even for small batch sizes.*
+![Optimization comparison](figures/optimization_comparison.png)
+*Figure: Comparison of optimization methods on the noisy quadratic model with parameters h₁=1.0, h₂=0.1, σ₁=σ₂=1.0, η=0.1, β=0.9, γ=0.99, p=0.5. Each panel shows training curves for different batch sizes (B=1, B=10, B=100 from left to right). The y-axis shows mean squared error (MSE) on a log scale, and the x-axis shows iterations. Key observations: 1) SGD+Momentum (red) significantly outperforms plain SGD (blue) at larger batch sizes (right panel) but offers little advantage at small batch sizes (left panel); 2) SGD+EMA (green) provides consistent benefits at all batch sizes, with most dramatic improvements at small batch sizes; 3) SGD+Preconditioning (purple) helps across all batch sizes; 4) Combined methods like SGD+Momentum+EMA (orange) provide balanced performance across different regimes.*
 
-Each optimizer shows two distinct regimes: a small-batch (stochastic) regime with perfect linear scaling, and a large-batch (deterministic) regime insensitive to batch size. The transition between these regimes is called the critical batch size.
-
-The results confirm the predictions from the noisy quadratic model:
+The results from both the noisy quadratic model and real neural network experiments confirm:
 
 1. **Effect of momentum**: Momentum-based optimizers match plain SGD methods in the small-batch regime but give substantial speedups in the large-batch regime.
 
 2. **Effect of preconditioning**: Preconditioning increases the critical batch size and gives substantial speedups in the large-batch regime, but also improves performance by a small constant factor even for very small batches.
 
-3. **Effect of EMA**: EMA reduces the number of steps required, especially for plain SGD, and becomes redundant in the large-batch regime. EMA reduces the critical batch size, allowing the same acceleration with less computation.
+3. **Effect of EMA**: EMA reduces the number of steps required, especially for plain SGD, and becomes less necessary in the large-batch regime where gradient estimates are already less noisy. EMA reduces the critical batch size, allowing the same acceleration with less computation.
 
 The paper also explores optimal learning rates and learning rate schedules, finding that the optimal learning rate scales linearly with batch size before reaching the critical batch size, consistent with common practices in deep learning.
 
