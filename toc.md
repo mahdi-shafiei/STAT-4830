@@ -25,3 +25,7 @@ title: Table of Contents
 
 [6. Stochastic gradient descent: A first look](section/6/notes.md)
    > A first look at stochastic gradient descent through the mean estimation problem.
+
+[7. Stochastic gradient descent: insights from the Noisy Quadratic Model](section/7/notes.md)
+   > Insights from the Noisy Quadratic Model (NQM) on the effect of SGD hyperparameters.
+

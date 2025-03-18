@@ -3,417 +3,249 @@ layout: course_page
 title: Stochastic Gradient Descent - Insights from a Noisy Quadratic Model
 ---
 
-# Stochastic Gradient Descent: Insights from a Noisy Quadratic Model
+# Stochastic Gradient Descent - Insights from a Noisy Quadratic Model
 
-## Table of contents
+## Table of Contents
 1. [Introduction](#introduction)
-2. [Problem setup: Noisy quadratic model](#problem-setup-noisy-quadratic-model)
-3. [SGD through the lens of the noisy quadratic model](#sgd-through-the-lens-of-the-noisy-quadratic-model)
-4. [Higher-dimensional challenges](#higher-dimensional-challenges)
-5. [Momentum](#momentum)
-6. [Exponential moving averages](#exponential-moving-averages)
-7. [Preconditioning](#preconditioning)
-8. [Experimental comparisons](#experimental-comparisons)
-9. [Conclusion](#conclusion)
+2. [Problem setup: Noisy Quadratic Model](#problem-setup-noisy-quadratic-model)
+3. [Algorithms: EMA, Momentum, and Preconditioning](#algorithms-ema-momentum-and-preconditioning)
 
 ## Introduction
 
-In our previous lecture, we examined stochastic gradient descent (SGD) in the context of large-scale optimization problems. We saw that SGD offers a memory-efficient approach for problems with massive datasets by sampling random data points rather than processing the entire dataset at once. We analyzed its convergence properties, both in expectation and variance, and observed the trade-offs involved in choosing the step size.
+In this lecture, we study stochastic optimization through the lens of a simple yet instructive framework: the noisy quadratic model (NQM). Unlike "full-batch" gradient methods, stochastic methods like SGD with *constant step size* do not reach exact minima due to noise in gradient estimates. Instead, these methods converge to a *steady-state risk.* Carefully analyzing this steady-state behavior highlights trade-offs central to stochastic optimization involving the choice of learning rate, batch size, and algorithm variants. We already saw this in the [Lecture 6](../6/notes.md) where we studied the SGD on a simple one-dimensional mean estimation problem. In dimensions greater than one, the behavior is more complex, due to potential "poor conditioning" of the loss function. 
 
-Today, we'll extend this understanding by studying SGD through the lens of a noisy quadratic model (NQM). While simple, this model captures many of the essential behaviors we see in real neural network optimization, making it a valuable tool for generating testable predictions. The insights we gain will help us understand several practical SGD modifications used in deep learning:
+We examine three popular variants of stochastic gradient methods: Exponential Moving Average (EMA), Momentum, and Preconditioning. Each method targets noise reduction and convergence acceleration differently. For example, EMA averages iterates, Momentum averages gradients, and Preconditioning adapts step sizes to problem curvature and see its benefit primarily in higher dimensional problems. 
 
-1. **Momentum**: How carrying velocity from previous updates can improve convergence
-2. **Exponential moving averages**: How averaging parameter values can reduce variance
-3. **Preconditioning**: How reshaping the optimization landscape can accelerate convergence
+The results of this lecture are based on the following paper by [Zhang et al. (2019)](https://arxiv.org/pdf/1907.04164). In this paper, the authors provide basic convergence theorems for EMA, momentum, and preconditioning methods. The theoretical results themselves are not new or so surprising. But this is not what is valuable about the paper. Instead, the paper is valuable because it interprets the results of the theorems in terms of the hyperparameters that are common to deep learning training and then *validates* the predictions on such problems. 
 
-These modifications are crucial for training deep neural networks efficiently, helping to navigate complex, high-dimensional loss landscapes. Our analysis is inspired by the 2019 paper "Which Algorithmic Choices Matter at Which Batch Sizes? Insights From a Noisy Quadratic Model" by researchers at Google, DeepMind, University of Toronto, and Anthropic.
+In this lecture, we will focus on the statements of the main theoretical results from [Zhang et al. (2019)](https://arxiv.org/pdf/1907.04164). We will not prove the theorems here. We will also not repeat the experiments from the paper. Instead, we will focus on the implications of the theorems for the hyperparameters of SGD. If you're interested in playing around with the experiments from the paper, see [the colab here](https://colab.research.google.com/github/gd-zhang/noisy-quadratic-model/blob/master/nqm.ipynb).
 
-## Problem setup: Noisy quadratic model
+We now introduce the model and the algorithms.
 
-Let's begin with a simple multivariate quadratic problem. Fix constants $h_1 > h_2 > 0$ (eigenvalues of our quadratic loss surface) and $\sigma_1, \sigma_2 > 0$ (noise standard deviations). Consider a multivariate random variable $x \in \mathbb{R}^2$, satisfying:
+## Problem setup: Noisy quadratic model 
 
-- Mean zero: $\mathbb{E}[x_1] = \mathbb{E}[x_2] = 0$
-- Independent components: $\mathbb{E}[x_1x_2] = \mathbb{E}[x_1]\mathbb{E}[x_2] = 0$
-- Known variances: Each component has variance $\sigma_i^2$, meaning $\mathbb{E}[x_i^2] = \sigma_i^2$ for $i = 1, 2$
+In the [previous lecture](../6/notes.md), we analyzed SGD on a simple one-dimensional mean estimation problem. There we wrote the target loss function $L$ that we wished to optimize as an *expectation* of simpler loss functions: $L(w) = \mathbb{E}\_{i \sim \mathrm{Unif}[1, \ldots, n]}[l(w,x_i)]$. We then estimated the gradient of the loss function ($\nabla L(w)$) by drawing a single sample $x_i$ from the distribution, taking the gradient of the loss corresponding to this sample ($\nabla l(w,x_i)$), and then taking a gradient step in the direction of the sample gradient ($w\_{k+1} = w_k - \alpha \nabla l(w_k, x_i)$). In the process, we proved that this gradient is an *unbiased* estimate of the true gradient of the loss function and that the update $w_{k+1}$ is an *unbiased* estimate of the true gradient step. This unbiasedness was crucial to the analysis that we presented. 
 
-Our loss function is a simple quadratic:
+In this lecture, we take a slightly different approach that streamlines the analysis. Instead of writing the target loss function as an expectation and then approximating its gradient with an unbiased random sample, we're going to assume there is a fixed loss function $L$ and that we can compute a "noisy" estimate of it's gradient. We'll work only in dimension 2 and we will assume the loss function is the following simple function 
 
 $$
-L(w) = \frac{1}{2}\mathbb{E}_{(x_1, x_2) \sim P}\left[h_1(x_1 - w_1)^2 + h_2(x_2 - w_2)^2\right]
+ L(w) \;=\; \tfrac{1}{2}\big(h_1 w_1^2 + h_2 w_2^2\big)\,, 
 $$
 
-This resembles the model we worked with in the previous lecture, but now we have two parameters $w_1$ and $w_2$ instead of just one. We can define the sample-wise loss for a specific datapoint $(x_1, x_2)$:
+where $h_1 \ge h_2 > 0$. Our goal is to optimize this loss function when we can't compute the true gradient of $L$, but only a noisy estimate of it. In that sense its very similar to the mean estimation problem that we studied in the [previous lecture](../6/notes.md). 
+
+What's different here is that we are going to study a variant of sgd that is slightly more general. Namely, we imagine that each SGD step receives a *noisy gradient* $g(w)$ such that 
 
 $$
-\ell(w; (x_1, x_2)) = \frac{1}{2}\left[h_1(x_1 - w_1)^2 + h_2(x_2 - w_2)^2\right]
+ g(w) \;=\; \nabla L(w) + \xi \;=\; (h_1 w_1,\, h_2 w_2) + \xi\,, 
 $$
+ 
+where $\mathbb{E}[\xi]=0$ and $\operatorname{Cov}(\xi)=\mathrm{diag}(c\_1/B,\,c\_2/B)$. In other words, each component of the gradient is corrupted by uncorrelated noise of variance $c\_i/B$. Where are $c\_i$ and $B$ coming from? Let me try to explain briefly in the following blurb: 
+> The "noisy gradient" $g$ is an unbiased estimate of the true gradient $\mathbb{E}[g(w)] = \nabla L(w)$. How does it arise? Let's say that we have $B$ unbiased samples $G\_1, \ldots, G\_B$ of $\nabla L(w)$, meaning $\mathbb{E}[G\_i] = \nabla L(w)$ for each i. Let's suppose further that each $G_i$ has covariance matrix $\mathrm{diag}(c\_1,\,c\_2)$. Then we can think of $g$ as an average of these noisy gradients: $g(w) = \frac{1}{B}\sum\_{i=1}^B G\_i(w)$. One can then quickly check that $\xi = \nabla L(w) - g(w)$ satisfies $\mathbb{E}[\xi]=0$ and $\operatorname{Cov}(\xi)=\mathrm{diag}(c\_1/B,\,c\_2/B)$. Thus, we get $g$ from averaging a *batch* of size $B$ of sample gradients and the coordinates of each sample gradient have variance $c_i$.
 
-By definition:
-$$
-L(w) = \mathbb{E}_{(x_1, x_2) \sim P}[\ell(w; (x_1, x_2))]
-$$
+Because of the above, we think of the quantity $B$ in the definition of $g$ and $\xi$ as a batch size and throughout we consider the effect of $B$ on algorithm performance. 
 
-### Expanding the population loss
+Before moving to algorithms, let me point out that we are going to be a bit sloppy with notation: For each $k$ and $B$ there will be a different noisy gradient $g_{k, B}(w)$ because the noise is different at each step and depends on how we set $B$. However, for simplicity, we will drop the subscripts and just write $g(w)$ from here on. We will think of $B$ as a knob we can turn throughout our analysis, but we cannot change $c_i$.
 
-Let's expand $L(w)$ to get a more explicit form:
+### SGD on the NQM
 
-$$
-\begin{aligned}
-L(w) &= \frac{1}{2}\mathbb{E}\left[h_1(x_1 - w_1)^2 + h_2(x_2 - w_2)^2\right] \\
-&= \frac{1}{2}\mathbb{E}\left[h_1(x_1^2 - 2x_1w_1 + w_1^2) + h_2(x_2^2 - 2x_2w_2 + w_2^2)\right] \\
-&= \frac{1}{2}\left(h_1\mathbb{E}[x_1^2] - 2h_1\mathbb{E}[x_1]w_1 + h_1w_1^2 + h_2\mathbb{E}[x_2^2] - 2h_2\mathbb{E}[x_2]w_2 + h_2w_2^2\right)
-\end{aligned}
-$$
-
-Since $\mathbb{E}[x_1] = \mathbb{E}[x_2] = 0$ and $\mathbb{E}[x_1^2] = \sigma_1^2$, $\mathbb{E}[x_2^2] = \sigma_2^2$, we get:
+To apply SGD in this setting, we fix a stepsize $\alpha$ (often called a "learning rate") and update the iterates at time-step $k$ as follows: 
 
 $$
-\begin{aligned}
-L(w) &= \frac{1}{2}\left(h_1\sigma_1^2 + h_1w_1^2 + h_2\sigma_2^2 + h_2w_2^2\right) \\
-&= \frac{1}{2}\left(h_1w_1^2 + h_2w_2^2\right) + \frac{1}{2}\left(h_1\sigma_1^2 + h_2\sigma_2^2\right)
-\end{aligned}
+ w_{k+1,i} = w_{k,i} - \alpha\, g_i(w_k) = w_{k,i} - \alpha\big(h_i w_{k,i} + \xi_{k,i}\big)\,. 
 $$
-
-So our population loss is:
-
-$$\boxed{L(w) = \frac{1}{2}\left(h_1w_1^2 + h_2w_2^2\right) + \frac{1}{2}\left(h_1\sigma_1^2 + h_2\sigma_2^2\right)}$$
-
-The second term is constant with respect to $w$, so the minimizer is clearly $w^* = (0, 0)$.
-
-### Gradient and noise calculation
-
-Now, let's look at the gradient of $L(w)$ and how it relates to the gradient of the sample loss $\ell(w; (x_1, x_2))$.
-
-The gradient of the population loss is:
-$$\nabla L(w) = \begin{pmatrix} h_1w_1 \\ h_2w_2 \end{pmatrix}$$
-
-For the sample loss, we have:
-$$\nabla \ell(w; (x_1, x_2)) = \begin{pmatrix} h_1(w_1 - x_1) \\ h_2(w_2 - x_2) \end{pmatrix}$$
-
-Let's compute the expectation of the gradient of the sample loss:
+ 
+Substituting the noise term and taking expectations, one finds a simple *linear recurrence* with batch size $B$. Treating $w_{k,i}$ as a random variable, its mean and variance evolve as:
 
 $$
-\begin{aligned}
-\mathbb{E}[\nabla \ell(w; (x_1, x_2))] &= \mathbb{E}\begin{pmatrix} h_1(w_1 - x_1) \\ h_2(w_2 - x_2) \end{pmatrix} \\
-&= \begin{pmatrix} h_1w_1 - h_1\mathbb{E}[x_1] \\ h_2w_2 - h_2\mathbb{E}[x_2] \end{pmatrix} \\
-&= \begin{pmatrix} h_1w_1 \\ h_2w_2 \end{pmatrix} \\
-&= \nabla L(w)
-\end{aligned}
-$$
-
-This confirms an important result: the expected gradient of the sample loss equals the gradient of the population loss. Mathematically:
-
-$$\boxed{\nabla L(w) = \mathbb{E}[\nabla \ell(w; (x_1, x_2))]}$$
-
-This property, known as differentiating under the integral sign, is what makes stochastic gradient descent work. It means that the stochastic gradient is an unbiased estimator of the true gradient.
-
-We can express the stochastic gradient as the true gradient plus noise:
-
-$$\nabla \ell(w; (x_1, x_2)) = \nabla L(w) + \varepsilon$$
-
-where:
-$$\varepsilon = \begin{pmatrix} -h_1x_1 \\ -h_2x_2 \end{pmatrix}$$
-
-The covariance matrix of this noise is:
+ 
+\mathbb{E}[w_{k+1,i}] = (1 - \alpha h_i)\,\mathbb{E}[w_{k,i}]\,, 
+\qquad 
+\mathbb{V}[w_{k+1,i}] = (1 - \alpha h_i)^2\,\mathbb{V}[w_{k,i}] + \frac{\alpha^2\,c_i}{B}\,. 
 
 $$
-\begin{aligned}
-\text{Cov}(\varepsilon) &= \mathbb{E}[\varepsilon\varepsilon^T] - \mathbb{E}[\varepsilon]\mathbb{E}[\varepsilon]^T \\
-&= \mathbb{E}\begin{pmatrix} h_1^2x_1^2 & h_1h_2x_1x_2 \\ h_1h_2x_1x_2 & h_2^2x_2^2 \end{pmatrix} - \begin{pmatrix} 0 \\ 0 \end{pmatrix}\begin{pmatrix} 0 & 0 \end{pmatrix} \\
-&= \begin{pmatrix} h_1^2\mathbb{E}[x_1^2] & h_1h_2\mathbb{E}[x_1x_2] \\ h_1h_2\mathbb{E}[x_1x_2] & h_2^2\mathbb{E}[x_2^2] \end{pmatrix} \\
-&= \begin{pmatrix} h_1^2\sigma_1^2 & 0 \\ 0 & h_2^2\sigma_2^2 \end{pmatrix}
-\end{aligned}
-$$
 
-So each component of the noise has variance proportional to $\sigma_i^2$, and the noise components are independent.
+Here the quantity $\mathbb{V}$ denotes the variance of a random variable (we adopt this notation to stay consistent with the NQM paper). 
 
-## SGD through the lens of the noisy quadratic model
+The statement and proof of the above result is nearly identical to those of [the previous lecture](../6/notes.md). In particular, as before, these equations say that in expectation, $w_i$ decays exponentially by a factor $(1-\alpha h_i)$ each step toward the optimum. In contrast, the variance of $w_i$ does not decay exponentially, because at each step noise is injected at a rate proportional to $\alpha^2/B$. The consequence of this is that this process has a **steady-state**: as $k\to\infty$, $\mathbb{E}[w_{k,i}] \to 0$ but $\mathbb{V}[w_{k,i}]$ converges to a constant. 
 
-Now that we understand the noisy gradient, let's analyze how minibatch SGD works in this setting.
 
-The minibatch SGD update rule is:
+In the last lecture, we mainly concerned ourselves with how quickly the iterates $w_k$ converged to the optimum. Here, we are interested in how quickly the **loss** $L(w_k)$ converges to the minimum value $L(0)=0$. We can derive the expected **loss** (or "risk") in dimension $i$ (for $i \in \{1, 2\}$) at step $k$ as 
 
 $$
-w_{k+1} = w_k - \eta \nabla \ell_{B_k}(w_k; x_{B_k})
-$$
-
-where $\nabla \ell_{B_k}$ is the average gradient computed over a minibatch $B_k$ of samples.
-
-We can rewrite this as:
+ 
+\mathbb{E}[\ell_i(w_{k,i})] = (1-\alpha h_i)^{2k} \mathbb{E}[\ell_i(w_{0,i})] + (1-(1-\alpha h_i)^{2k}) \frac{\alpha c_i}{2B(2-\alpha h_i)},
 
 $$
-\begin{aligned}
-w_{k+1} &= w_k - \eta \nabla \ell_{B_k}(w_k; x_{B_k}) \\
-&= w_k - \eta (\nabla L(w_k) + \varepsilon_{B_k}) \\
-&= (w_k - \eta \nabla L(w_k)) - \eta \varepsilon_{B_k}
-\end{aligned}
+
+where $\ell_i(w_i) = \frac{1}{2}h_i w_i^2$ and $L(w) = \ell_1(w_1) + \ell_2(w_2)$.  
+ 
+After many steps ($k$ large enough that $(1-\alpha h_i)^{2k}\approx0$), the first term nearly vanishes and the loss approaches a **steady-state risk**: 
+
+$$
+ L^{\text{(ss)}}_i \;=\; \frac{\alpha c_i}{2B(2-\alpha h_i)}\,. 
+$$
+ 
+This residual loss is the price we pay for using a positive learning rate with noisy gradients—SGD will hover around the optimum but can't converge perfectly due to the noise. Notice that $L^{\text{(ss)}}_i$ is **smaller** when the batch size $B$ is larger (averaging out more noise) and *larger* when the learning rate $\alpha$ is larger. In fact, for each coordinate $i$ there is a trade-off: a higher $\alpha$ gives faster initial decay (since $(1-\alpha h_i)^{2k}$ vanishes quicker) but yields a higher noise floor $L^{\text{(ss)}}_i$. 
+
+### The difficulty with higher dimensions: large conditioning
+
+In previous lectures we introduced the "condition number" of a linear system as the ratio of the largest to smallest singular values of a matrix. We saw that when a linear system has a large condition number, direct methods and iterative methods like gradient descent struggle: see [lecture 2](../2/notes.md) and [lecture 3](../3/notes.md). Beyond least squares, it turns out optimization problems can also have condition numbers, too. For example, in the context of NQM, the condition number of the problem is defined as the quantity:
+
+$$
+\kappa = \frac{h_1}{h_2}
 $$
 
-where $\varepsilon_{B_k}$ is the average noise in the minibatch. Due to the central limit theorem, as the batch size $B$ increases, the variance of this noise decreases proportionally to $1/B$.
+This $\kappa$ is called the *condition number* of the problem because it is the condition number of the Hessian $\nabla^2 L(w) = \mathrm{diag}(h_1, h_2)$ of the loss function. In general, whenever the Hessian of the loss function has a large condition number, SGD will slow down. Why might this be? 
 
-Looking at the component-wise update:
+To see why, notice that in order for the the first term in the loss recurrence to eventually vanish
+
+$$
+\mathbb{E}[\ell_i(w_{k,i})] = (1-\alpha h_i)^{2k} \mathbb{E}[\ell_i(w_{0,i})] + (1-(1-\alpha h_i)^{2k}) \frac{\alpha c_i}{2B(2-\alpha h_i)},
+$$
+
+we must have that $(1-\alpha h_i)^{2k}$ is smaller than 1 for each $i$. In particular, we need 
+
+$$
+\alpha \leq \min\{2/h_1, 2/h_2\} = 2/h_1,
+$$
+
+where the final inequality follows because $h_1 \geq h_2$. Thus, when we run SGD with a large, but allowable constant stepsize $\alpha = 1/h_1$, the convergence rate of the second component $\mathbb{E}[\ell_2(w_{k,2})]$ is 
+
+$$
+ (1-\alpha h_2)^{2k} = (1 - 1/\kappa)^{2k}.
+$$
+
+In particular, if $\kappa$ is large, then the convergence rate of the second component can be extremely slow. 
+
+## Algorithms: EMA, Momentum, and Preconditioning
+
+In the following sections, we introduce three techniques that help improve the performance of SGD: exponential moving average (EMA), momentum, and preconditioning. If you're busy and you want to get the TL;DR: 
+
+- EMA helps with small batch sizes by reducing the steady-state risk without sacrificing the initialization error.
+- Momentum and preconditioning both help with large batch sizes by reducing the initialization error. However, they also amplify the steady-state risk, so we need to be careful when batch sizes are low.
+
+We now turn to the EMA.
+
+### EMA 
+
+EMA is a modification of SGD that reduces its steady state risk *without* sacrificing convergence rate. It is help mostly when the batch-size of SGD is small. The EMA algorithm does not actually modify the update rule of SGD. Instead, it only changes where we evaluate the loss function. Specifically, we now maintain two iterates, defined precisely as:
+
+$$
+
+w_{k+1} = w_{k} - \alpha\, g(w_k), \quad \tilde{w}_{k+1} = \gamma \tilde{w}_{k} + (1 - \gamma) w_{k+1}
+
+$$
+
+The sequence $w_k$ is precisely the SGD sequence. On the other hand, the sequence $\tilde{w}_k$ is a simple *exponential moving average* of the SGD sequence. This scheme has minimal computational and memory overhead, requiring only one additional copy of parameters and simple arithmetic averaging.
+
+EMA's advantage can be gleaned from Theorem 2 of [Zhang et al. (2019)](https://arxiv.org/pdf/1907.04164), which states that 
 
 $$
 \begin{aligned}
-w_{k+1, i} &= w_{k, i} - \eta \nabla \ell_{B_k}(w_{k, i}; x_{B_k})_i \\
-&= w_{k, i} - \eta (h_i w_{k, i} - h_i \bar{x}_{B_k, i}) \\
-&= (1 - \eta h_i)w_{k, i} + \eta h_i \bar{x}_{B_k, i}
+\mathbb{E}[\ell(\tilde{w}_{k,i})] &\leq \left(\frac{(r_1^{k+1}-r_2^{k+1}) - \gamma(1-\alpha h_i)(r_1^k - r_2^k)}{r_1 - r_2}\right)^2 \mathbb{E}[\ell(w_{0,i})]\\
+&\hspace{20pt}+ \frac{\alpha c_i}{2B(2-\alpha h_i)}\frac{(1-\gamma)(1 + (1-\alpha h_i)\gamma)}{(1+\gamma)(1-(1-\alpha h_i)\gamma)},
 \end{aligned}
 $$
 
-where $\bar{x}_{B_k, i}$ is the average of the $i$-th component in the minibatch.
+where $ r_1 = 1-\alpha h_i $ and $ r_2 = \gamma $.
 
-Since $\mathbb{E}[\bar{x}_{B_k, i}] = 0$ and $\text{Var}(\bar{x}_{B_k, i}) = \sigma_i^2/B$, we can analyze the evolution of the second moment $\mathbb{E}[w_{k, i}^2]$.
-
-The expected risk after $t$ steps in a given dimension $i$ is:
-
-$$\boxed{\mathbb{E}[\ell(\theta_i(t))] = \underbrace{(1 - \eta h_i)^{2t}}_{\text{convergence rate}} \mathbb{E}[\ell(\theta_i(0))] + \underbrace{\frac{\eta h_i^2\sigma_i^2}{2B(2-\eta h_i)}}_{\text{steady state risk}} (1-(1-\eta h_i)^{2t})}$$
-
-where we've assumed $\eta h_i \leq 2$ for stability.
-
-This formula has two key terms:
-1. **Convergence term**: $(1-\eta h_i)^{2t}\mathbb{E}[\ell(\theta_i(0))]$ - This represents how quickly we "forget" the initial value. It decreases exponentially with $t$.
-2. **Steady-state risk term**: $\frac{\eta h_i^2\sigma_i^2}{2B(2-\eta h_i)}(1-(1-\eta h_i)^{2t})$ - This represents the asymptotic variance due to noise. It approaches $\frac{\eta h_i^2\sigma_i^2}{2B(2-\eta h_i)}$ as $t \to \infty$.
-
-We can see that minibatching (increasing $B$) reduces the steady-state variance by a factor of $B$, just as we observed in the one-dimensional case from the previous lecture.
-
-### Stability condition: Why η > 1/h₁ leads to divergence
-
-It's important to note that our analysis above depends critically on the condition that $\eta h_i < 2$ for all dimensions. When this condition is violated, SGD can become unstable and diverge.
-
-In particular, for the larger eigenvalue $h_1$, if we choose $\eta > 1/h_1$, the convergence factor $(1-\eta h_1)$ becomes negative with magnitude greater than 1, causing oscillations that grow in amplitude with each step. This divergence happens first in the direction of the largest eigenvalue (component 1 in our model), even while other directions might still be converging.
-
-To maintain stability, we must choose $\eta < 1/h_1$, which means the learning rate is constrained by the largest eigenvalue. This can significantly slow down convergence for components with smaller eigenvalues.
-
-## Higher-dimensional challenges
-
-In the one-dimensional case we studied previously, we only had to consider a single convergence rate and a single noise level. In higher dimensions, each component may converge at a different rate and experience different levels of noise. This introduces several challenges:
-
-### Different convergence rates
-
-Looking at our formula for the expected squared error, we see that the first term, $(1-\eta h_i)^{2t}\mathbb{E}[\ell(\theta_i(0))]$, determines how quickly component $i$ converges. Since $h_1 > h_2$ in our setup, we have $(1-\eta h_1) < (1-\eta h_2)$ for a fixed step size $\eta < 1/h_1$. This means that the first component (corresponding to the larger eigenvalue) "forgets" its initialization faster than the second component.
-
-The condition number of the problem, defined as the ratio $\kappa = h_1/h_2$, determines how disparate these convergence rates are. The larger the condition number, the more the convergence rates differ across dimensions.
-
-### Different noise levels
-
-The steady-state variance for component $i$ is $\frac{\eta h_i^2\sigma_i^2}{2B(2-\eta h_i)}$. This depends on both $h_i$ and $\sigma_i^2$. If the noise level $\sigma_i^2$ varies across dimensions, some components will have higher steady-state variance than others.
-
-### Step size constraints
-
-To ensure convergence, we need $\eta < 2/h_i$ for all $i$. This means the largest eigenvalue (in our case, $h_1$) constrains the maximum stable step size. If $h_1 \gg h_2$, we might be forced to use a very small step size, which will make the second component converge extremely slowly.
-
-### The balancing act
-
-Ideally, we would choose a step size $\eta$ that balances the convergence rates and steady-state variances across all dimensions. However, this is generally impossible when the eigenvalues $h_i$ differ significantly.
-
-![Component convergence](figures/component_convergence.png)
-*Figure: Component-wise convergence in SGD with parameters h₁=1.0, h₂=0.1, σ₁=σ₂=1.0, η=0.1, batch size=10. The component with larger eigenvalue (h₁=1.0) converges much faster (blue line) compared to the component with smaller eigenvalue (h₂=0.1, orange line). Both components have similar initialization but their convergence trajectories differ significantly due to eigenvalue disparity.*
-
-In the next sections, we'll explore three strategies to mitigate these issues:
-1. Momentum: helps with the convergence rate disparity
-2. Exponential moving averages: reduces the steady-state variance
-3. Preconditioning: addresses both issues by transforming the problem
-
-## Momentum
-
-Momentum is a modification to SGD that incorporates information from past updates. The intuition is that we want to continue moving in directions of persistent gradients, much like a physical object in motion tends to stay in motion.
-
-### Momentum algorithm
-
-The momentum SGD update is:
+The theorem shows that when $\gamma < 1 - \alpha \min_i\{h_i\}$, EMA reduces steady-state risk without sacrificing convergence rate. Explicitly, because $r_1 = 1 - \alpha h_i$ and $r_2 = \gamma < r_1$, it follows that $r_1 > r_2$. Thus, for large $k$, terms involving $r_2^k$ become negligible relative to those involving $r_1^k$, and the initialization error contraction factor approximates:
 
 $$
-\begin{aligned}
-v_{k+1} &= \beta v_k + \nabla \ell_{B_k}(w_k; x_{B_k}) \\
-w_{k+1} &= w_k - \eta v_{k+1}
-\end{aligned}
-$$
 
-where $\beta \in [0, 1)$ is the momentum parameter and $v_k$ is the velocity. In our noisy quadratic model, the component-wise update becomes:
+\frac{(r_1^{k+1}-r_2^{k+1}) - \gamma(1-\alpha h_i)(r_1^k - r_2^k)}{r_1 - r_2} \approx r_1^k,
 
 $$
-\begin{aligned}
-v_{k+1, i} &= \beta v_{k, i} + h_i(w_{k, i} - \bar{x}_{B_k, i}) \\
-w_{k+1, i} &= w_{k, i} - \eta v_{k+1, i}
-\end{aligned}
-$$
 
-### Momentum dynamics theorem
+showing the convergence rate matches that of plain SGD, namely $(1 - \alpha h_i)^{2k}$.
 
-According to the paper, the following result holds for momentum SGD:
+Thus, in the *small batch-size regime*, where steady-state risk is large for SGD, EMA can outperform SGD without sacrificing convergence rate. However, in the *large batch-size regime*, where initialization error dominates steady-state risk, EMA provides minimal additional benefit over standard SGD. This explicitly clarifies EMA's primary role: reducing steady-state risk, rather than initialization error.
 
-**Theorem 1:** Given a dimension index $i$, and $0 \leq \beta < 1$ with $\beta \neq (1 - \sqrt{\alpha h_i})^2$, the expected risk at time $t$ associated with that dimension satisfies the upper bound:
+### Momentum
+
+We now analyze Momentum within the NQM framework. Unlike EMA, which averages iterates, Momentum averages past gradients to reduce noise and accelerate convergence. Precisely matching our existing notation, the Momentum algorithm updates as:
 
 $$
-\mathbb{E}[\ell(\theta_i(t))] \leq \left(\frac{(r_1^{t+1} - r_2^{t+1}) - \beta(r_1^t - r_2^t)}{r_1 - r_2}\right)^2 \mathbb{E}[\ell(\theta_i(0))] + \frac{(1+\beta)\eta h_i^2\sigma_i^2}{2B(2\beta + 2 - \eta h_i)(1-\beta)}
-$$
 
-where $r_1$ and $r_2$ (with $r_1 \geq r_2$) are the two roots of the quadratic equation $x^2 - (1-\eta h_i + \beta)x + \beta = 0$.
-
-As with plain SGD, the loss for each dimension can be expressed as the sum of two terms:
-1. A term that decays exponentially, corresponding to the behavior of the deterministic version of the algorithm.
-2. A constant term representing the steady-state risk due to noise.
-
-### How momentum helps
-
-Momentum provides two key benefits:
-
-1. **Accelerated convergence**: For small learning rates, the convergence rate with momentum is approximately $(1-\frac{\eta h_i}{1-\beta})$, compared to $(1-\eta h_i)$ without momentum. This means momentum effectively increases the learning rate by a factor of $\frac{1}{1-\beta}$. For components with small eigenvalues (slow convergence), this acceleration is particularly beneficial.
-
-2. **Damped oscillations**: In high-curvature directions, momentum dampens oscillations, allowing for a larger overall step size.
-
-However, momentum also increases the steady-state variance by a factor of approximately $\frac{1+\beta}{1-\beta}$. With $\beta = 0.9$ (a common value), this means the variance is about 19 times higher! This is the price we pay for faster convergence.
-
-![Momentum convergence](figures/momentum_convergence.png)
-*Figure: Trade-off between convergence rate and steady-state risk as a function of momentum coefficient (β). Parameters: η×h=0.0005. The blue line shows how increasing momentum improves convergence rate (lower is better), while the red line shows how it increases steady-state risk (lower is better). This illustrates the fundamental trade-off when using momentum: faster convergence comes at the cost of higher steady-state variance.*
-
-### When momentum helps most
-
-Momentum is most beneficial when:
-1. The batch size $B$ is large (to counteract the variance increase)
-2. The condition number is large (so the acceleration benefit outweighs the variance cost)
-
-This explains why momentum often shows little benefit for small batch sizes but significant gains for large batch sizes, as observed in practice.
-
-![Momentum effect](figures/momentum_effect.png)
-*Figure: Effect of momentum on component-wise convergence with parameters h₁=1.0, h₂=0.1, σ₁=σ₂=1.0, η=0.1, β=0.9, batch size=10. Plain SGD (solid lines) vs SGD+Momentum (dashed lines) for both component 1 (blue) and component 2 (red). Momentum significantly accelerates convergence of the slower component 2, but also increases the noise level in steady-state for both components.*
-
-## Exponential moving averages
-
-Exponential moving average (EMA) is a technique that doesn't modify the optimization algorithm itself but rather the final output. The idea is to maintain a moving average of the parameters during training and use this average for inference.
-
-### EMA algorithm
-
-The EMA update is:
+m_{k+1,i} = \beta m_{k,i} + g_i(w_k), \quad w_{k+1,i} = w_{k,i} - \alpha m_{k+1,i}
 
 $$
-\begin{aligned}
-w_{k+1} &= w_k - \eta \nabla \ell_{B_k}(w_k; x_{B_k}) \\
-\tilde{w}_{k+1} &= \gamma \tilde{w}_k + (1-\gamma) w_{k+1}
-\end{aligned}
-$$
 
-where $\gamma \in [0, 1)$ is the averaging coefficient, and $\tilde{w}_k$ is the exponentially averaged parameter vector.
 
-### EMA dynamics theorem
+Note the parallels with EMA: both involve exponential averaging, but EMA averages parameter iterates, whereas Momentum averages gradients. Critically, unlike EMA, Momentum modifies the parameter update rule directly.
 
-According to the paper, the following result holds for EMA:
-
-**Theorem 2:** Given a dimension index $i$, and $0 \leq \gamma < 1$, the expected risk at time $t$ associated with that dimension satisfies the upper bound:
+The advantage of Momentum is clearly established by Theorem 1 from Zhang et al. (2019):
 
 $$
-\begin{aligned}
-\mathbb{E}[\ell(\tilde{\theta}_i(t))] \leq &\left(\frac{(r_1^{t+1} - r_2^{t+1}) - \gamma(1-\alpha h_i)(r_1^t - r_2^t)}{r_1 - r_2}\right)^2 \mathbb{E}[\ell(\theta_i(0))] \\
-&+ \frac{\alpha h_i^2\sigma_i^2}{2B(2-\alpha h_i)} \frac{(1-\gamma)(1+(1-\alpha h_i)\gamma)}{(1+\gamma)(1-(1-\alpha h_i)\gamma)}
-\end{aligned}
+
+\mathbb{E}[\ell(w_{k,i})] \leq \left(\frac{(r_1^{k+1}-r_2^{k+1}) - \beta(r_1^k - r_2^k)}{r_1 - r_2}\right)^2 \mathbb{E}[\ell(w_{0,i})] + \frac{(1 + \beta)\alpha c_i}{2B(2\beta + 2 - \alpha h_i)(1 - \beta)},
+
 $$
 
-where $r_1 = 1-\eta h_i$ and $r_2 = \gamma$.
+where $ r\_1 $ and $ r\_2 $ are the two roots of the quadratic equation:
 
-### How EMA helps
+$$
 
-EMA reduces the steady-state variance without affecting the convergence rate of the mean. By properly choosing an averaging coefficient $\gamma < 1 - \alpha h_d$ (so that $r_1 > r_2$), the colored term in Theorem 2 becomes strictly less than 1. This means EMA reduces the steady-state risk compared to plain SGD, without sacrificing convergence speed.
+z^2 - (1 - \alpha h_i + \beta)z + \beta = 0.
 
-![EMA effect](figures/ema_effect.png)
-*Figure: Effect of exponential moving average on component-wise convergence with parameters h₁=1.0, h₂=0.1, σ₁=σ₂=1.0, η=0.1, γ=0.99, batch size=10. Plain SGD (solid lines) vs SGD+EMA (dashed lines) for both component 1 (blue) and component 2 (red). EMA significantly reduces the variance in the steady state for both components, creating much smoother convergence paths. The initial convergence rate is preserved, but the final error is substantially lower with EMA.*
+$$
 
-### When EMA helps most
 
-EMA is most beneficial when:
-1. The batch size is small (high variance in updates)
-2. The step size is relatively large (high steady-state variance)
+The convergence rate explicitly depends on $ r_1 $, and we must distinguish clearly between two regimes based on the roots:
 
-This is complementary to momentum, which works best for large batch sizes. The figure below shows how EMA reduces the number of steps required to reach a target error, especially at small batch sizes:
+1. **Overdamped regime** ($\beta < (1-\sqrt{\alpha h_i})^2$, leading toreal roots $r_1$, $r_2$): here, the convergence rate is dominated by the larger root, approximately 
+$r_1 \approx 1 - \frac{\alpha h_i}{1-\beta}$. 
+Thus, increasing $\beta$ reduces $|r_1|$, accelerating convergence.
 
-![EMA steps to target](figures/ema_effect_steps.png)
-*Figure: Steps required to reach a target error (0.01) versus batch size, comparing SGD (blue) and SGD+EMA (green) with parameters h₁=1.0, h₂=0.1, σ₁=σ₂=1.0, η=0.1, γ=0.99. The y-axis shows steps on a log scale, and batch sizes range from 1 to 1000. EMA provides significant benefits at small batch sizes (reducing steps by ~2×), while the benefit diminishes at larger batch sizes where gradient estimates are already less noisy. This graph clearly illustrates why EMA is especially valuable for small-batch training.*
+2. **Underdamped regime** ($\beta \geq (1-\sqrt{\alpha h_i})^2$, leading to complex roots $r_1$, $r_2$): characterized by complex conjugate roots where $|r_1| = |r_2| = \sqrt{\beta}$. 
+In this regime, increasing $\beta$ does not further improve the convergence rate, as the magnitude is fixed near $\sqrt{\beta}$. 
+However, increasing $\beta$ significantly amplifies the steady-state risk by a factor of approximately $\frac{1}{1-\beta}$. 
+Thus, the optimal choice of $\beta$ lies at or just below the boundary between these two regimes.
 
-## Preconditioning
+Momentum thus provides two key impacts:
+- **Reduces initialization error** by accelerating the initial convergence.
+- **Increases steady-state risk** by amplifying it by approximately a factor of $\frac{1}{1-\beta}$.
 
-Preconditioning addresses the root cause of the convergence rate disparity: the different eigenvalues $h_i$. The idea is to transform the problem so that all dimensions have similar convergence properties.
+These trade-offs make Momentum beneficial in the large batch-size regime, where steady-state risk is inherently small, and initialization error dominates. Conversely, for small batch sizes—where steady-state risk dominates—the benefits of Momentum are minimal compared to standard SGD. Momentum's advantage is most pronounced with large batch sizes.
 
-### Preconditioning algorithm
 
-The preconditioned SGD update is:
+### Preconditioning
 
-$$w_{k+1} = w_k - \eta P^{-1} \nabla \ell_{B_k}(w_k; x_{B_k})$$
+We now analyze Preconditioning within the NQM framework. Precisely matching the established notation, the preconditioning algorithm is defined as:
 
-where $P$ is a positive definite matrix called the preconditioner.
+$$
 
-In our noisy quadratic model, an ideal preconditioner would be $P = \text{diag}(h_1, h_2)$, which would make all eigenvalues equal to 1. However, in practice, we don't know the exact eigenvalues, so we need to approximate $P$.
+w_{k+1,i} = w_{k,i} - \alpha h_i^{-p} g_i(w_k)
 
-The paper analyzes a family of preconditioners of the form $P = \text{diag}(h_1^p, h_2^p)$ for $0 \leq p \leq 1$. When $p = 0$, we recover standard SGD, and when $p = 1$, we have the ideal preconditioner.
+$$
 
-### Preconditioning dynamics
 
-The component-wise update with preconditioning is:
+Preconditioning aims to **balance convergence rates** across different dimensions by employing dimension-specific learning rates. Dimensions with smaller curvature $h_i$ typically converge slowest under standard SGD. By using preconditioning with factor $h_i^{-p}$, convergence is accelerated in these slower dimensions. However, this beneficial balancing of convergence rates also significantly **increases steady-state risk**. 
 
-$$w_{k+1, i} = w_{k, i} - \eta h_i^{-p} h_i (w_{k, i} - \bar{x}_{B_k, i}) = w_{k, i} - \eta h_i^{1-p} (w_{k, i} - \bar{x}_{B_k, i})$$
+Indeed, results from Section 3.3 of Zhang et al. (2019) provide show that:
 
-For the NQM, the dynamics of preconditioned SGD are equivalent to the SGD dynamics in a transformed problem with Hessian $\tilde{H} = P^{-1/2}HP^{-1/2}$ and gradient covariance $\tilde{C} = P^{-1/2}CP^{-1/2}$. 
+- **Component-wise Loss Bound:**  
+  
+$$
 
-The expected risk with preconditioning becomes:
+  \mathbb{E}[\ell_i(w_{k,i})] \leq (1 - \alpha h_i^{1-p})^{2k} \mathbb{E}[\ell_i(w_{0,i})] + \frac{\alpha c_i h_i^{-p}}{2B(2 - \alpha h_i^{1-p})}
+  
+$$
 
-$$\mathbb{E}[L(w(t))] \leq \sum_{i=1}^d (1-\eta h_i^{1-p})^{2t} \mathbb{E}[\ell(\theta_i(0))] + \sum_{i=1}^d \frac{\eta h_i^{2-p}\sigma_i^2}{2B(2-\eta h_i^{1-p})}$$
 
-### How preconditioning helps
+- **Convergence Rate:**  
+  The convergence rate changes from $1 - \alpha h_i$ (without preconditioning) to $1 - \alpha h_i^{1-p}$. As $p$ grows, dimensions with smaller curvature $h_i$ converge faster, since $h_i^{1-p}$ increases when $h_i$ is small.
 
-Preconditioning has two key effects:
+- **Steady-state Risk:**  
+  The steady-state risk increases from $\frac{\alpha c_i}{2B(2 - \alpha h_i)}$ (without preconditioning) to approximately:
+  
+$$
 
-1. **Equalized convergence rates**: As $p$ approaches 1, the terms $(1-\eta h_i^{1-p})$ become more similar across dimensions, regardless of the original eigenvalues $h_i$. This means all components converge at roughly the same rate.
+  \frac{\alpha c_i h_i^{-p}}{2B(2 - \alpha h_i^{1-p})}
+  
+$$
 
-2. **Transformation of the steady-state risk**: Preconditioning changes the steady-state risk term. For ill-conditioned problems (where $h_1 \gg h_2$), the steady-state risk becomes approximately $\frac{h_i^{2-p}\sigma_i^2}{2Bh_1}\frac{(h_i/h_1)^{-p}}{1-(h_i/h_1)^{1-p}}$, which increases with $p$.
+  Increasing $p$ magnifies steady-state risk, particularly in dimensions with low curvature.
 
-![Preconditioning effect](figures/preconditioning_effect.png)
-*Figure: Effect of preconditioning on component-wise convergence with parameters h₁=1.0, h₂=0.1, σ₁=σ₂=1.0, η=0.1, p=0.5, batch size=10. Plain SGD (solid lines) vs SGD+Preconditioning (dashed lines) for both component 1 (blue) and component 2 (red). Preconditioning with p=0.5 dramatically equalizes the convergence rates of both components. The slower component 2 converges much faster with preconditioning, while component 1's convergence remains similar. This shows how preconditioning can effectively address the convergence rate disparity caused by different eigenvalues.*
-
-The figure below shows how different preconditioning powers affect the steps required to reach a target loss:
-
-![Preconditioning powers](figures/preconditioning_powers.png)
-*Figure: Steps to target error versus batch size for different preconditioning powers (p values). Parameters: h₁=1.0, h₂=0.1, σ₁=σ₂=1.0, η=0.1, target error=0.01. Different colors represent different preconditioning powers: p=0.0 (blue, equivalent to SGD), p=0.25 (cyan), p=0.5 (green), p=0.75 (orange), and p=1.0 (red, optimal preconditioning). As p increases toward 1.0, the steps needed decrease substantially, especially at larger batch sizes. More aggressive preconditioning (higher p) allows perfect scaling to extend to larger batch sizes, showing how preconditioning enables efficient large-batch training.*
-
-### When preconditioning helps most
-
-Preconditioning is most beneficial when:
-1. The condition number is large (disparity in convergence rates)
-2. The batch size is large (so the potential increase in variance is mitigated)
-
-This aligns with empirical findings that preconditioned methods like Adam and K-FAC often outperform vanilla SGD, especially for large batch sizes.
-
-## Experimental comparisons
-
-The paper validates these theoretical insights on real neural networks through extensive experiments. Let's examine the overall comparison of different optimization methods:
-
-![Optimization comparison](figures/optimization_comparison.png)
-*Figure: Comparison of optimization methods on the noisy quadratic model with parameters h₁=1.0, h₂=0.1, σ₁=σ₂=1.0, η=0.1, β=0.9, γ=0.99, p=0.5. Each panel shows training curves for different batch sizes (B=1, B=10, B=100 from left to right). The y-axis shows mean squared error (MSE) on a log scale, and the x-axis shows iterations. Key observations: 1) SGD+Momentum (red) significantly outperforms plain SGD (blue) at larger batch sizes (right panel) but offers little advantage at small batch sizes (left panel); 2) SGD+EMA (green) provides consistent benefits at all batch sizes, with most dramatic improvements at small batch sizes; 3) SGD+Preconditioning (purple) helps across all batch sizes; 4) Combined methods like SGD+Momentum+EMA (orange) provide balanced performance across different regimes.*
-
-The results from both the noisy quadratic model and real neural network experiments confirm:
-
-1. **Effect of momentum**: Momentum-based optimizers match plain SGD methods in the small-batch regime but give substantial speedups in the large-batch regime.
-
-2. **Effect of preconditioning**: Preconditioning increases the critical batch size and gives substantial speedups in the large-batch regime, but also improves performance by a small constant factor even for very small batches.
-
-3. **Effect of EMA**: EMA reduces the number of steps required, especially for plain SGD, and becomes less necessary in the large-batch regime where gradient estimates are already less noisy. EMA reduces the critical batch size, allowing the same acceleration with less computation.
-
-The paper also explores optimal learning rates and learning rate schedules, finding that the optimal learning rate scales linearly with batch size before reaching the critical batch size, consistent with common practices in deep learning.
-
-## Conclusion
-
-In this lecture, we've explored stochastic gradient descent through the lens of a noisy quadratic model. We've seen how the basic SGD algorithm can be enhanced with momentum, exponential moving averages, and preconditioning to address the challenges of optimizing multiple parameters.
-
-Key takeaways:
-
-1. **Higher dimensions introduce new challenges**: Different parameters may converge at different rates and experience different levels of noise.
-
-2. **Momentum accelerates convergence**: By accumulating gradients over time, momentum helps overcome the slow convergence of parameters with small eigenvalues, but increases variance. It's most beneficial for large batch sizes.
-
-3. **EMA reduces variance**: Exponential moving averages provide a simple way to reduce the noise in the final parameters without slowing down convergence. It's particularly helpful for small batch sizes.
-
-4. **Preconditioning equalizes convergence rates**: By transforming the problem, preconditioning makes all parameters converge at similar rates, allowing for faster overall convergence.
-
-5. **Batch size matters**: The effectiveness of these techniques varies with batch size. Momentum and preconditioning work best with large batches, while EMA is particularly helpful for small batches.
-
-These insights help explain why methods like Adam (which combines momentum and adaptive preconditioning) and K-FAC are so effective in deep learning, especially with large batch sizes. They also explain why techniques like EMA are commonly used to stabilize training.
-
-The noisy quadratic model, despite its simplicity, captures many of the essential phenomena in neural network optimization. It provides a framework for understanding and predicting the behavior of different optimization algorithms across various batch sizes, making it a valuable tool for both researchers and practitioners. 
+Hence, with large batch sizes, the optimal choice for $p$ is close to 1, balancing faster convergence in slow dimensions against increased steady-state risk. Therefore, preconditioning is most beneficial in the **large batch-size regime**, where steady-state risk is naturally lower, and the primary objective is rapid reduction of initialization error. Conversely, in the small batch-size regime—characterized by higher steady-state risk—preconditioning can negatively affect performance compared to plain SGD.
