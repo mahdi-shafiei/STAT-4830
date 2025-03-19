@@ -27,5 +27,5 @@ title: Table of Contents
    > A first look at stochastic gradient descent through the mean estimation problem.
 
 [7. Stochastic gradient descent: insights from the Noisy Quadratic Model](section/7/notes.md)
-   > When should we use exponential moving averaging, momentum, and preconditioning?
+   > When should we use exponential moving averages, momentum, and preconditioning?
 
