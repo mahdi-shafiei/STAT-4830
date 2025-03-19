@@ -307,7 +307,13 @@ Weight decay serves several important purposes:
 
 3. **Stability**: By limiting parameter magnitudes, weight decay can improve numerical stability during training, especially for deep networks.
 
-Weight decay is not discussed in our NQM analysis in [Lecture 7](../7/notes.md). However, it can be analyzed in that framework by modifying the loss function to include the quadratic penalty. It's straightforward to check that the effect is to change the loss to $L(w) = \frac{1}{2}(h_1 + \lambda)w_1^2 + \frac{1}{2}(h_2 + \lambda)w_2^2$, which improves the condition number $\kappa = \frac{h_1}{h_2}$ from $h_1/h_2$ to $(h_1 + \lambda)/(h_2 + \lambda)$. Note that as $\lambda \to \infty$, the condition number approaches 1, making the problem perfectly conditioned. The issue with taking very large $\lambda$ is that it shifts the optimum away from the true minimum. So choosing the right $\lambda$ is a balance between improving conditioning and shifting the optimum too far away. 
+Weight decay is not discussed in our NQM analysis in [Lecture 7](../7/notes.md). However, it can be analyzed in that framework by modifying the loss function to include the quadratic penalty. It's straightforward to check that the effect is to change the loss to 
+
+$$
+L(w) = \frac{1}{2}(h_1 + \lambda)w_1^2 + \frac{1}{2}(h_2 + \lambda)w_2^2,
+$$
+
+ which improves the condition number $\kappa = \frac{h_1}{h_2}$ from $h_1/h_2$ to $(h_1 + \lambda)/(h_2 + \lambda)$. Note that as $\lambda \to \infty$, the condition number approaches 1, making the problem perfectly conditioned. The issue with taking very large $\lambda$ is that it shifts the optimum away from the true minimum. So choosing the right $\lambda$ is a balance between improving conditioning and shifting the optimum too far away. 
 
 In practice, weight decay values typically range from 1e-5 to 1e-3. A good choice of $\lambda$ depends on the dataset size, model architecture, and other regularization techniques employed.
 
