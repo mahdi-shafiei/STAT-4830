@@ -3,7 +3,7 @@ layout: course_page
 title: Stochastic Gradient Descent - The General Problem and Implementation Details
 ---
 
-# Stochastic Gradient Descent: The General Problem and Implementation Details
+# Stochastic Gradient Descent: The general problem and implementation details
 
 ## Table of contents
 1. [Introduction](#introduction)
@@ -33,7 +33,8 @@ $$L(w) = \frac{1}{n}\sum_{i=1}^n \ell(w, x_i, y_i)$$
 
 This objective function represents the average loss over a dataset of $n$ examples, where $w \in \mathbb{R}^d$ contains the model parameters (weights), $(x_i, y_i)$ is a training example with input $x_i$ and label $y_i$, and $\ell(w, x_i, y_i)$ measures the prediction error for a single example.
 
-This formulation generalizes our previous examples. In mean estimation ([Lecture 6](../6/notes.md)), the loss function was $\ell(w, x_i) = \frac{1}{2}(w - x_i)^2$ with a scalar parameter $w$. In the noisy quadratic model ([Lecture 7](../7/notes.md)), we used $L(w) = \frac{1}{2}(h_1 w_1^2 + h_2 w_2^2)$ with a two-dimensional parameter $w = (w_1, w_2)$.
+This formulation generalizes our previous mean estimation example ([Lecture 6](../6/notes.md)), the loss function was $\ell(w, x_i) = \frac{1}{2}(w - x_i)^2$ with a scalar parameter $w$. 
+> In [Lecture 7](../7/notes.md), we analyzed the noisy quadratic model with loss function $L(w) = \frac{1}{2}(h_1 w_1^2 + h_2 w_2^2)$. Though not a stochastic optimization problem in the standard sense, we still applied stochastic gradient methods by assuming access to unbiased gradient estimators at each iteration.
 
 The key challenge in stochastic optimization stems from the summation over $n$ examples. For large datasets, computing the full gradient:
 
@@ -364,6 +365,8 @@ Learning rate schedules dynamically manage the bias-variance trade-off: early la
 
 
 ## Implementation Details in PyTorch
+
+The following diagram illustrates the complete SGD training loop in PyTorch, showing how data flows through the model, gradients propagate backward, and parameters are updated. This diagram provides a roadmap for the implementation details we'll examine in the following sections.
 
 ```ASCII
                          SGD TRAINING LOOP IN PYTORCH

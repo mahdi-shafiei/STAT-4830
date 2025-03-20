@@ -29,3 +29,5 @@ title: Table of Contents
 [7. Stochastic gradient descent: insights from the Noisy Quadratic Model](section/7/notes.md)
    > When should we use exponential moving averages, momentum, and preconditioning?
 
+[8. Stochastic Gradient Descent: The general problem and implementation details](section/8/notes.md) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/8/notebook.ipynb)
+   > Stochastic optimization problems, SGD, tweaks, and implementation in PyTorch
