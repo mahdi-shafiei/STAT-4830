@@ -54,9 +54,18 @@ By the end of this course, you will become an intelligent consumer of numerical 
 * Basic Probability (Stat 4300)
 * Programming experience in a scripting language such as Python. Basic comfort in iteration and functions. 
 
-## Deliverable: a final project due on week 3
+## Assessment
 
-# Final Project Structure
+- In class participation and attendance (starting Thur March 20th) (5%)
+- Final project report, implementation, and development process (65%)
+   - Implementation (25%)
+   - Report / self critiques (25%)
+   - Team peer assessment (5%)
+   - Instructor assessment of involvement in project (10%)
+- Midterm project presentation (10%)
+- Final project presentation (20%)
+
+## Final project deliverable due on week 3
 
 VERY detailed instructions on how to get started with your project are available at the following link: [STAT-4830-project-base](https://github.com/damek/STAT-4830-project-base)
 
@@ -99,11 +108,7 @@ Final projects often become a single rushed deliverable. We’ll break the proje
 
 ### Feedback loop
 
-- I will meet with each group about three times:
-  1. **Week 3**: Check project scope and direction.
-  2. **Mid-Semester**: Reflect on progress and address challenges.
-  3. **Late-Semester**: Final check-in before presentations.
-
+- I will meet with each group semi-weakly to discuss project scope and direction, reflect on progress and address challenges, and check in before deliverable are due.
 - Additional questions are welcome anytime.
 
 
