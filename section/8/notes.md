@@ -300,13 +300,7 @@ $$w_{k+1} = w_k - \alpha (\nabla L(w_k) + \lambda w_k) = (1 - \alpha\lambda)w_k 
 
 This implementation reveals the origin of the term "weight decay": in each iteration, parameters are first scaled by a factor $(1-\alpha\lambda)$ before the gradient update. With $\alpha\lambda < 1$, this factor shrinks (decays) the weights toward zero.
 
-Weight decay serves several important purposes:
-
-1. **Explicit Regularization**: It directly penalizes model complexity, helping to prevent overfitting. The $L_2$ penalty encourages the model to use all features moderately rather than relying heavily on a few.
-
-2. **Improved Conditioning**: For quadratic problems, weight decay effectively adds $\lambda$ to all eigenvalues of the Hessian. This reduces the condition number, making optimization easier, particularly for ill-conditioned problems.
-
-3. **Stability**: By limiting parameter magnitudes, weight decay can improve numerical stability during training, especially for deep networks.
+Weight decay serves several important purpose: It directly penalizes model complexity. The $L_2$ penalty encourages the model to use all features moderately rather than relying heavily on a few. For quadratic problems, weight decay effectively adds $\lambda$ to all eigenvalues of the Hessian. This reduces the condition number, making optimization easier, particularly for ill-conditioned problems. The same benefit applies to problems beyond quadratic optimization. By limiting parameter magnitudes, weight decay can improve numerical stability during training, especially for deep networks.
 
 Weight decay is not discussed in our NQM analysis in [Lecture 7](../7/notes.md). However, it can be analyzed in that framework by modifying the loss function to include the quadratic penalty. It's straightforward to check that the effect is to change the loss to 
 
