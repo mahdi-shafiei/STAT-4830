@@ -13,8 +13,7 @@
 !section/*/slides.md
 !section/*/slides.pdf
 !section/*/utils.py
-!section/*/cheetsheet.md
-
+!section/*/cheatsheet.md
 # Don't ignore PNGs in figures directories
 !section/*/figures/
 !section/*/figures/*.png
