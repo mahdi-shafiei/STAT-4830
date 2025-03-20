@@ -11,7 +11,7 @@ title: Stochastic Gradient Descent - The General Problem and Implementation Deta
 3. [Stochastic Gradient Descent and Variants](#stochastic-gradient-descent-and-variants)
 4. [Implementation Details in PyTorch](#implementation-details-in-pytorch)
 5. [Advanced Tweaks](#advanced-tweaks)
-6. [Conclusion](#conclusion)
+6. [A Minimal Working Implementation](#a-minimal-working-implementation)
 
 ## Introduction
 
@@ -883,7 +883,7 @@ Certain combinations are especially effective in specific contexts. For large-ba
 
 Remember that interactions between techniques may require hyperparameter adjustments. Adding momentum often necessitates reducing the learning rate, while implementing weight decay might require recalibration when used alongside momentum. These cascading adjustments underscore why incremental implementation and validation are crucial.
 
-### Minimal Working Example
+## Minimal Working Implementation
 
 The following example trains a linear regression on synthetic data, combining momentum, weight decay, EMA, and a cosine-annealing schedule. You can test out the code in the [notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/8/notebook.ipynb).
 
