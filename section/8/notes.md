@@ -379,19 +379,26 @@ EPOCH LOOP +-------------------------------------------------------------+
     +-------------+                   | SAMPLING                         |
                                       | (w/ or w/o replacement)          |
                                       v                                  |
-+-------------------+        +------------------+        +---------------+
-| 5. PARAM UPDATE   |        | MINI-BATCH       |        |               |
-|                   |        | [x₂,y₂]          |        |               |
-| optimizer.step()  |        | [x₇,y₇]  SHUFFLE |        |               |
-|                   |        | [x₄,y₄]  ↺↺↺↺↺↺  |        |               |
-| w ← w - α∇L       |        +------------------+        |               |
-|                   |                |                   |               |
-| LEARNING RATE     |                |                   |               |
-| SCHEDULER         |                v                   |               |
-| scheduler.step()  |        +------------------+        |               |
-|                   |        | 1. FORWARD PASS  |        |               |
-+-------------------+        |                  |        |               |
-        ^                    | outputs = model( |        |               |
++-------------------+        +------------------+                        |
+| 5. PARAM UPDATE   |        | MINI-BATCH       |                        |
+|                   |        | [x₂,y₂]          |                        |
+| optimizer.step()  |        | [x₇,y₇]  SHUFFLE |                        |
+|                   |        | [x₄,y₄]  ↺↺↺↺↺↺  |                        |
+| w ← w - α∇L       |        +------------------+                        |
+|                   |                |                                   |
+| LEARNING RATE     |                |                                   |
+| SCHEDULER         |                v                                   |
+| scheduler.step()  |        +------------------+                        |
+|                   |        | ZERO GRADIENTS   |                        |
++-------------------+        | optimizer.       |                        |
+        ^                    | zero_grad()      |                        |
+        |                    +------------------+                        |
+        |                            |                                   |
+        |                            v                                   |
+        |                    +------------------+        +---------------+
+        |                    | 1. FORWARD PASS  |        |               |
+        |                    |                  |        |               |
+        |                    | outputs = model( |        |               |
         |                    |    batch_x)      |        |               |
         |                    |                  |        |               |
         |                    | nn.Module        |        |               |
@@ -407,8 +414,8 @@ EPOCH LOOP +-------------------------------------------------------------+
 | Creates:          |        |                  |        |               |
 | param.grad        |        | + λ||w||² (decay)|        |               |
 |                   |        +------------------+        |               |
-| optimizer.        |                |                   |               |
-| zero_grad()       |                | scalar loss       |               |
+|                   |                |                   |               |
+|                   |                | scalar loss       |               |
 |                   |                v                   |               |
 +-------------------+        +------------------+        |               |
         ^                    | 3. COMPUTATIONAL |        |               |
@@ -442,12 +449,6 @@ ONE COMPLETE SGD STEP                                              |     |
 +-----------------------------------------------------------------+      |
                                                                          |
 TRAINING LOOP COMPLETE ---------------------------------------------+----+
-
-COLOR CODING:
-- DATA FLOW: batch_x, batch_y, outputs (blue)
-- GRADIENT FLOW: loss.backward(), param.grad (red)
-- PARAMETER VALUES: model weights, optimizer state (green)
-- CONTROL OPERATIONS: zero_grad(), step() (purple)
 ```
 
 ### Data Loading and Batch Sampling
