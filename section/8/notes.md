@@ -890,7 +890,7 @@ Remember that interactions between techniques may require hyperparameter adjustm
 
 ### Minimal Working Example
 
-This example trains a linear regression on synthetic data, combining momentum, weight decay, EMA, and a cosine-annealing schedule.
+The following example trains a linear regression on synthetic data, combining momentum, weight decay, EMA, and a cosine-annealing schedule. You can test out the code in the [notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/8/notebook.ipynb).
 
 ```python
 import torch
