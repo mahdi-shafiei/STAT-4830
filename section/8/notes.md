@@ -344,7 +344,7 @@ where $\beta > 0$ controls the decay rate. This schedule is particularly signifi
 
 **Cosine Annealing** follows a cosine function:
 
-$$\alpha_k = \alpha_{\min} + \frac{1}{2}(\alpha_0 - \alpha_{\min})(1 + \cos(\frac{k\pi}{K}))$$
+$$\alpha_k = \alpha_{\min} + \frac{1}{2}(\alpha_0 - \alpha_{\min})\left(1 + \cos(\frac{k\pi}{K})\right)$$
 
 where $K$ is the total number of iterations and $\alpha_{\min}$ is the minimum learning rate. This creates a smooth decline that starts slow, accelerates in the middle, and then slows again near the end.
 The theoretical motivation comes from optimization theory: constant learning rates produce iterates with variance lower-bounded by a positive constant proportional to $\alpha$. Decreasing $\alpha$ systematically shrinks this variance, preserving early rapid progress and later enabling convergence closer to the optimum.
