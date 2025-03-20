@@ -2,7 +2,7 @@
 layout: course_page
 title: Stochastic Gradient Descent - The General Problem and Implementation Details
 ---
-# 📊 STOCHASTIC GRADIENT DESCENT (SGD) CHEAT SHEET
+# STOCHASTIC GRADIENT DESCENT (SGD) CHEAT SHEET
 
 ## 1️⃣ GENERAL STOCHASTIC OPTIMIZATION PROBLEMS
 
@@ -307,7 +307,7 @@ ema_model.update_parameters(model)
 
 ### Minimal Working Example
 
-You can test out the code in the [notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/8/notebook.ipynb)
+You can test out the code in the [notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/8/notebook.ipynb).
 
 ### Key Takeaways
 - SGD with constant learning rate converges to a "noise ball" around the optimum
