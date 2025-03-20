@@ -216,7 +216,7 @@ w_{k+1} = w_k - \alpha \frac{1}{|B_k|}\sum_{i \in B_k}\nabla \ell(w_k, x_i, y_i)
 $$
 
 
-Under this approach, each example appears exactly once per epoch. Although the theoretical analysis of sampling without replacement is more challenging, empirical results typically favor this method.
+Under this approach, each example appears exactly once per epoch. The theoretical analysis of sampling without replacement is more challenging. Empirical results typically favor this method.
 
 ### 3.2 Previously Discussed Tweaks
 
