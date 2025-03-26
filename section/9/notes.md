@@ -10,7 +10,8 @@ title: Adaptive Optimization Methods
 2. [Algorithm Definitions](#algorithm-definitions)
 3. [Theoretical Analysis](#theoretical-analysis)
 4. [Practical Implementation](#practical-implementation)
-5. [Empirical Insights](#empirical-insights)
+5. [A Minimal Working Example](#a-minimal-working-example)
+6. [References](#references)
 
 ## Introduction and Motivation
 
@@ -757,3 +758,18 @@ The script plots both the timing per epoch and the training and validation loss 
 
 The plots show that on this problem, all the methods are roughly comparable, with a slight advantage for the adaptive methods. It's incredibly difficult to compare optimization algorithms from an empirical perspective. The results depend on the model, the dataset, and the hyperparameters. Recently some researchers at Google, Meta, Dell, and in Academia have started the [algoperf benchmark](https://github.com/mlcommons/algorithmic-efficiency), which tests optimizers on a variety of medium scale machine learning tasks. They've also written a [paper](https://arxiv.org/abs/2306.07179) on the difficulty of benchmarking neural network training algorithms. We'll discuss some of these issues in a later lecture, but for now let this just serve as a warning that drawing conclusions from a few plots is hard!
 
+## References
+
+**[1]** Duchi, J., Hazan, E., & Singer, Y. (2011). *Adaptive subgradient methods for online learning and stochastic optimization*. Journal of Machine Learning Research, 12(Jul), 2121-2159. [Link](https://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf)
+
+**[2]** Tieleman, T., & Hinton, G. (2012). *Lecture 6.5—RMSProp: Divide the gradient by a running average of its recent magnitude*. COURSERA: Neural Networks for Machine Learning. [Link](https://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
+
+**[3]** Kingma, D. P., & Ba, J. (2015). *Adam: A method for stochastic optimization*. International Conference on Learning Representations (ICLR). [Link](https://arxiv.org/abs/1412.6980)
+
+**[4]** Loshchilov, I., & Hutter, F. (2019). *Decoupled weight decay regularization*. International Conference on Learning Representations (ICLR). [Link](https://arxiv.org/abs/1711.05101)
+
+**[5]** Défossez, A., Bottou, L., Bach, F., & Usunier, N. (2022). *A simple convergence proof of Adam and Adagrad*. Transactions on Machine Learning Research (TMLR). [Link](https://arxiv.org/abs/2003.02395)
+
+**[6]** Zhang, G., Li, L., Nado, Z., Martens, J., Sachdeva, S., Dahl, G., Shallue, C., & McAllester, D. (2019). *Which algorithmic choices matter at which batch sizes? Insights from a noisy quadratic model*. Advances in Neural Information Processing Systems (NeurIPS). [Link](https://arxiv.org/abs/1907.04164)
+
+**[7]** Choi, D., Shallue, C. J., Nado, Z., Lee, J., Maddison, C. J., & Dahl, G. E. (2020). *On empirical comparisons of optimizers for deep learning*. International Conference on Learning Representations (ICLR). [Link](https://arxiv.org/abs/1910.05446)

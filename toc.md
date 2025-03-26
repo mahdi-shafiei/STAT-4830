@@ -31,3 +31,6 @@ title: Table of Contents
 
 [8. Stochastic Gradient Descent: The general problem and implementation details](section/8/notes.md) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/8/notebook.ipynb)
    > Stochastic optimization problems, SGD, tweaks, and implementation in PyTorch
+
+[9. Adaptive Optimization Methods](section/9/notes.md) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/9/notebook.ipynb)
+   > Intro to adaptive optimization methods: Adagrad, Adam, and AdamW.
