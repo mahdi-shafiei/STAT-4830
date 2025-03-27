@@ -202,6 +202,8 @@ By examining these bounds, we can compare the theoretical guarantees of differen
 
 Now that we've established our key assumptions and convergence measure, we can present the main theoretical results for Adagrad in the non-adaptive setting (with $\beta_1 = 0$, meaning no momentum). The following theorem, adapted from Défossez et al. (2022), provides a bound on the expected squared gradient norm for Adagrad.
 
+> The bounds from Défossez et al. (2022) are probably not the last word. A brief literature review yields this [this paper](https://proceedings.neurips.cc/paper_files/paper/2023/file/7ac19fdcdf4f311f3e3ef2e7ef4784d7-Paper-Conference.pdf), which appears to have tighter theory. I mainly chose Défossez et al. (2022) because it's conceptually clean.
+
 For Adagrad with constant step size $\alpha > 0$ and accumulation parameter $\beta_2 = 1$ (standard Adagrad), after $N$ iterations we have:
 
 $$\mathbb{E}[\|\nabla L(w_{\tau_N})\|^2] \leq \frac{2R(L(w_0) - L_*)}{\alpha\sqrt{N}} + \frac{1}{\sqrt{N}}\left(4dR^2 + \alpha dRL\right)\ln\left(1 + \frac{NR^2}{\epsilon}\right)$$
