@@ -5,7 +5,8 @@ title: Stochastic Gradient Descent - The General Problem and Implementation Deta
 
 # Stochastic Gradient Descent: The general problem and implementation details
 
-[cheatsheet](cheatsheet.md)
+1. [cheatsheet](cheatsheet.md)
+2. [notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/8/notebook.ipynb)
 
 ## Table of contents
 1. [Introduction](#introduction)

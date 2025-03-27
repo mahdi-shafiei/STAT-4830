@@ -5,9 +5,8 @@ title: Adaptive Optimization Methods
 
 # Adaptive Optimization Methods
 
-[Cheat Sheet](cheatsheet.md)
-
-[notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/9/notebook.ipynb)
+1. [Cheat Sheet](cheatsheet.md)
+2. [notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/9/notebook.ipynb)
 
 ## Table of contents
 1. [Introduction and Motivation](#introduction-and-motivation)
