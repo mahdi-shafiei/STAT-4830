@@ -4,7 +4,7 @@ title: Stochastic Gradient Descent - The General Problem and Implementation Deta
 ---
 # STOCHASTIC GRADIENT DESCENT (SGD) CHEAT SHEET
 
-## 1️⃣ GENERAL STOCHASTIC OPTIMIZATION PROBLEMS
+##  GENERAL STOCHASTIC OPTIMIZATION PROBLEMS
 
 ### Core Framework
 - **Empirical Risk:** $L(w) = \frac{1}{n}\sum_{i=1}^n \ell(w, x_i, y_i)$
@@ -36,7 +36,7 @@ $$g(w, B) = \frac{1}{|B|}\sum_{i \in B} \nabla_w \ell(w, x_i, y_i)$$
 - **Generalization Bound:** $L_{\text{pop}}(w) \leq L_{\text{emp}}(w) + \mathcal{O}\left(\sqrt{\frac{\text{complexity}(w) + \log(1/\delta)}{n}}\right)$
 - **SGD Insight:** Can provide implicit regularization beyond empirical risk minimization
 
-## 2️⃣ SGD METHODS AND VARIANTS
+## SGD METHODS AND VARIANTS
 
 ### Gradient Methods Spectrum
 
@@ -119,7 +119,7 @@ $$g(w, B) = \frac{1}{|B|}\sum_{i \in B} \nabla_w \ell(w, x_i, y_i)$$
 - **Formula:** $\alpha_k = \alpha_{\min} + \frac{1}{2}(\alpha_0 - \alpha_{\min})(1 + \cos(\frac{k\pi}{K}))$
 - **Properties:** Smooth, non-monotonic decay
 
-## 3️⃣ PYTORCH IMPLEMENTATION
+## PYTORCH IMPLEMENTATION
 
 ### Complete Training Loop
 ```ASCII
@@ -277,7 +277,7 @@ for epoch in range(num_epochs):
     scheduler.step()  # or scheduler.step(val_loss) for ReduceLROnPlateau
 ```
 
-## 4️⃣ ADVANCED TECHNIQUES
+## ADVANCED TECHNIQUES
 
 ### Implementing EMA
 ```python
