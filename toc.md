@@ -34,3 +34,6 @@ title: Table of Contents
 
 [9. Adaptive Optimization Methods](section/9/notes.md) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/9/notebook.ipynb)
    > Intro to adaptive optimization methods: Adagrad, Adam, and AdamW.
+
+[10. Benchmarking Optimizers: Challenges and Some Empirical Results](section/10/notes.md) 
+   > How do we compare optimizers for deep learning? 
