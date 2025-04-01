@@ -11,6 +11,8 @@ title: Adaptive Optimization Methods - Cheat Sheet
 - **Poor conditioning**: Condition number $\kappa = \frac{\text{largest eigenvalue}}{\text{smallest eigenvalue}}$ of Hessian
 - **Difficult learning rate trade-off**: Must be small enough for steep directions, but slows progress in flat ones
 
+![ZigZag](../3/figures/zigzag_visualization.png)
+
 **Adaptive Methods Insight**: Give each parameter its own learning rate that adapts during training:
 - Parameters with consistently large gradients → smaller learning rates
 - Parameters with small gradients → larger learning rates
