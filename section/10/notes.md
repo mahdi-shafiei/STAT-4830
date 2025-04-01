@@ -5,6 +5,8 @@ title: Benchmarking Optimizers - Challenges and Some Empirical Results
 
 # Benchmarking Optimizers: Challenges and Some Empirical Results
 
+[Cheat Sheet](cheatsheet.md)
+
 ## Table of contents
 1. [Introduction: The Optimizer Comparison Problem](#introduction-the-optimizer-comparison-problem)
 2. [Challenge 1: Defining and Measuring Speed](#challenge-1-defining-and-measuring-speed)
