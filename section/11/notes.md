@@ -26,15 +26,15 @@ Previous lectures in this course examined the properties of specific optimizatio
 
 Before beginning the iterative tuning process described in Section 3, several foundational decisions are typically made at the start of a deep learning project. These initial choices concern the model architecture, the optimization algorithm, the batch size, and the overall starting configuration. This section covers guidance from the playbook on making these early choices, which establish the baseline upon which later tuning experiments will build.
 
-### 2.1 Model Architecture: Start with the Known
+### 2.1 Model Architecture
 
 The Deep Learning Tuning Playbook recommends beginning a new project by selecting a well-established model architecture that is known to perform well on similar tasks [1]. Developing custom architectures can be deferred until after a reliable baseline has been established using a standard model. Choosing an architecture typically means selecting a *family* of models, as architectures often have their own hyperparameters (such as the number of layers or the width of layers) that determine the specific model configuration. The process for selecting these architectural hyperparameters is part of the broader tuning strategy discussed in Section 3.
 
-### 2.2 Optimizer Selection: Balancing Power and Tuning Effort
+### 2.2 Optimizer Selection
 
 Selecting an appropriate optimization algorithm is another initial step. The playbook suggests starting with optimizers that are widely used and well-understood for the type of problem being addressed [1]. Examples include SGD with momentum or adaptive methods like Adam and AdamW, whose mechanics were detailed in Lectures [7](../7/notes.md) and [9](../9/notes.md). It is important to recognize the trade-off between an optimizer's potential capabilities and the effort required to tune it. Optimizers like Adam possess more tunable hyperparameters (learning rate $η$, momentum parameters $\beta_1$ and $\beta_2$, and the epsilon term $\epsilon$) compared to SGD with momentum (learning rate $η$, momentum parameter $\beta$). As implicitly shown by the findings in Choi et al. (2019b) [2] (discussed further in Section 3.3), achieving the potential benefits of more complex optimizers often requires careful tuning of these additional hyperparameters. Therefore, if tuning resources are limited at the project's outset, it might be pragmatic to start with a simpler optimizer configuration, such as SGD with momentum, or Adam with its $\beta_1$, $\beta_2$, and $\epsilon$ parameters fixed to standard default values, deferring the tuning of these additional parameters until later stages.
 
-### 2.3 Batch Size: A Matter of Speed and Resources
+### 2.3 Batch Size
 
 The batch size primarily determines the training speed and the utilization of hardware resources. According to the playbook and empirical studies like Shallue et al. (2018) [3], the batch size should not be treated as a hyperparameter to be tuned directly for improving validation performance [1]. Comparable validation accuracy is typically achievable across a wide range of batch sizes, provided that other critical hyperparameters, particularly the learning rate and any regularization parameters, are carefully re-tuned for each batch size setting [3]. Neglecting to re-tune these interacting parameters can create misleading impressions about the effect of batch size on final model performance.
 
