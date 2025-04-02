@@ -80,7 +80,18 @@ $$v_t = \beta_2 v_{t-1} + (1 - \beta_2) g_t^2$$
 
 Here, $m_t$ represents the estimate of the first moment (mean) of the gradients, and $v_t$ is the estimate of the second moment (uncentered variance). The hyperparameters $\beta_1$ and $\beta_2$ control the exponential decay rates for these moment estimates, typically set to 0.9 and 0.999 respectively.
 
-A key insight in Adam is the recognition that these moment estimates are biased toward zero during the initial iterations, especially when the decay rates are high (i.e., $\beta_1$ and $\beta_2$ close to 1). This occurs because the moving averages are initialized at zero and take time to "warm up." To counteract this bias, Adam applies correction terms:
+A key insight in Adam is the recognition that these moment estimates are biased toward zero during the initial iterations, especially when the decay rates are high (i.e., $\beta_1$ and $\beta_2$ close to 1). This occurs because the moving averages are initialized at zero and take time to "warm up." 
+
+> Let me give you a more formal reason for this. Suppose that $m_0 = 0$ and $g_t = g$ for all $g$. Then consider
+> $$ m_{t} = \beta_1 m_{t-1} + (1 - \beta_1) g = \beta_1^t m_0 + (1 - \beta_1) \sum_{i=0}^{t-1} \beta_1^i g = (1 - \beta_1) \sum_{i=0}^{t-1} \beta_1^i g $$
+> 
+> Noting that $\sum_{i=0}^{t-1} \beta_1^i = \frac{1 - \beta_1^t}{1 - \beta_1}$ we get
+> 
+> $$ m_{t} = (1 - \beta_1) \sum_{i=0}^{t-1} \beta_1^i g = (1 - \beta_1) \frac{1 - \beta_1^t}{1 - \beta_1} g = (1 - \beta_1^t) g$$
+> 
+> This shows that the estimate of the "true" gradient produced by momentum is scaled by $(1-\beta_1^t)$ even in this simple setting. Since $\beta_1$ is often chosen close to 1, this can lead to significant "bias" in early iterations. This explains why adam performs the following correction. 
+
+To counteract this bias, Adam applies correction terms:
 
 $$\hat{m}_t = \frac{m_t}{1 - \beta_1^t}$$
 
@@ -110,13 +121,9 @@ In SGD, this leads to an update equivalent to:
 
 $$w_t = (1 - \alpha\lambda)w_{t-1} - \alpha\nabla \ell(w_{t-1})$$
 
-The factor $(1 - \alpha\lambda)$ directly scales down the weights, hence the term "weight decay." However, in Adam, the regularization term is included in the gradient that gets adaptively scaled:
+The factor $(1 - \alpha\lambda)$ directly scales down the weights, hence the term "weight decay." However, in Adam, the regularization term is included in the gradient that gets adaptively scaled by $\frac{\alpha}{\sqrt{\hat{v}_t} + \epsilon}$. 
 
-$$w_t = w_{t-1} - \frac{\alpha}{\sqrt{\hat{v}_t} + \epsilon}(\hat{m}_t + \lambda w_{t-1})$$
-
-This means the decay effect varies across parameters based on their gradient history, potentially undermining the regularization benefits. Parameters with large gradient magnitudes receive less regularization than those with small gradients.
-
-AdamW addresses this issue by decoupling weight decay from the gradient update. Instead of incorporating the regularization term into the gradient, it applies weight decay directly to the parameters:
+Instead of $\ell_2$ regularization, AdamW decouples weight decay from the gradient update:
 
 $$w_t = (1 - \alpha\lambda)w_{t-1} - \frac{\alpha}{\sqrt{\hat{v}_t} + \epsilon}\hat{m}_t$$
 
@@ -128,9 +135,8 @@ This simple modification ensures consistent regularization across all parameters
 4. Bias correction: $\hat{m}_t = \frac{m_t}{1 - \beta_1^t}$ and $\hat{v}_t = \frac{v_t}{1 - \beta_2^t}$
 5. Apply weight decay: $w_t = (1 - \alpha\lambda)w_{t-1} - \frac{\alpha}{\sqrt{\hat{v}_t} + \epsilon}\hat{m}_t$
 
-The decoupling approach in AdamW has at least two implications. First, it restores the regularization effect to be consistent across all parameters, regardless of their gradient history. Second, it makes the weight decay hyperparameter $\lambda$ easier to tune, as its effect becomes independent of the adaptive learning rates. 
-
-The motivation for AdamW was the empirical observation that L2 regularization was much less effective in Adam than in SGD. By implementing weight decay in this way, AdamW can match or exceed the generalization performance of SGD with momentum, while still benefiting from the adaptive learning rates of Adam.
+Why decouple? The authors of the original AdamW paper claim that 
+> We provide empirical evidence that our proposed modification (i) decouples the optimal choice of weight decay factor from the setting of the learning rate for both standard SGD and Adam and (ii) substantially improves Adam’s generalization performance, allowing it to compete with SGD with momentum on image classification datasets (on which it was previously typically outperformed by the latter).
 
 ### A quick experiment
 
