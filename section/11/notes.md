@@ -7,10 +7,10 @@ title: A Playbook for Tuning Deep Learning Models
 
 ## Table of contents
 1.  [Introduction](#introduction-beyond-algorithms-to-process)
-2.  [Initial Setup: Foundational Choices](#initial-setup-foundational-choices)
-3.  [The Tuning Process: An Iterative Approach](#the-scientific-tuning-process-an-iterative-approach)
+2.  [Initial Setup](#initial-setup-foundational-choices)
+3.  [The Tuning Process](#the-scientific-tuning-process-an-iterative-approach)
 4.  [Determining Training Duration](#determining-training-duration)
-5.  [Conclusion: Tuning as a Systematic Process](#conclusion-tuning-as-a-systematic-process)
+5.  [Conclusion](#conclusion-tuning-as-a-systematic-process)
 6.  [References](#references)
 
 ## 1. Introduction
@@ -22,7 +22,7 @@ Previous lectures in this course examined the properties of specific optimizatio
 ![Figure 1: Workflow](figures/workflow.svg)
 *Figure 1: Overview of the iterative tuning process based on the Deep Learning Tuning Playbook [1]. The process begins with initial setup (Section 2) and then enters an iterative loop focused primarily on exploration (Section 3.2). Each loop involves defining a goal (Section 3.3), identifying hyperparameter roles (Section 3.3), designing and running experiments while tuning nuisance parameters (Section 3.4), and analyzing results for insights (Section 3.5). Decisions to adopt changes are made based on evidence, considering variance and complexity (Section 3.6). The loop continues until exploration goals are met, potentially followed by a final exploitation phase.*
 
-## 2. Initial Setup: Foundational Choices
+## 2. Initial Setup
 
 Before beginning the iterative tuning process described in Section 3, several foundational decisions are typically made at the start of a deep learning project. These initial choices concern the model architecture, the optimization algorithm, the batch size, and the overall starting configuration. This section covers guidance from the playbook on making these early choices, which establish the baseline upon which later tuning experiments will build.
 
@@ -56,7 +56,7 @@ Re-tuning is essential because key hyperparameters interact strongly with the ba
 Before starting the iterative tuning process detailed in Section 3, it is necessary to establish an initial configuration. This includes specifying the initial model hyperparameters (e.g., number of layers), the optimizer settings (e.g., initial learning rate, fixed momentum value), and the number of training steps for initial experiments. The playbook advises aiming for a baseline configuration that is intentionally simple, uses minimal computational resources, and achieves "reasonable" performance – meaning the model performs distinctly better than random chance on the validation set [1]. Starting with simplicity avoids premature complexity. For example, one might begin with a constant learning rate schedule before exploring more complex decay schemes. The initial choice for the number of training steps involves a trade-off: longer training can simplify tuning certain parameters like decay schedules, but shorter runs allow for faster iteration during the exploration phase. This trade-off, and methods for determining training duration, are discussed further in Section 4.
 
 
-## 3. The Tuning Process: An Iterative Approach
+## 3. The Tuning Process
 
 Once an initial baseline configuration is established, the core work of improving model performance begins. This section details the iterative tuning process outlined in the Deep Learning Tuning Playbook [1]. This process treats hyperparameter optimization not as arbitrary tweaking, but as a structured, scientific endeavor focused on building understanding and making evidence-based improvements.
 
@@ -94,11 +94,11 @@ Automated search algorithms are typically used to explore the space defined by t
 
 Designing effective studies involves allocating a finite computational budget across three competing needs: evaluating a sufficient range of scientific hyperparameter values, defining sufficiently broad search spaces for nuisance hyperparameters, and sampling those spaces densely enough with trials [1]. Expanding any of these dimensions typically requires more computational resources. Adequately tuning nuisance parameters is essential for the validity of the comparison between scientific parameter settings.
 
-### 3.5 Analyzing Experimental Results: Extracting Insights
+### 3.5 Analyzing Experimental Results
 
 After running the trials within a study (or set of studies), the analysis should extend beyond addressing the original scientific goal [1]. It is crucial to check for potential issues with the experiment itself and to extract broader insights about the tuning problem.
 
-A key check is evaluating the adequacy of the chosen search spaces for the nuisance hyperparameters. This can be done visually using basic hyperparameter axis plots, which show the validation objective achieved by each trial plotted against the value of a specific hyperparameter. If the best-performing trials consistently cluster near the boundary of the search range for a particular hyperparameter, it suggests the space may be too small in that dimension, and the optimal value might lie outside the tested range. **Figure 1** illustrates this concept, contrasting a scenario where the best learning rates are near the edge (suggesting the need to expand the search) with one where the optimum appears well within the range. The playbook states: "A search space is suspicious if the best point sampled from it is close to its boundary. We might find an even better point if we expanded the search range in that direction" [1]. If issues are found, the search space should be adjusted and the study potentially rerun.
+A key check is evaluating the adequacy of the chosen search spaces for the nuisance hyperparameters. This can be done visually using basic hyperparameter axis plots, which show the validation objective achieved by each trial plotted against the value of a specific hyperparameter. If the best-performing trials consistently cluster near the boundary of the search range for a particular hyperparameter, it suggests the space may be too small in that dimension, and the optimal value might lie outside the tested range. **Figure 6** illustrates this concept, contrasting a scenario where the best learning rates are near the edge (suggesting the need to expand the search) with one where the optimum appears well within the range. The playbook states: "A search space is suspicious if the best point sampled from it is close to its boundary. We might find an even better point if we expanded the search range in that direction" [1]. If issues are found, the search space should be adjusted and the study potentially rerun.
 
 ![Figure 6: Search Space Boundary Check Example](figures/bad_search_space.png)
 *Figure 6: Example hyperparameter axis plots illustrating search space boundary checks. Left: The best trials (lowest error) cluster near the upper boundary for the learning rate, indicating the search space might need expansion. Right: The best trials are well within the search space boundaries, suggesting the chosen range is adequate.*
@@ -110,14 +110,14 @@ Examining the training and validation curves (objective vs. training step) for t
 *   **High Variance:** Significant fluctuations in validation error late in training, potentially due to small batch sizes or validation sets, can make comparisons unreliable. Reducing the learning rate via decay, using Polyak averaging, or increasing batch/validation size might be necessary.
 *   **Convergence Status:** If trials are still improving significantly at the final step, the allocated training time might be insufficient (see Section 4). Conversely, if performance saturates very early, the training run might be unnecessarily long.
 
-Finally, to directly address the scientific goal, **isolation plots** are useful [1]. These plots show the best performance achieved for each value of the scientific hyperparameter, after having optimized over the nuisance hyperparameters for that specific setting (either through separate studies or by selecting the best trial per scientific value from a larger combined study). **Figure 4** shows a conceptual example plotting the best achievable validation error against different strengths of weight decay (the scientific hyperparameter), where each point implicitly represents a learning rate tuned specifically for that decay strength. The playbook notes: "An isolation plot... plots the model performance after 'optimizing away' the nuisance hyperparameters. An isolation plot makes it easier to perform an apples-to-apples comparison between different values of the scientific hyperparameter" [1].
+Finally, to directly address the scientific goal, **isolation plots** are useful [1]. These plots show the best performance achieved for each value of the scientific hyperparameter, after having optimized over the nuisance hyperparameters for that specific setting (either through separate studies or by selecting the best trial per scientific value from a larger combined study). **Figure 7** shows a conceptual example plotting the best achievable validation error against different strengths of weight decay (the scientific hyperparameter), where each point implicitly represents a learning rate tuned specifically for that decay strength. The playbook notes: "An isolation plot... plots the model performance after 'optimizing away' the nuisance hyperparameters. An isolation plot makes it easier to perform an apples-to-apples comparison between different values of the scientific hyperparameter" [1].
 
 ![Figure 7: Isolation Plot Example](figures/isolation_plot.png)
 *Figure 7: Conceptual isolation plot showing the best validation error achieved for different values of a scientific hyperparameter (e.g., weight decay strength), after optimizing over nuisance hyperparameters (e.g., learning rate) for each value.*
 
-### 3.6 Making Decisions: Adopting Changes Carefully
+### 3.6 Making Decisions
 
-The final step in a tuning round is deciding whether to adopt a change – be it a new technique, a different model variant, or simply a new set of hyperparameter values – as the baseline for future work [1]. This decision should consider the observed performance improvement in light of potential sources of variation, primarily trial variance (run-to-run variation with the same hyperparameters but different random seeds) and study variance (variation due to the hyperparameter search process itself). If resources permit, characterizing trial variance by rerunning the best configurations multiple times can provide confidence intervals. The playbook suggests a pragmatic approach: adopt a change if it demonstrates a performance improvement that seems unlikely to be due to variance alone, and if this improvement justifies any potential increase in complexity introduced by the change [1].
+The final step in a tuning round is deciding whether to adopt a change, be it a new technique, a different model variant, or simply a new set of hyperparameter values, as the baseline for future work [1]. This decision should consider the observed performance improvement in light of potential sources of variation, primarily trial variance (run-to-run variation with the same hyperparameters but different random seeds) and study variance (variation due to the hyperparameter search process itself). If resources permit, characterizing trial variance by rerunning the best configurations multiple times can provide confidence intervals. The playbook suggests a pragmatic approach: adopt a change if it demonstrates a performance improvement that seems unlikely to be due to variance alone, and if this improvement justifies any potential increase in complexity introduced by the change [1].
 
 ## 4. Determining Training Duration
 
@@ -125,11 +125,11 @@ The amount of time or number of steps allocated for each training run is another
 
 Regardless of which regime applies, the playbook strongly advises against treating the maximum number of training steps (`max_train_steps`) as a hyperparameter to be tuned within a single study [1]. Instead, a fixed training duration (in steps) should be chosen and used consistently for all trials within that experimental round. Performance should then be evaluated using **retrospective checkpoint selection**. This involves saving model checkpoints periodically during training and, after the run is complete, selecting the checkpoint that achieved the best validation performance at any point during the run. This approach avoids relying on the potentially suboptimal performance at the very last training step and eliminates the need for complex prospective early stopping heuristics [1]. The optimal number of training steps required can change as the model or training pipeline evolves (e.g., adding data augmentation might increase the steps needed), and it often interacts strongly with the tuning of learning rate decay schedules [1]. Observing where the best checkpoint consistently falls within the fixed training duration can provide information for adjusting `max_train_steps` in later rounds of experiments.
 
-## 5. Conclusion: Tuning as a Systematic Process
+## 5. Tuning as a Systematic Process
 
 This lecture outlined a systematic process for tuning deep learning models, drawing primarily from the Deep Learning Tuning Playbook [1]. The core idea is to move beyond ad-hoc adjustments and adopt an iterative, scientific approach. This involves setting clear experimental goals, carefully distinguishing between scientific, nuisance, and fixed hyperparameters, and focusing on gaining insights during the exploration phase before optimizing greedily for performance.
 
-A takeaway, supported by empirical evidence [2], is that the hyperparameter tuning protocol – including the search space, budget, and search method – is inseparable from the algorithm itself when making comparisons. Fair comparisons require careful tuning of relevant nuisance hyperparameters for all methods under consideration. While powerful optimization algorithms exist (Lectures [7](../7/notes.md), [9](../9/notes.md)), their practical effectiveness hinges on applying a sound, evidence-based tuning methodology like the one described here.
+A takeaway, supported by empirical evidence [2], is that the hyperparameter tuning protocol, including the search space, budget, and search method, is inseparable from the algorithm itself when making comparisons. Fair comparisons require careful tuning of relevant nuisance hyperparameters for all methods under consideration. While powerful optimization algorithms exist (Lectures [7](../7/notes.md), [9](../9/notes.md)), their practical effectiveness hinges on applying a sound, evidence-based tuning methodology like the one described here.
 
 ## 6. References
 
