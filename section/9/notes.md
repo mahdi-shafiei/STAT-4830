@@ -60,11 +60,7 @@ The key component is $G_{t,ii}$, which represents the sum of squared gradients f
 
 $$G_{t,ii} = \sum_{j=1}^{t} g_{j,i}^2$$
 
-This accumulation of squared gradients in the denominator causes the effective learning rate to decrease over time, with the rate of decrease being larger for parameters that consistently have large gradients. Alternatively, we can write the update in vector form:
-
-$$w_t = w_{t-1} - \alpha \cdot G_t^{-1/2} \odot g_t$$
-
-where $G_t$ is a diagonal matrix with $G_{t,ii}$ as its diagonal elements, $G_t^{-1/2}$ represents the element-wise inverse square root, and $\odot$ denotes element-wise multiplication.
+This accumulation of squared gradients in the denominator causes the effective learning rate to decrease over time, with the rate of decrease being larger for parameters that consistently have large gradients. 
 
 The usefulness of Adagrad is that it eliminates the need to manually tune the learning rate for different parameters. This is particularly useful for problems with sparse gradients, where some parameters may be updated infrequently. In such cases, when a parameter does receive an update, Adagrad gives it a larger effective learning rate compared to frequently updated parameters.
 
@@ -219,7 +215,6 @@ The step size $\alpha$ affects both terms in interesting ways. A larger $\alpha$
 > Unlike standard SGD, however, Adagrad doesn't require the learning rate to decay over time to achieve convergence. The adaptive scaling automatically provides the necessary dampening effect.
 
 The parameter $\epsilon$, which is added for numerical stability, appears in the logarithmic term. While it's often treated as a minor implementation detail, this bound shows that it does have a theoretical impact on convergence, albeit a relatively small one due to the logarithmic dependence.
-
 
 ### Main Results for Adam
 
