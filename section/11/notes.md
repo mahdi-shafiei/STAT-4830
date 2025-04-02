@@ -6,24 +6,14 @@ title: A Playbook for Tuning Deep Learning Models
 # A Playbook for Tuning Deep Learning Models
 
 ## Table of contents
-1.  [Introduction: Beyond Algorithms to Process](#introduction-beyond-algorithms-to-process)
+1.  [Introduction](#introduction-beyond-algorithms-to-process)
 2.  [Initial Setup: Foundational Choices](#initial-setup-foundational-choices)
-    *   [Model Architecture: Start with the Known](#model-architecture-start-with-the-known)
-    *   [Optimizer Selection: Balancing Power and Tuning Effort](#optimizer-selection-balancing-power-and-tuning-effort)
-    *   [Batch Size: A Matter of Speed and Resources](#batch-size-a-matter-of-speed-and-resources)
-    *   [Establishing a Baseline: The Initial Configuration](#establishing-a-baseline-the-initial-configuration)
-3.  [The Scientific Tuning Process: An Iterative Approach](#the-scientific-tuning-process-an-iterative-approach)
-    *   [The Incremental Strategy](#the-incremental-strategy)
-    *   [Exploration First, Exploitation Later](#exploration-first-exploitation-later)
-    *   [Structuring Experiments: Goals and Hyperparameter Roles](#structuring-experiments-goals-and-hyperparameter-roles)
-    *   [Designing Studies: Search and Comparison](#designing-studies-search-and-comparison)
-    *   [Analyzing Experimental Results: Extracting Insights](#analyzing-experimental-results-extracting-insights)
-    *   [Making Decisions: Adopting Changes Carefully](#making-decisions-adopting-changes-carefully)
+3.  [The Tuning Process: An Iterative Approach](#the-scientific-tuning-process-an-iterative-approach)
 4.  [Determining Training Duration](#determining-training-duration)
 5.  [Conclusion: Tuning as a Systematic Process](#conclusion-tuning-as-a-systematic-process)
 6.  [References](#references)
 
-## 1. Introduction: Beyond Algorithms to Process
+## 1. Introduction
 
 Optimizing the performance of deep learning models presents significant challenges that extend beyond the selection of a specific training algorithm. Practical success often depends on a meticulous process for tuning model hyperparameters and training procedures. However, as noted in the introduction to the Deep Learning Tuning Playbook [1], these effective tuning strategies are rarely documented, often involve guesswork, and can vary substantially between practitioners. This lecture outlines a systematic, evidence-based *process* for tuning deep learning models, drawing guidance from the playbook available at [https://github.com/google-research/tuning_playbook](https://github.com/google-research/tuning_playbook) and empirical results from its supporting references.
 

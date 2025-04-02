@@ -17,6 +17,7 @@
 # Don't ignore PNGs in figures directories
 !section/*/figures/
 !section/*/figures/*.png
+!section/*/figures/*.svg
 
 # Python
 __pycache__/
