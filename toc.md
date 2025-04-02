@@ -37,3 +37,6 @@ title: Table of Contents
 
 [10. Benchmarking Optimizers: Challenges and Some Empirical Results](section/10/notes.md) 
    > How do we compare optimizers for deep learning? 
+
+[11. A Playbook for Tuning Deep Learning Models](section/11/notes.md)
+   > A systematic process for [tuning deep learning models](https://github.com/google-research/tuning_playbook)

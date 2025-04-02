@@ -145,10 +145,10 @@ A takeaway, supported by empirical evidence [2], is that the hyperparameter tuni
 
 [1] Godbole, V., Dahl, G. E., Gilmer, J., Shallue, C. J., & Nado, Z. (2023). *Deep Learning Tuning Playbook*. GitHub repository. [https://github.com/google-research/tuning_playbook](https://github.com/google-research/tuning_playbook)
 
-[2] Choi, D., Shallue, C. J., Nado, Z., Lee, J., Maddison, C. J., & Dahl, G. E. (2019). *On Empirical Comparisons of Optimizers for Deep Learning*. arXiv preprint arXiv:1910.05446.
+[2] Choi, D., Shallue, C. J., Nado, Z., Lee, J., Maddison, C. J., & Dahl, G. E. (2019). *On Empirical Comparisons of Optimizers for Deep Learning*. arXiv preprint. [arXiv:1910.05446](https://arxiv.org/abs/1910.05446)
 
-[3] Shallue, C. J., Lee, J., Antognini, J., Sohl-Dickstein, J., Frostig, R., & Dahl, G. E. (2018). *Measuring the Effects of Data Parallelism on Neural Network Training*. Journal of Machine Learning Research, 20(112), 1-49.
+[3] Shallue, C. J., Lee, J., Antognini, J., Sohl-Dickstein, J., Frostig, R., & Dahl, G. E. (2018). *Measuring the Effects of Data Parallelism on Neural Network Training*. Journal of Machine Learning Research, 20(112), 1-49. [link](https://arxiv.org/abs/1811.03600)
 
-[4] Bousquet, O., Gelly, S., Kurach, K., Teytaud, O., & Vincent, D. (2017). *Critical hyper-parameters: no random, no cry*. arXiv preprint arXiv:1706.03200.
+[4] Bousquet, O., Gelly, S., Kurach, K., Teytaud, O., & Vincent, D. (2017). *Critical hyper-parameters: no random, no cry*. arXiv preprint [arXiv:1706.03200](https://arxiv.org/abs/1706.03200)
 
-[5] Gelbart, M. A., Snoek, J., & Adams, R. P. (2014). *Bayesian Optimization with Unknown Constraints*. arXiv preprint arXiv:1403.5607.
+[5] Gelbart, M. A., Snoek, J., & Adams, R. P. (2014). *Bayesian Optimization with Unknown Constraints*. arXiv preprint [arXiv:1403.5607](https://arxiv.org/abs/1403.5607)
