@@ -200,11 +200,11 @@ By examining these bounds, we can compare the theoretical guarantees of differen
 
 ### Main Results for Adagrad
 
-Now that we've established our key assumptions and convergence measure, we can present the main theoretical results for Adagrad in the non-adaptive setting (with $\beta_1 = 0$, meaning no momentum). The following theorem, adapted from Défossez et al. (2022), provides a bound on the expected squared gradient norm for Adagrad.
+Now that we've established our key assumptions and convergence measure, we can present the main theoretical results for Adagrad. The following theorem, adapted from Défossez et al. (2022), provides a bound on the expected squared gradient norm for Adagrad.
 
 > The bounds from Défossez et al. (2022) are probably not the last word. A brief literature review yields this [this paper](https://proceedings.neurips.cc/paper_files/paper/2023/file/7ac19fdcdf4f311f3e3ef2e7ef4784d7-Paper-Conference.pdf), which appears to have tighter theory. I mainly chose Défossez et al. (2022) because it's conceptually clean.
 
-For Adagrad with constant step size $\alpha > 0$ and accumulation parameter $\beta_2 = 1$ (standard Adagrad), after $N$ iterations we have:
+For Adagrad with constant step size $\alpha > 0$, after $N$ iterations we have:
 
 $$\mathbb{E}[\|\nabla L(w_{\tau_N})\|^2] \leq \frac{2R(L(w_0) - L_*)}{\alpha\sqrt{N}} + \frac{1}{\sqrt{N}}\left(4dR^2 + \alpha dRL\right)\ln\left(1 + \frac{NR^2}{\epsilon}\right)$$
 
@@ -220,27 +220,6 @@ The step size $\alpha$ affects both terms in interesting ways. A larger $\alpha$
 
 The parameter $\epsilon$, which is added for numerical stability, appears in the logarithmic term. While it's often treated as a minor implementation detail, this bound shows that it does have a theoretical impact on convergence, albeit a relatively small one due to the logarithmic dependence.
 
-### Main Results for Adam
-
-Having examined Adagrad's convergence guarantees, we now turn to Adam's theoretical properties. The following result, also adapted from Défossez et al. (2022), provides a bound on the expected squared gradient norm for Adam without momentum ($\beta_1 = 0$).
-
-For Adam with step size $\alpha_n = \alpha \sqrt{\frac{1-\beta_2^n}{1-\beta_2}}$ where $\alpha > 0$ and $0 < \beta_2 < 1$, after $N$ iterations we have:
-
-$$\mathbb{E}[\|\nabla L(w_{\tau_N})\|^2] \leq \frac{2R(L(w_0) - L_*)}{\alpha N} + E\left(\frac{1}{N}\ln\left(1 + \frac{R^2}{(1-\beta_2)\epsilon}\right) - \ln(\beta_2)\right)$$
-
-where $E = \frac{4dR^2}{\sqrt{1-\beta_2}} + \frac{\alpha dRL}{1-\beta_2}$.
-
-This bound has a structure similar to Adagrad's, with an initialization term and a steady-state error term. However, there are several important differences. First, notice that the initialization term decays at a rate of $O(1/N)$ rather than $O(1/\sqrt{N})$, indicating potentially faster convergence in the early stages of optimization. This faster rate comes from the specific step size schedule $\alpha_n$ that incorporates the $\beta_2$ parameter.
-
-Second, the steady-state error term scales with $1/N$ rather than $1/\sqrt{N}$, but includes a factor that depends on $1/\sqrt{1-\beta_2}$ and $1/(1-\beta_2)$. As $\beta_2$ approaches 1, these terms grow larger, potentially offsetting the faster convergence rate. This reveals an important trade-off: larger values of $\beta_2$ provide better smoothing of gradient estimates but can slow convergence if not properly balanced with the step size.
-
-Like Adagrad, Adam's bound includes a dependence on the problem dimension $d$, which appears in both the $4dR^2$ and $\alpha dRL$ terms. This dimension dependence suggests that Adam, like Adagrad, might face challenges in very high-dimensional problems under certain conditions.
-
-An interesting connection between Adam and Adagrad emerges when we consider the optimal parameter settings for a finite horizon. If we set $\beta_2 = 1-1/N$ and $\alpha \sim 1/\sqrt{N}$, Adam's bound becomes very similar to Adagrad's. In fact, in this regime, Adam behaves like Adagrad: both effectively average gradients over a window of size approximately $N$, with Adam using an exponential moving average and Adagrad using a simple average.
-
-This equivalence suggests that Adam can be viewed as a generalization of Adagrad, where $\beta_2$ controls the effective window size for gradient averaging. With appropriate parameter settings, Adam can either behave like constant step-size SGD (small $\beta_2$) or like Adagrad (large $\beta_2$). This flexibility allows Adam to adapt to different problem characteristics, though it also means that parameter tuning can be crucial for optimal performance.
-
-It's worth noting that the step size schedule in this theorem differs from the constant step size often used in practice. The schedule $\alpha_n = \alpha \sqrt{\frac{1-\beta_2^n}{1-\beta_2}}$ is designed to achieve theoretical convergence, while practical implementations often use a constant step size with additional heuristics like learning rate scheduling to improve performance.
 
 ### Main Results for Adam
 
