@@ -102,8 +102,8 @@ title: Adaptive Optimization Methods - Cheat Sheet
     *   In Adam, the gradient term $g_t = \nabla \ell + \lambda w_{t-1}$ gets included in $m_t$ and $v_t$, so the effective weight decay depends on $\sqrt{\hat{v}_t}$, making it inconsistent across parameters.
 *   **AdamW Solution:** Decouple weight decay from the adaptive gradient update.
 *   **AdamW Update Rule:**
-    1.  Apply weight decay directly: $w'_{t-1} = (1 - \alpha\lambda)w_{t-1}$ (note: sometimes uses $\lambda$ not scaled by $\alpha$)
-    2.  Compute Adam update using $w'_{t-1}$ and $g_t = \nabla \ell(w'_{t-1})$ (gradient *without* L2 term):
+    1.  Apply weight decay directly: $$w_{t-1}'= (1 - \alpha\lambda)w_{t-1}$$ (note: sometimes uses $\lambda$ not scaled by $\alpha$)
+    2.  Compute Adam update using $w'\_{t-1}$ and $g\_t = \nabla \ell(w'\_{t-1})$ (gradient *without* L2 term):
         $$w_t = w'_{t-1} - \alpha \frac{\hat{m}_t}{\sqrt{\hat{v}_t} + \epsilon}$$
     *   *Simplified view from lecture notes:*
         $$w_t = (1 - \alpha\lambda)w_{t-1} - \frac{\alpha}{\sqrt{\hat{v}_t} + \epsilon}\hat{m}_t \quad \text{(where } m_t, v_t \text{ use } g_t = \nabla\ell(w_{t-1}))$$
@@ -113,7 +113,7 @@ title: Adaptive Optimization Methods - Cheat Sheet
 
 **Slide 9: Figure - Adagrad LR Decay**
 
-![section 2 figure 1](figures/section2_figures.png) (Assuming first panel)
+![section 2 figure 1](figures/section2_figures.png) 
 *   **Shows:** Effective learning rate ($\alpha / \sqrt{G_{t,ii}+\epsilon}$) for two parameters.
 *   **Takeaway:**
     *   Parameter with larger gradients (green) sees LR decay *faster*.
@@ -125,7 +125,7 @@ title: Adaptive Optimization Methods - Cheat Sheet
 
 **Slide 10: Figure - Accumulation vs EMA**
 
-![section 2 figure 2](figures/section2_figures.png) (Assuming second panel)
+![section 2 figure 2](figures/section2_figures.png) 
 *   **Shows:** Denominator term behavior.
     *   Adagrad (red): Sum of squares ($G_{t,ii}$) grows monotonically.
     *   Adam (blue, green, purple): EMA of squares ($v_t$, uncorrected) stabilizes, forgets old gradients. Different $\beta_2$ values control smoothing/memory.
@@ -135,7 +135,7 @@ title: Adaptive Optimization Methods - Cheat Sheet
 
 **Slide 11: Figure - Adam Bias Correction**
 
-![section 2 figure 3](figures/section2_figures.png) (Assuming third panel)
+![section 2 figure 3](figures/section2_figures.png) 
 *   **Shows:** Impact of bias correction on moment estimates ($m_t, v_t$).
     *   Dashed lines: Uncorrected estimates ($m_t, v_t$) start near zero and slowly ramp up.
     *   Solid lines: Bias-corrected estimates ($\hat{m}_t, \hat{v}_t$) converge to true values much faster.
@@ -146,10 +146,10 @@ title: Adaptive Optimization Methods - Cheat Sheet
 **Slide 12: Theory - Assumptions**
 
 *   **Goal:** Analyze convergence $\mathbb{E}[\|\nabla L(w)\|^2] \to 0$.
-*   **Setup:** $L(w) = \mathbb{E}_{z \sim \mathcal{D}}[\ell(w, z)]$
-*   **Assumption 1: Lower Bounded:** $L(w) \geq L_*$ for some finite $L_*$. (Prevents divergence to $-\infty$).
+*   **Setup:** $L(w) = \mathbb{E}\_{z \sim \mathcal{D}}[\ell(w, z)]$
+*   **Assumption 1: Lower Bounded:** $L(w) \geq L\_* $ for some finite $L\_* $. (Prevents divergence to $-\infty$).
 *   **Assumption 2: Bounded Gradients ($\ell_\infty$ norm):** $\|\nabla \ell(w, z)\|_\infty \leq R$ for all $w, z$.
-    *   $\|x\|_\infty = \max_i |x_i|$.
+    *   $\\|x\\|\_\infty = \max\_i \|x_i\|$.
     *   Needed because methods adapt *coordinate-wise*. Bounds per-coordinate gradient magnitude. (Contrast with typical SGD analysis using $\ell_2$ bounds on variance).
 *   **Assumption 3: Smoothness:** $L(w)$ is $L$-smooth (Lipschitz gradient).
     *   $\|\nabla L(w) - \nabla L(w')\|_2 \leq L\|w - w'\|_2$. Ensures gradient doesn't change too rapidly.
