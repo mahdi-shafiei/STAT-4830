@@ -5,6 +5,8 @@ title: A Playbook for Tuning Deep Learning Models
 
 # A Playbook for Tuning Deep Learning Models
 
+[Cheat Sheet](cheatsheet.md)
+
 ## Table of contents
 1.  [Introduction](#introduction-beyond-algorithms-to-process)
 2.  [Initial Setup](#initial-setup-foundational-choices)

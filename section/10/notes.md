@@ -6,6 +6,7 @@ title: Benchmarking Optimizers - Challenges and Some Empirical Results
 # Benchmarking Optimizers: Challenges and Some Empirical Results
 
 [Cheat Sheet](cheatsheet.md)
+[YouTube Presentation on AlgoPerf](https://www.youtube.com/watch?v=_yX1ItxReLY)
 
 ## Table of contents
 1. [Introduction: The Optimizer Comparison Problem](#introduction-the-optimizer-comparison-problem)
