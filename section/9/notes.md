@@ -19,8 +19,6 @@ title: Adagrad, Adam, and AdamW Optimization
 
 ## Motivation
 
-Stochastic Gradient Descent (SGD) uses mini-batches or individual samples ($z$) to estimate gradients $\nabla \ell(w, z)$ for minimizing a loss $L(w) = \mathbb{E}_{z \sim \mathcal{D}}[\ell(w, z)]$. This reduces per-iteration cost compared to full-batch methods. However, standard SGD uses a single learning rate ($\alpha$) for all parameters, leading to inefficiency on some problems.
-
 SGD performs poorly when input features have varying scales or the loss function $L(w)$ is poorly conditioned. Poor conditioning means the Hessian matrix $\nabla^2 L(w)$ has eigenvalues with widely different magnitudes, measured by the condition number $\kappa = \lambda_{\max} / \lambda_{\min}$. The loss landscape then exhibits elongated valleys. SGD may oscillate across steep dimensions while progressing slowly along flat dimensions. For deep learning models, parameter gradients often vary significantly across layers, exacerbating this issue.
 
 Consider a quadratic problem 
