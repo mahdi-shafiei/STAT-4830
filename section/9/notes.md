@@ -1,6 +1,6 @@
 ---
 layout: course_page
-title: Adagrad, Adam, and AdamW Optimization
+title: Adagrad, Adam, and AdamW 
 ---
 
 # Adagrad, Adam, and AdamW

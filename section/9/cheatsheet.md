@@ -1,10 +1,10 @@
 ---
 layout: course_page
-title: Adaptive Optimization Methods - Cheat Sheet
+title: Adagrad, Adam, and AdamW  - Cheat Sheet
 ---
 
 
-### Adaptive Optimization: Cheat Sheet / Slides
+### Adagrad, Adam, and AdamW: Cheat Sheet / Slides
 
 ---
 
