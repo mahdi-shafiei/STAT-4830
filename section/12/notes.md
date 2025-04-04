@@ -224,19 +224,162 @@ These collective operations are typically implemented in specialized communicati
 
 ## 6. Parallelism Strategies
 
-Having established the structure of large transformer models and the critical role of activation memory, we now turn to the primary strategies used to distribute the training workload across multiple accelerator devices. These techniques allow us to overcome the memory and compute limitations of a single device. This section details the main parallelism paradigms as presented in the Ultrascale Playbook: Data Parallelism, Pipeline Parallelism, Tensor Parallelism, and Fully Sharded Data Parallelism. Each approach offers different trade-offs regarding communication overhead, memory efficiency, and implementation complexity.
+Having introduced the fundamental distributed communication primitives in Section 5, we now explore the primary parallelism strategies employed to train large models across multiple devices. These strategies distribute the computational workload and model state in distinct ways, each presenting specific advantages and limitations concerning memory usage, compute efficiency, and communication overhead. The techniques described here follow the exposition in the Ultrascale Playbook ([Playbook Link Here](https://huggingface.co/spaces/nanotron/ultrascale-playbook)).
 
-### 6.1 Data Parallelism (DP)
+### 6.1 Data Parallelism (DP) & Optimizations
 
-Data Parallelism is perhaps the most common and conceptually straightforward approach to distributed training ([Playbook, Section: data_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=data_parallelism)). In DP, each participating worker (typically a GPU) holds a complete, identical copy of the entire model, including all parameters $w$. Training proceeds by splitting a large global data batch $\mathcal{B}$ into smaller micro-batches, $\mathcal{B}_k$, one for each worker $k$.
+Data Parallelism (DP) is a common strategy where the complete model is replicated on each participating worker device (e.g., gpu). The global data batch $\mathcal{B}$ is divided into smaller micro-batches, $\mathcal{B}_k$. Each worker $k$ independently processes its assigned micro-batch $\mathcal{B}_k$ through the forward and backward passes using its local model replica to compute local gradients $\nabla \ell(w, \mathcal{B}_k)$. ([Playbook, Section: data_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=data_parallelism)).
 
-During each training step, every worker independently performs the forward pass using its local micro-batch $\mathcal{B}\_k$ and the current model parameters $w$ to compute the loss $\sum_{z \in \mathcal{B}\_k} \ell(w, z)$. Subsequently, each worker computes the gradients of this loss with respect to its copy of the model parameters, resulting in local gradients $g\_k = \sum\_{z \in \mathcal{B}\_k} \nabla\_w \ell(w, z)$. To ensure all model replicas remain consistent, these local gradients must be aggregated across all $N$ workers to obtain the gradient for the full global batch, $g = \sum\_{k=1}^N g\_k$. This aggregation is typically achieved using a collective communication operation called AllReduce, which sums the gradient tensors from all workers and distributes the final sum back to every worker. After the AllReduce operation, each worker has the total gradient sum $g$. Each worker then computes the average gradient $\hat{g} = g / \|\mathcal{B}\|$ and performs an identical parameter update (e.g., $w \leftarrow w - \eta \hat{g}$ using an optimizer like SGD or Adam), ensuring all model replicas stay synchronized.
+Since gradients are computed on different data subsets, they must be synchronized across all workers before the parameters $w$ are updated. This ensures that all model replicas remain consistent. Typically, the gradients are averaged across all workers using an AllReduce collective operation (Section 5). The synchronized gradient $\nabla L(w, \mathcal{B}) = \frac{1}{N_d} \sum_{k=1}^{N_d} \nabla \ell(w, \mathcal{B}_k)$ (where $N_d$ is the number of DP workers) is then used by each worker to perform an identical optimizer step.
 
-![Figure 1: Data parallelism replicates the model N times across N devices. Each device processes a fraction of the batch and the resulting gradients are averaged across devices using an AllReduce operation.](figures/dp.png)
-*Figure 1: Data parallelism replicates the model N times across N devices. Each device processes a fraction of the batch and the resulting gradients are averaged across devices using an AllReduce operation. ([Playbook, Section: data_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=data_parallelism))*
+*(Instruction: Insert Figure 10 placeholder here)*
+**Figure 10: Data Parallelism Overview**
+> **Playbook Quote for Figure 10:** "The idea behind data parallelism (DP) is to replicate the model on several GPUs... gradients from the model instances will be averaged using an operation called ‘all-reduce’" ([Playbook, Section: data_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=data_parallelism), adapted from figure and text).
 
-> **Playbook Quote for Figure 1:** "Figure 1: Data parallelism replicates the model N times across N devices. Each device processes a fraction of the batch and the resulting gradients are averaged across devices using an AllReduce operation." ([Playbook, Section: data_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=data_parallelism), figure caption).
+A naive DP implementation would perform the AllReduce only after the entire backward pass completes on all workers. This leaves gpus idle during the communication phase. Performance is improved by overlapping the AllReduce communication with the backward pass computation. As soon as the gradients for a subset of parameters are computed (e.g., for the final layers of the model), the AllReduce operation for those specific gradients can be initiated while the backward pass continues computing gradients for earlier layers. This overlap is often achieved using framework-specific hooks attached to parameter gradients.
 
-The primary communication cost in DP stems from the AllReduce operation performed on the gradients in each step. The time taken by this operation depends on the number of model parameters and the communication bandwidth between the workers.
+*(Instruction: Insert Figure 11 placeholder here)*
+**Figure 11: Data Parallelism with Computation-Communication Overlap**
+> **Playbook Quote for Figure 11:** "...gradients (red boxes) for a layer can be gathered and summed even before the gradients from earlier layers... have been computed... Overlapping computation and communication reduces the time spent waiting for gradient synchronization..." ([Playbook, Section: data_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=data_parallelism), adapted from figure and text).
 
-Data Parallelism is relatively simple to implement and can provide significant training speedups, especially when the communication overhead is small compared to the computation time per step. However, its main limitation is memory usage. Since each worker holds a full replica of the model parameters, the optimizer states, and the activations generated for its micro-batch, DP does not reduce the memory footprint required per device. Therefore, DP alone cannot be used to train models whose parameters and activations exceed the memory capacity of a single worker.
+Further efficiency gains can be achieved through gradient bucketing. Instead of initiating a separate AllReduce operation for each parameter or small group of parameters as soon as their gradients are ready, gradients are collected into larger buffers, or "buckets." A single AllReduce operation is then performed for each bucket. This reduces the number of distinct communication calls, which can lower overhead, especially on networks where latency is a factor.
+
+*(Instruction: Insert Figure 12 placeholder here)*
+**Figure 12: Data Parallelism with Gradient Bucketing**
+> **Playbook Quote for Figure 12:** "...group gradients into buckets and launch a single all-reduce for all the gradients within the same bucket instead of performing independent all-reduce for each gradient." ([Playbook, Section: data_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=data_parallelism), adapted from figure and text).
+
+When using gradient accumulation (performing multiple forward/backward passes for several micro-batches before one optimizer step), the AllReduce synchronization should only occur after the gradients for *all* accumulated micro-batches have been computed and summed locally. Synchronization after each intermediate micro-batch's backward pass is unnecessary and adds overhead. Frameworks typically provide mechanisms, like a `no_sync()` context manager, to disable gradient synchronization during the intermediate steps of gradient accumulation.
+
+Data parallelism is conceptually straightforward and effectively parallelizes computation over the data dimension, leading to increased training throughput. However, its primary limitation is memory usage: every worker must store the entire model, its gradients, the optimizer states, and the activations for its micro-batch. Consequently, DP alone cannot be used if the model itself is too large to fit on a single worker. Additionally, the cost of the AllReduce operation scales with model size and can become a bottleneck as the number of workers ($N_d$) grows large.
+
+### 6.2 ZeRO (Zero Redundancy Optimizer) Stages
+
+The ZeRO (Zero Redundancy Optimizer) techniques aim to overcome the memory limitations of standard Data Parallelism by eliminating the redundant storage of model state (optimizer states, gradients, and parameters) across DP workers. Instead of replication, ZeRO partitions these states, assigning each DP worker responsibility for only a fraction ($1/N_d$) of the total state. ([Playbook, Section: zero](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=zero)).
+
+The core idea is partitioning. While activations necessarily differ across DP workers (due to different input data) and cannot be sharded this way, the other three components are identical across replicas in standard DP after synchronization and are thus candidates for partitioning. ZeRO implements this partitioning in three progressive stages.
+
+ZeRO Stage 1 partitions only the optimizer states. Each worker holds $1/N_d$ of the states (e.g., Adam momentum/variance). During training, the backward pass computes full gradients locally. These gradients are then reduced using ReduceScatter (Section 5), such that worker $k$ receives the final, summed gradient shard corresponding only to the parameters whose optimizer states it manages. Worker $k$ performs the optimizer update only on its local parameter shard (often maintained in FP32 for precision). Finally, an AllGather collective (Section 5) is required to reassemble the complete, updated set of parameters (typically in the working precision like BF16) on all workers before the next forward pass begins.
+
+*(Instruction: Insert Figure 13 placeholder here)*
+**Figure 13: ZeRO-1 Communication Pattern**
+> **Playbook Quote for Figure 13:** [Find quote in playbook describing the ZeRO-1 figure, highlighting ReduceScatter for grads and AllGather for params after optimizer step.] ([Playbook, Section: zero](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=zero)).
+
+ZeRO Stage 2 partitions both the optimizer states and the gradients. The key change from ZeRO-1 is that the backward pass communication becomes a ReduceScatter directly. This means each worker only materializes the $1/N_d$ portion of the summed gradients it needs for its optimizer state shard, saving memory compared to ZeRO-1 which required temporary storage of full gradients before the ReduceScatter. The subsequent optimizer step and parameter AllGather remain similar to ZeRO-1.
+
+ZeRO Stage 3, often referred to as Fully Sharded Data Parallelism (FSDP) in PyTorch implementations, partitions all three components: parameters, gradients, and optimizer states. Each worker persistently stores only its assigned $1/N_d$ shard of the parameters. During the forward pass, as computation proceeds layer by layer, each worker uses an AllGather operation to temporarily retrieve the necessary full parameters for the current layer, performs the computation, and then immediately discards the parameter shards it does not own. The backward pass operates similarly, gathering parameters as needed and computing gradients only for the locally owned parameter shard. Gradient synchronization occurs via ReduceScatter, as in ZeRO-2.
+
+*(Instruction: Insert Figure 14 placeholder here)*
+**Figure 14: ZeRO-3 / FSDP Parameter Handling (Forward and Backward)**
+> **Playbook Quote for Figure 14:** "So as we perform the forward pass... we retrieve the necessary parameters on demand and immediately flush them... The backward pass works the same way..." ([Playbook, Section: zero](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=zero), adapted from `dp_zero3_fwd.svg` / `dp_zero3_bwd.svg` descriptions).
+
+The progressive partitioning offered by ZeRO stages significantly reduces the memory required per worker for model state, allowing DP techniques to be applied to much larger models. ZeRO-3 offers the maximum savings for model state components.
+
+*(Instruction: Insert Figure 15 placeholder here)*
+**Figure 15: ZeRO Memory Savings Overview**
+> **Playbook Quote for Figure 15:** [Find quote in playbook explaining the `zero_memory.svg` diagram, showing memory reduction formulas or trends for parameters ($\Psi$), optimizer states (k$\Psi$), and gradients across ZeRO stages and DP degree $N_d$.] ([Playbook, Section: zero](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=zero)).
+
+The primary advantage of ZeRO is the substantial reduction in memory required per worker for parameters, gradients, and optimizer states. This enables training larger models using data parallelism. However, ZeRO introduces more communication compared to standard DP. ZeRO-1 and ZeRO-2 change the gradient AllReduce to a ReduceScatter and add a parameter AllGather. ZeRO-3 replaces the single parameter AllGather with potentially many AllGather operations throughout the forward and backward passes (one per layer or block being gathered). The performance of ZeRO-3 relies heavily on the ability to effectively overlap this parameter gathering (prefetching) with computation. Importantly, none of the ZeRO stages partition the activation memory.
+
+### 6.3 Tensor Parallelism (TP)
+
+Tensor Parallelism (TP) addresses scenarios where even a single layer's weights or activations exceed the memory of one device, or where further parallelization *within* a layer is desired to speed up computation. TP achieves this by partitioning the execution of individual large operations, such as the matrix multiplications found in transformer MHA and FFN layers, across multiple workers. These workers compute on shards of the tensors involved in the operation. ([Playbook, Section: tensor_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=tensor_parallelism)).
+
+Consider a linear layer computation $Y = XW$. TP typically splits the weight matrix $W$ and performs corresponding computations on shards:
+*   **Column Parallelism:** $W$ is split column-wise across $N\_{tp}$ workers: $W = [W\_1 \| W\_2 \| \dots \| W\_{N\_{tp}}]$. Each worker $k$ computes $Y\_k = X W\_k$ using the *full* input $X$ (which must be available to all TP workers). The final output $Y$ exists logically as the concatenation $[Y\_1 \| \dots \| Y\_{N_{tp}}]$ across the workers' memories.
+*   **Row Parallelism:** $W$ is split row-wise: $W = [W\_1^T \| \dots \| W_{N\_{tp}}^T]^T$. The input $X$ is also considered split row-wise (often matching the output sharding of a preceding column-parallel layer). Each worker $k$ computes a partial result $Y_k = X\_k W\_k$. The final output $Y = \sum\_{k=1}^{N\_{tp}} Y_k$ is obtained by summing the partial results using an AllReduce collective across the TP workers.
+
+*(Instruction: Insert Figure 16 placeholder here)*
+**Figure 16: Tensor Parallelism for Linear Layers (Column and Row)**
+> **Playbook Quote for Figure 16:** [Find quote in playbook describing the TP diagram(s) for linear layers, explaining column splitting requiring broadcast/identity on input and row splitting requiring AllReduce on output.] ([Playbook, Section: tensor_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=tensor_parallelism)).
+
+In transformer blocks, FFN layers commonly use a Column-Parallel followed by a Row-Parallel layer. This configuration avoids an AllReduce between the two FFN layers. MHA layers apply similar partitioning: column parallelism for the $W_Q, W_K, W_V$ projections (effectively giving each worker a subset of attention heads) and row parallelism for the output projection $W_O$. A practical constraint is that the TP degree ($N_{tp}$) should ideally divide the number of attention heads evenly.
+
+*(Instruction: Insert Figure 17 placeholder here)*
+**Figure 17: Tensor Parallelism Applied to Transformer FFN and MHA**
+> **Playbook Quote for Figure 17:** [Find quote in playbook describing the application of column/row parallelism within FFN and MHA blocks.] ([Playbook, Section: tensor_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=tensor_parallelism)).
+
+TP necessitates communication collectives (like AllReduce for row parallelism, potentially identity/broadcast/AllGather depending on exact data flow for column parallelism) *within* the forward and backward computation of a single layer. This demands high-bandwidth, low-latency interconnects, making TP most effective within a single compute node equipped with connections like NVLink.
+
+*(Instruction: Insert Figure 18 placeholder here)*
+**Figure 18: Communication Timeline in Tensor Parallelism**
+> **Playbook Quote for Figure 18:** "...we hit a synchronization point with the AllReduce operation that cannot be overlapped with computation. This exposed communication overhead is necessary to combine partial results across tensor-parallel ranks..." ([Playbook, Section: tensor_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=tensor_parallelism)).
+
+Tensor Parallelism reduces memory requirements for weights, gradients, optimizer states, *and* activations within the parallelized layers, as these are sharded across the TP workers. It can also reduce the wall-clock time per layer if the computation savings outweigh the communication overhead. However, this communication overhead is significant and limits TP's scalability, especially across nodes with slower interconnects. TP also increases implementation complexity and does not naturally parallelize all layer types (like Layer Normalization), which still require access to the full hidden dimension representation, limiting overall activation memory savings.
+
+### 6.4 Sequence Parallelism (SP)
+
+Sequence Parallelism (SP) is an extension designed to work alongside Tensor Parallelism (TP). It addresses a limitation of TP: operations like Layer Normalization or Dropout typically require the input tensor to be complete along the hidden dimension ($h$), preventing TP's hidden-dimension sharding from reducing activation memory for these specific operations. SP mitigates this by sharding the activations along the *sequence* dimension ($s$) for these particular operations, while TP handles the hidden dimension sharding for matrix multiplications. ([Playbook, Section: sequence_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=sequence_parallelism)).
+
+SP involves partitioning the input sequence across the workers participating in the TP group. Operations like LayerNorm can then be applied locally to each sequence chunk. However, transitions are required when moving between TP-sharded regions (where tensors are split along dimension $h$) and SP-sharded regions (split along dimension $s$). To enter a TP region (like a column-parallel linear layer), an AllGather operation is performed along the sequence dimension to reconstruct the full tensor needed by the TP layer. To exit a TP region (like after a row-parallel linear layer whose output needs to be sharded by sequence for the subsequent LayerNorm), a ReduceScatter operation is used along the sequence dimension. This ReduceScatter simultaneously performs the necessary reduction (summing partial results from the row-parallel layer) and distributes the result correctly sharded by sequence dimension.
+
+*(Instruction: Insert Figure 19 placeholder here)*
+**Figure 19: Tensor Sharding and Communication in TP vs. TP+SP**
+> **Playbook Quote for Figure 19:** [Find quote in playbook explaining the figure with f/f*/g/g*, describing the transitions: "g" operation (all-gather) combines... back to full sequence length... "g*" operation (reduce-scatter) which reduces... while scattering along sequence dimension".] ([Playbook, Section: sequence_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=sequence_parallelism)).
+
+The communication volume with SP is comparable to TP alone, but the pattern shifts to using AllGather and ReduceScatter at the boundaries between TP and SP execution regions. It still demands high-bandwidth intra-node interconnects.
+
+The main advantage of Sequence Parallelism is that it further reduces the peak activation memory footprint compared to using only Tensor Parallelism, by allowing activations for operations like LayerNorm to remain sharded along the sequence dimension. This can enable larger batch sizes or sequence lengths within a TP group. However, SP inherits the communication bottlenecks and intra-node scaling limitations of TP and adds another layer of implementation complexity due to the sharding transitions.
+
+### 6.5 Context Parallelism (CP) & Ring Attention
+
+Context Parallelism (CP) is designed to tackle the activation memory challenge posed by extremely long input sequences. Even with TP+SP and activation recomputation, the memory required can become prohibitive for sequence lengths in the tens or hundreds of thousands, as certain parts of the computation within TP still effectively process the full sequence length. CP addresses this by partitioning the input sequence across workers *globally* for nearly all layers, not just specific ones like in SP. ([Playbook, Section: context_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=context_parallelism)).
+
+Most operations in a transformer (like FFNs, LayerNorm) can operate independently on their local sequence chunk when the input is sharded along the sequence dimension. The main challenge lies in the self-attention mechanism (MHA), where each token (query) potentially needs to attend to all other tokens (keys and values) in the sequence. If the sequence is distributed, workers must communicate to exchange the necessary Key (K) and Value (Val) information.
+
+Ring Attention provides an efficient communication pattern for MHA under Context Parallelism. Workers are arranged in a logical ring. Each worker computes attention scores using its local Query (Q) chunk against the Key (K) and Value (Val) chunks it currently holds. Simultaneously, it sends its current K/V chunk to the next worker in the ring and receives the K/V chunk from the previous worker asynchronously. This allows the communication of K/V chunks to be overlapped with the local attention computation, minimizing idle time.
+
+*(Instruction: Insert Figure 20 placeholder here)*
+**Figure 20: Ring Attention Mechanism**
+> **Playbook Quote for Figure 20:** [Find quote in playbook describing the ring attention animation/diagram, explaining the passing of K/V chunks and overlap: "each GPU first initiates an asynchronous communication... computes the attention score... receives keys and values from the previous GPU..."] ([Playbook, Section: context_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=context_parallelism)).
+
+For causal attention masks used in decoder models, simply splitting the sequence sequentially can lead to computational load imbalance (early sequence chunks require less computation). ZigZag attention partitioning distributes chunks non-sequentially across workers to achieve better load balance during the Ring Attention computation.
+
+*(Instruction: Insert Figure 21 placeholder here)*
+**Figure 21: ZigZag Partitioning for Load Balancing in Ring Attention**
+> **Playbook Quote for Figure 21:** "...assigning the tokens not purely sequential to the GPUs but by mixing the ordering... computation is now balanced across all GPUs." ([Playbook, Section: context_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=context_parallelism), adapted from `cp_zigzagmask.svg` description).
+
+Communication in CP primarily involves the ring-based exchange of K/V chunks within the attention layers. Additionally, similar to Data Parallelism (since each worker processes different parts of the sequence), an AllReduce operation is needed to synchronize gradients across the CP group before the optimizer step.
+
+Context Parallelism enables training on exceptionally long sequences by sharding activation memory along the sequence dimension throughout the model. Ring Attention offers an efficient mechanism to handle the necessary communication within the attention layers. However, it adds complexity to the attention mechanism and still requires gradient synchronization across the group.
+
+### 6.6 Pipeline Parallelism (PP) & Scheduling
+
+Pipeline Parallelism (PP) is primarily motivated by the need to train models whose parameters are too large to fit even on a group of tensor-parallel workers within a single node, or to scale training across a large number of nodes where TP's communication overhead becomes prohibitive. PP partitions the model's layers *sequentially* into stages. Each stage, consisting of a contiguous block of layers, is assigned to a different worker or group of workers. Data flows through the pipeline, with the output of stage $i$ becoming the input for stage $i+1$. ([Playbook, Section: pipeline_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=pipeline_parallelism)).
+
+A naive implementation where a full batch passes completely through stage 1, then stage 2, and so on, is highly inefficient. Only one stage is computationally active at any given time, leaving all other stages idle. This idle time is known as the pipeline bubble. The size of the bubble relative to the useful computation time increases linearly with the number of pipeline stages ($p$), drastically reducing hardware utilization.
+
+*(Instruction: Insert Figure 22 placeholder here)*
+**Figure 22: Pipeline Bubble in Naive Sequential Execution**
+> **Playbook Quote for Figure 22:** "An example of Pipeline parallelism... The remaining idle time is indicated in grey and usually called the 'bubble'..." ([Playbook, Section: pipeline_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=pipeline_parallelism)).
+
+To mitigate the bubble, the global data batch is split into multiple smaller micro-batches ($m$). These micro-batches are processed through the pipeline stages in a staggered manner, allowing multiple stages to operate concurrently on different micro-batches. Different schedules exist for managing the flow of these micro-batches:
+*   **All-Forward-All-Backward (AFAB):** All micro-batches complete their forward pass through all stages before any backward pass begins. This is relatively simple to implement but requires storing activations for all $m$ micro-batches until the backward phase begins, potentially leading to high peak activation memory. The relative bubble size is reduced to approximately $(p-1)/m$.
+*   **One-Forward-One-Backward (1F1B):** This schedule interleaves forward and backward passes more tightly. As soon as a micro-batch finishes its forward pass through the last stage, its backward pass begins, propagating backward through the stages. This allows subsequent micro-batches' forward passes to overlap with preceding micro-batches' backward passes. 1F1B significantly reduces peak activation memory compared to AFAB (roughly proportional to $p$ micro-batches instead of $m$) but maintains a similar bubble size of $(p-1)/m$ and increases scheduling complexity.
+
+*(Instruction: Insert Figure 23 placeholder here)*
+**Figure 23: Pipeline Parallelism Schedules (AFAB and 1F1B)**
+> **Playbook Quote for Figure 23:** [Find quotes describing the AFAB (`pp_afab2.svg`) and 1F1B (`image.png` with 1F1B schedule) figures, highlighting micro-batch flow and activation storage needs.] ([Playbook, Section: pipeline_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=pipeline_parallelism)).
+
+More advanced schedules exist. **Interleaved Stages** assign non-contiguous layers (e.g., odd layers to stage 1, even layers to stage 2) to potentially reduce the bubble further, but increase communication between stages. Techniques like **ZeroBubble** or **DualPipe** aim to nearly eliminate the bubble by decomposing the backward pass computation (separating input-gradient calculation from weight-gradient calculation) and creating highly optimized, fine-grained schedules, albeit with significant implementation complexity.
+
+Communication in PP primarily involves point-to-point transfers between adjacent pipeline stages: sending activations forward and gradients backward for each micro-batch. This communication pattern is typically less demanding on network bandwidth, especially across nodes, compared to the collective operations used frequently in TP or FSDP.
+
+Pipeline Parallelism enables scaling model depth across many devices and is less sensitive to inter-node communication bandwidth than TP. However, it introduces the pipeline bubble inefficiency, which limits ideal scaling. Effective implementation requires complex scheduling and careful load balancing of computation across stages. Activation memory usage depends critically on the chosen schedule.
+
+### 6.7 Expert Parallelism (EP)
+
+Expert Parallelism (EP) is a specialized technique applicable only to Mixture-of-Experts (MoE) model architectures. MoE models replace some standard FFN layers with a larger set of parallel "expert" FFNs. For each input token, a routing mechanism (a "gate") selects a small subset of these experts (often just one or two) to process that token. ([Playbook, Section: expert_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=expert_parallelism)).
+
+*(Instruction: Insert Figure 24 placeholder here)*
+**Figure 24: Mixture-of-Experts (MoE) Layer Concept**
+> **Playbook Quote for Figure 24:** "Illustrationg [sic] of a MoE layer taken from the Switch Transformers paper" ([Playbook, Section: expert_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=expert_parallelism)).
+
+Expert Parallelism leverages this architecture by assigning different expert networks to different workers. Since the experts operate independently, they can be distributed. During the forward pass, after the router determines which expert(s) each token should be sent to, an AlltoAll collective communication operation is used. This operation efficiently routes token representations from their current worker to the worker(s) hosting their assigned expert(s). After computation by the expert(s), another AlltoAll operation gathers the results back to the original workers.
+
+Expert Parallelism alone only parallelizes the MoE layers. Other layers (like attention) would perform redundant computations on all workers if only EP were used. Therefore, EP is almost always combined with Data Parallelism. In such a setup, the workers are typically arranged in a 2D grid. One dimension handles Data Parallelism (replicating the non-MoE parts and processing different data micro-batches), while the other dimension handles Expert Parallelism (distributing the experts within each DP replica).
+
+*(Instruction: Insert Figure 25 placeholder here)*
+**Figure 25: Combining Expert Parallelism (EP) and Data Parallelism (DP)**
+> **Playbook Quote for Figure 25:** [Find quote in playbook describing the `ep_schema.png` figure, illustrating the combination of DP and EP.] ([Playbook, Section: expert_parallelism](https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=expert_parallelism)).
+
+Expert Parallelism allows models to scale to extremely large parameter counts (by having many experts) while keeping the computational cost per token relatively low (since only a few experts are active). The main drawback is the communication overhead introduced by the AlltoAll operations needed for routing tokens, which can become significant depending on the network and routing patterns. It is only applicable to MoE model architectures.
