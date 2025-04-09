@@ -7,13 +7,7 @@ title: Course Overview
 
 AKA: Optimization in PyTorch
 
-> I'm currently developing this course for Spring 2025. I am literally pushing my thoughts to this public repo as soon as I have them. Be prepared for the course to look rough until the semester starts.
-
-*See a rough outline of the course [here](section/0/notes.md#tentative-course-structure).* 
-
 For lecture notes see [table of contents](toc.md).
-
-**ED/Canvas:** If you have not been added to the course on ED or Canvas, please email me from your Penn email and I'll add you.
 
 **Office Hours:** Tuesdays 12:30-1:30 PM
 

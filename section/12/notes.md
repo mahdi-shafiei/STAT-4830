@@ -129,6 +129,29 @@ $$f(x) = \text{OutputLayer} \circ \text{Block}_L \circ \dots \circ \text{Block}_
 
 In summary, the parameters in a standard Transformer model are concentrated in the embedding matrix $W_E$, the MHA projection matrices ($W_Q, W_K, W_V, W_O$ per layer), the FFN weights ($W_1, W_2$ per layer), the LN parameters ($\gamma, \beta$ per normalization), and the final output projection matrix $W_{LM}$. The computational cost is dominated by the large matrix multiplications performed within the MHA mechanism ($QK^T$, $\text{Scores} \cdot Val$) and the FFN layers ($XW_1$, $HW_2$), repeated across $L$ blocks. Understanding this distribution is crucial for designing effective parallelism strategies.
 
+
+### Common Modifications: Attention Masking and Dropout
+
+The structure described above represents a standard Transformer block. Two common modifications are frequently incorporated for specific modeling purposes or regularization during training: Attention Masking and Dropout.
+
+**Attention Masking** controls which key positions each query position can attend to. This is necessary for tasks like autoregressive language modeling, where a token should not attend to future tokens. Masking is typically implemented by adding a mask matrix $M \in \{0, -\infty\}^{s \times s}$ to the scaled dot-product scores *before* the softmax operation:
+
+$$
+\text{Scores}_i = \text{softmax}_{\text{keys}}\left(\frac{Q_i K_i^T}{\sqrt{d_k}} + M\right) \in \mathbb{R}^{s \times s}
+$$
+
+Where $M_{jk} = -\infty$, the exponentiated value becomes zero, effectively preventing attention from query position $j$ to key position $k$. A common **causal mask** sets $M_{jk} = -\infty$ for all $k > j$ and $M_{jk} = 0$ otherwise. This ensures that position $j$ attends only to positions $k \le j$. Other mask patterns can be used, for example, to ignore padding tokens.
+
+**Dropout** is a regularization technique used during training to prevent overfitting. It randomly sets a fraction $p$ (the dropout probability) of elements in an input tensor to zero and scales the remaining elements by $1/(1-p)$ to maintain the expected value. Dropout is typically applied after the attention output projection ($O_{MHA}$) and after each linear layer within the FFN. Mathematically, during training for an input $Z$:
+
+$$
+\text{Dropout}(Z)_{train} = \frac{1}{1-p} \cdot (Z \odot B)
+$$
+
+where $B$ is a binary mask tensor with elements randomly set to 0 (with probability $p$) or 1 (with probability $1-p$), drawn independently for each training step. During inference, Dropout is deactivated, effectively becoming an identity function ($\text{Dropout}(Z)_{inference} = Z$). The only parameter is the dropout rate $p$.
+
+
+
 ## 3. The Memory Bottleneck: Activations in Backpropagation
 
 PyTorch relies on autodifferentiation (e.g., the formal chain rule) to compute gradients of the loss function $\ell(w, z)$ with respect to the model parameters $w$. Autodifferentiation, or backpropagation as it's called in the deep learning literature, operates by applying the chain rule recursively, starting from the output layer and moving backward through the network. A key requirement of this process is access to intermediate values computed during the forward pass. These intermediate values are often referred to collectively as "activations." Storing these activations consumes significant memory, often becoming the primary bottleneck when training large models. (See Lectures [4](../4/notes.md) and [5](../5/notes.md) for background on computational graphs and automatic differentiation).
