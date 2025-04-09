@@ -29,6 +29,9 @@ This lecture focuses on the system-level challenges and practical strategies for
 
 We will begin by reviewing the Transformer architecture to pinpoint sources of high computational and memory demands. Subsequently, we identify activation memory as a primary bottleneck during backpropagation and introduce activation recomputation as a crucial memory-saving technique. A primer on essential distributed communication primitives follows, providing the foundation for understanding parallelism. The core of the lecture analyzes the main parallelism strategies outlined in the playbook: Data Parallelism (DP), including its memory-efficient variants like ZeRO/Fully Sharded Data Parallelism (FSDP); Tensor Parallelism (TP) and its enhancement, Sequence Parallelism (SP); Context Parallelism (CP) for long sequences; Pipeline Parallelism (PP) with its scheduling considerations; and Expert Parallelism (EP) for Mixture-of-Experts models. Finally, we discuss how these strategies are combined in practice and conclude with guidance on selecting appropriate configurations.
 
+> Note: I wrote this guide for my students after reading through the [Ultrascale Playbook](https://huggingface.co/spaces/nanotron/ultrascale-playbook){:target="_blank"} by myself. The content is essentially a subset of what is covered in the playbook, but I added supporting detail where I struggled to understand concepts. I am grateful to the authors for writing this document and allowing me to include their figures in these notes. 
+
+Almost every figure in this lecture is taken from the Playbook; they were used with permission. 
 
 ## 2. Transformers: Anatomy of a Large Model
 
