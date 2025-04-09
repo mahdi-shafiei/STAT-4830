@@ -40,3 +40,6 @@ title: Table of Contents
 
 [11. A Playbook for Tuning Deep Learning Models](section/11/notes.md)
    > A systematic process for [tuning deep learning models](https://github.com/google-research/tuning_playbook)
+
+[12. Scaling Transformers: Parallelism Strategies from the Ultrascale Playbook](section/12/notes.md)
+   > How do we scale training of transformers to 100s of billions of parameters?
