@@ -18,6 +18,7 @@
 !section/*/figures/
 !section/*/figures/*.png
 !section/*/figures/*.svg
+!section/*/figures/*.gif
 
 # Python
 __pycache__/
