@@ -5,6 +5,8 @@ title: Scaling Transformers - Parallelism Strategies from the Ultrascale Playboo
 
 # Scaling Transformers: Parallelism Strategies from the Ultrascale Playbook
 
+[Cheatsheet](cheatsheet.md){:target="_blank"}
+
 ## Table of Contents
 1.  [Introduction: The Scaling Challenge](#1-introduction-the-scaling-challenge)
 2.  [Transformers: Anatomy of a Large Model](#2-transformers-anatomy-of-a-large-model)
@@ -30,8 +32,6 @@ This lecture focuses on the system-level challenges and practical strategies for
 We will begin by reviewing the Transformer architecture to pinpoint sources of high computational and memory demands. Subsequently, we identify activation memory as a primary bottleneck during backpropagation and introduce activation recomputation as a crucial memory-saving technique. A primer on essential distributed communication primitives follows, providing the foundation for understanding parallelism. The core of the lecture analyzes the main parallelism strategies outlined in the playbook: Data Parallelism (DP), including its memory-efficient variants like ZeRO/Fully Sharded Data Parallelism (FSDP); Tensor Parallelism (TP) and its enhancement, Sequence Parallelism (SP); Context Parallelism (CP) for long sequences; Pipeline Parallelism (PP) with its scheduling considerations; and Expert Parallelism (EP) for Mixture-of-Experts models. Finally, we discuss how these strategies are combined in practice and conclude with guidance on selecting appropriate configurations.
 
 > Note: I wrote this guide for my students after reading through the [Ultrascale Playbook](https://huggingface.co/spaces/nanotron/ultrascale-playbook){:target="_blank"} by myself. The content is essentially a subset of what is covered in the playbook, but I added supporting detail where I struggled to understand concepts. I am grateful to the authors for writing this document and allowing me to include their figures in these notes. 
-
-Almost every figure in this lecture is taken from the Playbook; they were used with permission. 
 
 ## 2. Transformers: Anatomy of a Large Model
 
@@ -126,9 +126,25 @@ $$
 \text{Logits} = H'_{final} W_{LM} \in \mathbb{R}^{s \times V_{size}}
 $$
 
-The entire Transformer model $f$ can be viewed as the composition of these layers: 
+The entire Transformer model $f$, parameterized by weights $w$, maps an input sequence $x$ to output logits:
 
-$$f(x) = \text{OutputLayer} \circ \text{Block}_L \circ \dots \circ \text{Block}_1 \circ \text{EmbeddingLayer}(x).$$
+$$
+f(x; w) = \text{OutputLayer} \circ \text{Block}_L \circ \dots \circ \text{Block}_1 \circ \text{EmbeddingLayer}(x)
+$$
+
+Training optimizes the parameters $w$ by minimizing an objective function $L(w)$, typically the expected loss over a data distribution, $L(w) = \mathbb{E}\_z[\ell(w, z)]$. The loss $\ell(w, z)$ is computed for individual data samples $z$. For autoregressive language modeling, a data sample $z = (x, y)$ consists of an input sequence $x = (x\_1, \dots, x\_s)$ and a target sequence $y = (y\_1, \dots, y\_s)$, where $y\_t = x\_{t+1}$ represents the token following $x\_t$. The standard loss function is the Cross-Entropy Loss, calculated between the model's predicted logit distribution and the actual target token index at each sequence position $t$:
+
+$$
+\ell(w, z) = -\frac{1}{s} \sum_{t=1}^{s} \log P(y_t | x_1, \dots, x_t; w)
+$$
+
+The probability $P(y\_t \| x\_1, \dots, x\_t; w)$ is derived from the model's output logits $\text{Logits} = f(x; w) \in \mathbb{R}^{s \times V\_{size}}$. Specifically, for position $t$, let $\text{Logits}\_t \in \mathbb{R}^{V\_{size}}$ be the logit vector. The probability of observing vocabulary item $v$ is:
+
+$$
+P(v | x_1, \dots, x_t; w) = \frac{\exp(\text{Logits}_{t,v})}{\sum_{v'=1}^{V_{size}} \exp(\text{Logits}_{t,v'})}
+$$
+
+Minimizing the objective $L(w)$ requires computing gradients with respect to all parameters $w$ and updating them. Therefore, understanding the location and scale of these parameters, as well as the computational cost of the forward and backward passes through the architecture defined above, is essential for developing efficient scaling strategies.
 
 In summary, the parameters in a standard Transformer model are concentrated in the embedding matrix $W_E$, the MHA projection matrices ($W_Q, W_K, W_V, W_O$ per layer), the FFN weights ($W_1, W_2$ per layer), the LN parameters ($\gamma, \beta$ per normalization), and the final output projection matrix $W_{LM}$. The computational cost is dominated by the large matrix multiplications performed within the MHA mechanism ($QK^T$, $\text{Scores} \cdot Val$) and the FFN layers ($XW_1$, $HW_2$), repeated across $L$ blocks. Understanding this distribution is crucial for designing effective parallelism strategies.
 

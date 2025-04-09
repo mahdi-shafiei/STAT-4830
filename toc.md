@@ -32,14 +32,14 @@ title: Table of Contents
 [8. Stochastic Gradient Descent: The general problem and implementation details](section/8/notes.md) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/8/notebook.ipynb)
    > Stochastic optimization problems, SGD, tweaks, and implementation in PyTorch
 
-[9. Adaptive Optimization Methods](section/9/notes.md) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/9/notebook.ipynb)
+[9. Adaptive Optimization Methods](section/9/notes.md) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/9/notebook.ipynb) | [Cheatsheet](section/9/cheatsheet.md)
    > Intro to adaptive optimization methods: Adagrad, Adam, and AdamW.
 
-[10. Benchmarking Optimizers: Challenges and Some Empirical Results](section/10/notes.md) 
+[10. Benchmarking Optimizers: Challenges and Some Empirical Results](section/10/notes.md) | [Cheatsheet](section/10/cheatsheet.md)
    > How do we compare optimizers for deep learning? 
 
-[11. A Playbook for Tuning Deep Learning Models](section/11/notes.md)
+[11. A Playbook for Tuning Deep Learning Models](section/11/notes.md) | [Cheatsheet](section/11/cheatsheet.md)
    > A systematic process for [tuning deep learning models](https://github.com/google-research/tuning_playbook)
 
-[12. Scaling Transformers: Parallelism Strategies from the Ultrascale Playbook](section/12/notes.md)
+[12. Scaling Transformers: Parallelism Strategies from the Ultrascale Playbook](section/12/notes.md) | [Cheatsheet](section/12/cheatsheet.md)
    > How do we scale training of transformers to 100s of billions of parameters?
