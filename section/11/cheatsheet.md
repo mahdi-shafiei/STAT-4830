@@ -132,5 +132,3 @@ title: A Playbook for Tuning Deep Learning Models
 *   **The tuning protocol IS part of the algorithm** for empirical comparisons. Fair comparisons require tuning nuisance HPs. (Ref: Choi et al. [2])
 *   Adopt changes based on **evidence**, considering variance and complexity.
 
----
-*(References section omitted for brevity in cheat sheet format, but present in main lecture notes)*

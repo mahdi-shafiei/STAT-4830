@@ -106,7 +106,7 @@ Input H^(l-1) --> LN1 --> MHA --> Add (*) --> LN2 --> FFN --> Add (**) --> Outpu
 
 **Purpose:** Allows each token to look at other tokens in the sequence and decide which are important ("attend to").
 
-**Input:** Normalized $X' = \text{LN}_1(H^{(l-1)})$
+**Input:** Normalized $ X' = \text{LN}\_1(H^{(l-1)}) $
 
 **1. Create Query, Key, Value vectors:**
 *   Linearly project $X'$ using learnable weights $W_Q, W_K, W_V \in \mathbb{R}^{h \times h}$.
@@ -164,9 +164,9 @@ Input H^(l-1) --> LN1 --> MHA --> Add (*) --> LN2 --> FFN --> Add (**) --> Outpu
 
 **Purpose:** Process information for each token *independently* after attention. Adds representational capacity.
 
-**Input:** Normalized $X'' = \text{LN}_2(H_{intermediate})$
+**Input:** Normalized $ X'' = \text{LN}\_2(H_{intermediate})$
 
-**Structure:** Two linear layers with a non-linearity (e.g., GELU) in between.
+**Structure:** Two linear layers with a non-linearity (e.g.,[GELU](https://pytorch.org/docs/stable/generated/torch.nn.GELU.html){:target="_blank"}) in between.
 $$ O_{FFN} = \text{GELU}(X'' W_1 + b_1) W_2 + b_2 $$
 *   $W_1 \in \mathbb{R}^{h \times d_{ff}}$, $b_1 \in \mathbb{R}^{d_{ff}}$ (Expand dimension)
 *   $W_2 \in \mathbb{R}^{d_{ff} \times h}$, $b_2 \in \mathbb{R}^{h}$ (Contract back to $h$)
