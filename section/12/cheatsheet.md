@@ -389,12 +389,12 @@ $$ O_{FFN} = \text{GELU}(X'' W_1 + b_1) W_2 + b_2 $$
 **Purpose:** Simulate a larger effective batch size without increasing memory per worker.
 
 **How:**
-1.  Divide worker's data $\mathcal{B}_k$ into $A$ smaller "accumulation micro-batches" $\mathcal{B}_{k,a}$.
+1.  Divide worker's data $\mathcal{B}\_k$ into $A$ smaller "accumulation micro-batches" $\mathcal{B}\_{k,a}$.
 2.  For $a = 1$ to $A$:
-    *   Forward/Backward on $\mathcal{B}_{k,a}$ to get gradient $g_{k,a}$.
-    *   **Accumulate** gradients locally: $g_k^{(A)} = \sum_{a=1}^A g_{k,a}$.
+    *   Forward/Backward on $\mathcal{B}\_{k,a}$ to get gradient $g\_{k,a}$.
+    *   **Accumulate** gradients locally: $g\_{k}^{(A)} = \sum\_{a=1}^A g\_{k,a}$.
     *   **Crucially: NO gradient synchronization (AllReduce) for steps $a=1..A-1$.** (Use framework tools like `no_sync()`).
-3.  **After step A:** Perform **one** AllReduce on the accumulated gradients $g_k^{(A)}$.
+3.  **After step A:** Perform **one** AllReduce on the accumulated gradients $g\_{k}^{(A)}$.
 4.  Perform **one** optimizer step using the final averaged gradient.
 
 **Trade-off:** Saves memory, but takes $A$ times longer computationally for the same amount of data compared to a single large batch.

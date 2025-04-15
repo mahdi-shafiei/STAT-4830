@@ -3,6 +3,7 @@ description: Course materials for STAT 4830
 baseurl: "/STAT-4830"
 url: "https://damek.github.io"
 github_username: damek
+repository: damek/STAT-4830
 
 # Build settings
 markdown: kramdown
