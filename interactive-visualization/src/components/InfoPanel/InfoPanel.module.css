@@ -1,9 +1,12 @@
 .infoPanel {
-  font-family: monospace;
-  font-size: 0.9em;
+  /* Keep styles minimal as details moved to OperationDetailsPanel */
 }
 .note {
-    font-size: 0.9em; /* Make note slightly smaller */
+    font-size: 0.85em; /* Make note slightly smaller */
     color: grey;
-    margin-top: 5px;
+    margin: 5px 0; /* Adjust margin */
 }
+
+/* Remove notation styles if they existed here */
+.notationArea { display: none; }
+.mathCode { display: none; }

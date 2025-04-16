@@ -1,0 +1,21 @@
+/* Container for KaTeX output */
+.mathContainer {
+  font-size: 1.1em; /* Slightly larger math */
+  line-height: 1.5;
+  color: #225; /* Dark blue math text */
+}
+
+/* Style for fallback text on KaTeX error */
+.katexError {
+    color: red;
+    font-style: italic;
+    background-color: #fee;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+/* Optional: Adjust KaTeX default spacing if needed */
+.mathContainer .katex {
+  /* Example: reduce bottom margin slightly */
+  /* margin-bottom: 0.1em; */
+}

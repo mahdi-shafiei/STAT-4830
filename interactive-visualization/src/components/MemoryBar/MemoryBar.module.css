@@ -6,26 +6,49 @@
   gap: 5px;
 }
 .memoryLabel {
-    width: 100px; /* Allocate fixed space for labels */
+    width: 110px; /* Slightly more space for "Shard 1/X" */
     text-align: right;
-    flex-shrink: 0; /* Prevent label from shrinking */
+    flex-shrink: 0;
     font-size: 0.9em;
+    white-space: nowrap;
 }
 .barBackground {
   flex-grow: 1;
-  height: 12px;
+  height: 14px; /* Slightly taller bar */
   background-color: #e0e0e0;
   border-radius: 3px;
   overflow: hidden;
   border: 1px solid #ccc;
+  position: relative; /* Needed for absolute positioning of overlay */
 }
 .barForeground {
   height: 100%;
   border-radius: 2px;
-  transition: width 0.3s ease-in-out; /* Animation for later */
+  transition: width 0.3s ease-in-out;
+  position: absolute; /* Positioned absolutely within background */
+  left: 0;
+  top: 0;
+  z-index: 1; /* Base layer */
 }
-/* Add specific colors */
+/* Style for the temporary full overlay (FSDP AllGather) */
+.barTempFullOverlay {
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 2; /* Above foreground */
+    /* Use background color of the type but with opacity */
+}
+
+/* Specific colors */
 .params { background-color: blue; }
 .activations { background-color: green; }
 .gradients { background-color: red; }
 .optstates { background-color: purple; }
+
+/* Assign semi-transparent colors for the overlay */
+.barTempFullOverlay.params { background-color: rgba(0, 0, 255, 0.3); }
+.barTempFullOverlay.activations { background-color: rgba(0, 128, 0, 0.3); }
+.barTempFullOverlay.gradients { background-color: rgba(255, 0, 0, 0.3); }
+.barTempFullOverlay.optstates { background-color: rgba(128, 0, 128, 0.3); }
+

@@ -1,321 +1,164 @@
 import React, { createContext, useState, useContext, useEffect, useRef, useCallback } from 'react';
-import { DP_STEPS, DP_TOTAL_STEPS } from '../config/strategies/dp';
+import { generateDpSteps } from '../config/strategies/dp';
+import { generateFsdpSteps } from '../config/strategies/fsdp';
+import { generateSingleGpuSteps } from './singleGpuSteps';
+import type { GpuState, CommOperation, CommDataType, StepDetail } from './types';
 
-// --- Type Definitions ---
-// Define structure for a single GPU's state
-export interface GpuState {
-    id: number;
-    paramMemory: number;
-    activationMemory: number;
-    gradientMemory: number;
-    optStateMemory: number;
-    status: 'idle' | 'computing' | 'communicating';
-    currentLayerName?: string; // Layer being processed
-}
+export type { GpuState, CommOperation, CommDataType, StepDetail };
 
-// Define communication operation and data types explicitly
-export type CommOperation = 'AllReduce' | 'P2P' | 'AllGather' | 'ReduceScatter' | 'AlltoAll' | string; // Allow string for flexibility
-export type CommDataType = 'Activations' | 'Gradients' | 'Params' | 'Tokens' | 'KV' | string;
+const MAX_ACTIVATION = 75; const MAX_PARAM = 100; const MAX_OPTSTATE = 100; const MAX_GRADIENT = 100;
+const MODEL_LAYERS = ['Embed', 'MHA', 'FFN', 'LN', 'Output'];
 
-// Define StepDetail structure (can be expanded)
-export interface StepDetail {
-    step: number;
-    type?: 'INIT' | 'COMPUTE' | 'COMM' | 'GRADIENTS' | 'UPDATE' | 'DONE' | string; // Allow custom types
-    layer?: string;
-    parallel?: boolean; // True if step happens across multiple ranks simultaneously
-    direction?: 'forward' | 'backward';
-    operation?: CommOperation;
-    dataType?: CommDataType;
-    description: string;
-}
-
-// --- Simulation Constants ---
-const MAX_ACTIVATION = 75;
-const MAX_PARAM = 80;
-const MAX_OPTSTATE = 80;
-const MAX_GRADIENT = 50; // Placeholder max gradient size per GPU before reduction
-
-// --- Helper Functions ---
-// Function to generate steps for single GPU (similar to Chunk 2)
-const generateSingleGpuSteps = (): StepDetail[] => {
-    const MODEL_LAYERS = ['Embed', 'MHA', 'FFN', 'LN', 'Output'];
-    const steps: StepDetail[] = [{ step: 0, type: 'INIT', description: 'Single GPU Initial state.' }];
-    MODEL_LAYERS.forEach((layer, index) => {
-        steps.push({
-            step: index + 1, type: 'COMPUTE', direction: 'forward', layer: layer,
-            description: `Forward Pass: Processing ${layer} layer.`
-        });
-    });
-    steps.push({ step: MODEL_LAYERS.length + 1, type: 'DONE', description: 'Forward Pass Complete.' });
-    // Add backward/update steps later
-    return steps.map((s, index) => ({ ...s, step: index })); // Renumber steps
-};
-const SINGLE_GPU_STEPS = generateSingleGpuSteps();
-const SINGLE_GPU_TOTAL_STEPS = SINGLE_GPU_STEPS.length > 0 ? SINGLE_GPU_STEPS.length - 1 : 0;
-
-
-// Function to initialize GPU states based on strategy and number
+// Helper: Initialize GPU States - Robust version
 const initializeGpuStates = (numGpus: number, strategy: string): GpuState[] => {
-    console.log(`Initializing state for ${numGpus} GPUs, strategy: ${strategy}`);
-    return Array.from({ length: numGpus }, (_, i) => {
-        // Determine initial memory based on strategy
-        // DP replicates Params and OptStates fully
-        const initialParams = (strategy === 'dp' || strategy === 'single') ? MAX_PARAM : 0;
-        const initialOptStates = (strategy === 'dp' || strategy === 'single') ? MAX_OPTSTATE : 0;
+    // Ensure numGpus is at least 1
+    const count = Math.max(1, numGpus);
+    console.log(`Initializing state for ${count} GPUs, strategy: ${strategy}`);
+    return Array.from({ length: count }, (_, i) => {
+        let iP = 0, iO = 0, iG = 0;
+        // Ensure shardDenom is at least 1 to avoid division by zero
+        const shardDenom = (strategy === 'fsdp' && count > 0) ? count : 1;
+        const isParallel = strategy === 'dp' || strategy === 'fsdp';
 
-        return {
-            id: i,
-            paramMemory: initialParams,
-            activationMemory: 0,
-            gradientMemory: 0,
-            optStateMemory: initialOptStates,
-            status: 'idle',
-            currentLayerName: undefined,
-        };
+        if (strategy === 'single' || strategy === 'dp') { iP = MAX_PARAM; iO = MAX_OPTSTATE; }
+        else if (strategy === 'fsdp') { iP = MAX_PARAM / shardDenom; iO = MAX_OPTSTATE / shardDenom; }
+
+        return { id: i, paramMemory: iP, activationMemory: 0, gradientMemory: iG, optStateMemory: iO,
+            status: 'idle', currentLayerName: undefined, isParamsTempFull: false,
+            dataShardId: isParallel ? i + 1 : undefined, };
     });
 };
 
 // --- Context Definition ---
-interface SimulationState {
-  currentStep: number;
-  totalSteps: number;
-  isPlaying: boolean;
-  strategy: string;
-  numGpus: number; // Number of GPUs currently simulated
-  gpuStates: GpuState[]; // State of each GPU
-  stepDetails: StepDetail | null; // Details of the current step
-}
-
-interface SimulationContextProps extends SimulationState {
-  play: () => void;
-  pause: () => void;
-  nextStep: () => void;
-  reset: () => void;
-  setStrategy: (strategy: string) => void;
-  setNumGpus: (num: number) => void;
-}
-
+interface SimulationState { currentStep: number; totalSteps: number; isPlaying: boolean; strategy: string; numGpus: number; gpuStates: GpuState[]; stepDetails: StepDetail | null; }
+interface SimulationContextProps extends SimulationState { play: () => void; pause: () => void; nextStep: () => void; prevStep: () => void; reset: () => void; setStrategy: (strategy: string) => void; setNumGpus: (num: number) => void; }
 const SimulationContext = createContext<SimulationContextProps | undefined>(undefined);
 
 // --- Context Provider ---
 export const SimulationProvider: React.FC<{ children: React.ReactNode; initialNumGpus?: number }> = ({ children, initialNumGpus = 1 }) => {
-  const [strategy, setStrategyInternal] = useState('single'); // Default strategy
-  const [numGpus, setNumGpusInternal] = useState(initialNumGpus);
+  const [strategy, setStrategyInternal] = useState(() => initialNumGpus > 1 ? 'fsdp' : 'single');
+  const [numGpus, setNumGpusInternal] = useState(() => strategy === 'single' ? 1 : Math.max(2, initialNumGpus));
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  // Initialize state carefully
   const [gpuStates, setGpuStates] = useState<GpuState[]>(() => initializeGpuStates(numGpus, strategy));
-
   const intervalRef = useRef<number | null>(null);
 
-  // Determine current simulation steps and total based on strategy
+  // Determine current simulation steps dynamically and safely
   const { currentSimulationSteps, totalSteps } = React.useMemo(() => {
-    if (strategy === 'dp') {
-        return { currentSimulationSteps: DP_STEPS, totalSteps: DP_TOTAL_STEPS };
+    let steps: StepDetail[];
+    try {
+      if (strategy === 'dp') steps = generateDpSteps(numGpus);
+      else if (strategy === 'fsdp') steps = generateFsdpSteps(numGpus);
+      else steps = generateSingleGpuSteps();
+    } catch (e) {
+        console.error("Error generating simulation steps:", e);
+        steps = [{step: 0, type: 'ERROR', description: 'Error generating steps.'}]; // Fallback
     }
-    // Default to single GPU
-    return { currentSimulationSteps: SINGLE_GPU_STEPS, totalSteps: SINGLE_GPU_TOTAL_STEPS };
-  }, [strategy]);
+    const totSteps = steps.length > 0 ? steps.length - 1 : 0;
+    console.log(`Generated ${steps.length} steps for ${strategy} with ${numGpus} GPUs. Total steps index: ${totSteps}`);
+    return { currentSimulationSteps: steps, totalSteps: totSteps };
+  }, [strategy, numGpus]);
 
-  // Get details for the current step
-  const stepDetails = currentSimulationSteps[currentStep] || null;
+  // Ensure stepDetails is derived safely
+  const stepDetails = (currentStep >= 0 && currentStep < currentSimulationSteps.length)
+    ? currentSimulationSteps[currentStep]
+    : null;
 
-
-  // --- State Update Logic (including DP) ---
+  // --- State Update Logic (with added checks) ---
   const updateGpuStatesForStep = useCallback((step: number) => {
-    const details = currentSimulationSteps[step];
-    if (!details) return; // Exit if step details not found
+    // Ensure steps array is valid before proceeding
+    if (!currentSimulationSteps || currentSimulationSteps.length === 0) {
+        console.error("Attempted to update state with invalid simulation steps.");
+        return;
+    }
+    // Clamp step to valid range
+    const clampedStep = Math.max(0, Math.min(step, totalSteps));
+    const details = currentSimulationSteps[clampedStep];
+
+    if (!details) { console.warn(`No step details found for step ${clampedStep}`); return; }
 
     setGpuStates(prevStates => {
-        // Determine if the step applies to all GPUs (parallel) or just one (for future strategies)
-        const isParallelStep = details.parallel === true || strategy === 'single'; // Single GPU steps apply to the only GPU
+        // Defensive check on prevStates length
+        if (!Array.isArray(prevStates) || (prevStates.length !== numGpus && strategy !== 'single')) {
+             console.warn(`GPU state array length mismatch. Re-initializing. Prev length: ${prevStates?.length}, Expected: ${numGpus}`);
+             return initializeGpuStates(numGpus, strategy);
+        }
 
-        return prevStates.map((gpu, index) => {
-            // Only update GPUs relevant to the step (all for parallel, specific index otherwise)
-            if (!isParallelStep /* && index !== targetGpuIndex */) { // Add targetGpuIndex later if needed
-                return gpu; // Return unchanged state if step doesn't apply
-            }
+        const isParallel = details.parallel === true;
+        const isParamsSharded = strategy === 'fsdp'; const isGradsSharded = strategy === 'fsdp'; const isOptStatesSharded = strategy === 'fsdp';
+        const shardDenom = numGpus > 0 ? numGpus : 1;
 
-            // Copy previous state for modification
-            let newState = { ...gpu };
-            let nextStatus: GpuState['status'] = 'idle'; // Default next status
-            newState.currentLayerName = undefined; // Clear layer name by default
+        return prevStates.map((gpu) => {
+            if (!isParallel && strategy !== 'single' && gpu.id !== 0) return gpu;
 
-            // --- Logic based on step type ---
-            switch (details.type) {
-                case 'INIT':
-                    // Handled by initializeGpuStates on reset/strategy change
-                    nextStatus = 'idle';
-                    newState.activationMemory = 0;
-                    newState.gradientMemory = 0;
-                    break;
-                case 'COMPUTE':
-                    nextStatus = 'computing';
-                    newState.currentLayerName = details.layer;
-                    if (details.direction === 'forward') {
-                        // Simplified activation growth (spread over forward steps)
-                        const forwardSteps = currentSimulationSteps.filter(s => s.type === 'COMPUTE' && s.direction === 'forward').length;
-                        const growthPerStep = forwardSteps > 0 ? MAX_ACTIVATION / forwardSteps : MAX_ACTIVATION;
-                        newState.activationMemory = Math.min(gpu.activationMemory + growthPerStep, MAX_ACTIVATION);
-                    }
-                    // Add backward compute logic later
-                    break;
-                case 'GRADIENTS':
-                    // Placeholder: Max out gradient memory locally *before* communication
-                    nextStatus = 'computing'; // Still active computing gradients
-                    newState.currentLayerName = 'Gradients';
-                    newState.gradientMemory = MAX_GRADIENT;
-                    newState.activationMemory = 0; // Clear activations (simplified)
-                    break;
-                case 'COMM':
-                    nextStatus = 'communicating';
-                    // Visual state change handled here. Memory changes usually reflect *after* comms.
-                    break;
-                case 'UPDATE':
-                    nextStatus = 'computing'; // Treat update as compute activity
-                    newState.currentLayerName = 'Optimizer';
-                     // Gradients are consumed by the optimizer (reset after this step)
-                    break;
-                 case 'DONE':
-                    nextStatus = 'idle';
-                    break;
-                default:
-                    nextStatus = 'idle'; // Default for unknown types
-                    break;
-            }
+            let newState = { ...gpu }; let nextStatus: GpuState['status'] = 'idle';
+            newState.currentLayerName = undefined; newState.isParamsTempFull = false;
 
-            // --- Handle state changes *after* specific steps ---
-            // Find the *previous* step's details to react to completed actions
-            const prevStepDetails = currentSimulationSteps[step - 1];
+            const prevStepDetails = (clampedStep > 0 && clampedStep - 1 < currentSimulationSteps.length)
+                ? currentSimulationSteps[clampedStep - 1]
+                : null;
+
+            // --- Result of PREVIOUS step ---
             if (prevStepDetails) {
-                if (prevStepDetails.type === 'COMM' && prevStepDetails.operation === 'AllReduce' && prevStepDetails.dataType === 'Gradients') {
-                    // After AllReduce, gradients are conceptually averaged
-                    newState.gradientMemory = MAX_GRADIENT * 0.6; // Visual: show reduced gradients
-                } else if (prevStepDetails.type === 'UPDATE') {
-                     // After optimizer update, gradients are conceptually zeroed
-                     newState.gradientMemory = 0;
-                }
+                 if (strategy === 'fsdp' && prevStepDetails.type === 'COMM' && prevStepDetails.operation === 'AllGather' && prevStepDetails.dataType === 'Params') newState.isParamsTempFull = true;
+                 else if (strategy === 'fsdp' && prevStepDetails.type === 'MEMORY_OP' && prevStepDetails.operation === 'DiscardParams') newState.isParamsTempFull = false;
+                 else if (strategy === 'dp' && prevStepDetails.type === 'COMM' && prevStepDetails.operation === 'AllReduce') newState.gradientMemory = MAX_GRADIENT * 0.6;
+                 else if (strategy === 'fsdp' && prevStepDetails.type === 'COMM' && prevStepDetails.operation === 'ReduceScatter') newState.gradientMemory = MAX_GRADIENT / shardDenom;
+                 else if (prevStepDetails.type === 'UPDATE' && (strategy === 'dp' || strategy === 'fsdp')) newState.gradientMemory = 0; // Uniformly clear grads
+            } else if (clampedStep === 0) { // Ensure reset on step 0
+                 Object.assign(newState, initializeGpuStates(numGpus, strategy)[gpu.id]);
+                 return newState;
             }
-             newState.status = nextStatus; // Set the final status for this GPU for this step
+
+            // --- State FOR CURRENT step ---
+            switch (details.type) {
+                case 'INIT': nextStatus = 'idle'; newState.activationMemory = 0; newState.gradientMemory = 0; newState.isParamsTempFull = false; break;
+                case 'COMPUTE': /* ... unchanged compute logic ... */
+                    nextStatus = 'computing'; newState.currentLayerName = details.layer || 'Compute';
+                    if ((strategy === 'dp' || strategy === 'fsdp') && details.direction === 'forward' && newState.dataShardId) newState.currentLayerName = `B${newState.dataShardId}: Fwd-${details.layer}`;
+                    else if (details.direction === 'backward') newState.currentLayerName = `Bwd-${details.layer}`;
+                    if (details.direction === 'forward') { const fSteps = currentSimulationSteps.filter(s => s.type === 'COMPUTE' && s.direction === 'forward').length; const growth = fSteps > 0 ? MAX_ACTIVATION / fSteps : MAX_ACTIVATION; newState.activationMemory = Math.min(gpu.activationMemory + growth, MAX_ACTIVATION); }
+                    else if (details.direction === 'backward') { if (strategy === 'fsdp') newState.gradientMemory = MAX_GRADIENT; newState.activationMemory = Math.max(0, gpu.activationMemory - MAX_ACTIVATION / MODEL_LAYERS.length); }
+                    if(strategy === 'fsdp' && gpu.isParamsTempFull) newState.isParamsTempFull = true; // Preserve flag
+                    break;
+                case 'GRADIENTS': nextStatus = 'computing'; newState.currentLayerName = `Grads g${gpu.id}`; newState.gradientMemory = MAX_GRADIENT; newState.activationMemory = 0; break;
+                case 'COMM': /* ... unchanged COMM logic ... */
+                    nextStatus = 'communicating'; newState.currentLayerName = `${details.operation} (${details.dataType})`;
+                    if (strategy === 'fsdp' && details.operation === 'AllGather' && details.dataType === 'Params') newState.isParamsTempFull = true; // Set during COMM
+                    break;
+                 case 'MEMORY_OP': /* ... unchanged MEMORY_OP logic ... */
+                     nextStatus = 'idle'; newState.currentLayerName = 'Discard Shards'; newState.isParamsTempFull = false; // Explicitly unset
+                     break;
+                case 'UPDATE': nextStatus = 'computing'; newState.currentLayerName = 'Optimizer'; break;
+                case 'DONE': nextStatus = 'idle'; newState.gradientMemory = 0; newState.activationMemory = 0; newState.isParamsTempFull = false; break;
+                default: nextStatus = 'idle'; break;
+            }
+            newState.status = nextStatus;
             return newState;
         });
     });
-  }, [currentSimulationSteps, strategy]); // Dependencies
+  }, [currentSimulationSteps, strategy, numGpus, totalSteps]); // Added totalSteps dependency
 
-  // --- Simulation Controls (Play, Pause, Step, Reset) ---
-  const clearSimulationInterval = useCallback(() => {
-    if (intervalRef.current !== null) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  }, []);
+  // --- Simulation Controls & Management ---
+  const intervalSpeed = 1000;
+  const clearSimulationInterval = useCallback(() => { if (intervalRef.current !== null) clearInterval(intervalRef.current); intervalRef.current = null; }, []);
+  const advanceStep = useCallback((direction: 1 | -1 = 1) => { setCurrentStep(prev => { const next = prev + direction; const clampedNext = Math.max(0, Math.min(next, totalSteps)); if (clampedNext !== prev) { setIsPlaying(false); clearSimulationInterval(); updateGpuStatesForStep(clampedNext); return clampedNext; } return prev; }); }, [totalSteps, clearSimulationInterval, updateGpuStatesForStep]);
+  const prevStep = useCallback(() => { advanceStep(-1); }, [advanceStep]);
+  const play = useCallback(() => { if (isPlaying || currentStep >= totalSteps) return; setIsPlaying(true); clearSimulationInterval(); if (currentStep < totalSteps) { advanceStep(1); setCurrentStep(prevStep => { if (prevStep < totalSteps) { intervalRef.current = window.setInterval(() => advanceStep(1), intervalSpeed); } else { setIsPlaying(false); } return prevStep; }); } else { setIsPlaying(false); } }, [isPlaying, currentStep, totalSteps, clearSimulationInterval, advanceStep, intervalSpeed]);
+  const pause = useCallback(() => { if (!isPlaying) return; setIsPlaying(false); clearSimulationInterval(); }, [isPlaying, clearSimulationInterval]);
+  // Reset now correctly uses state setters to trigger useEffect
+  const reset = useCallback(() => { setIsPlaying(false); clearSimulationInterval(); setCurrentStep(0); setGpuStates(initializeGpuStates(numGpus, strategy)); /* State update triggered by useEffect */ }, [numGpus, strategy, clearSimulationInterval]);
+  // Setters now just update state, useEffect handles reset
+  const setNumGpusCallback = useCallback((num: number) => { if (num !== numGpus && strategy !== 'single') { setNumGpusInternal(num); } }, [numGpus, strategy]);
+  const setStrategyCallback = useCallback((newStrategy: string) => { if (newStrategy !== strategy) { const nextNumGpus = newStrategy === 'single' ? 1 : (numGpus >= 2 ? numGpus : 2); setNumGpusInternal(nextNumGpus); setStrategyInternal(newStrategy); } }, [numGpus, strategy]);
 
-  const advanceStep = useCallback(() => {
-    setCurrentStep(prev => {
-      const next = prev + 1;
-      if (next > totalSteps) {
-        setIsPlaying(false);
-        clearSimulationInterval();
-        updateGpuStatesForStep(totalSteps); // Ensure final state update
-        return totalSteps;
-      }
-      updateGpuStatesForStep(next); // Update GPU states for the NEW step
-      return next;
-    });
-  }, [totalSteps, clearSimulationInterval, updateGpuStatesForStep]);
+  // Effect to reset simulation state when strategy or numGpus changes
+  useEffect(() => { reset(); }, [strategy, numGpus, reset]); // Use reset in dependency
 
-  const play = useCallback(() => {
-    if (isPlaying || currentStep >= totalSteps) return;
-    setIsPlaying(true);
-    clearSimulationInterval();
-    advanceStep(); // Advance first step immediately
+  useEffect(() => clearSimulationInterval, [clearSimulationInterval]); // Cleanup
 
-    if (currentStep + 1 <= totalSteps) { // Ensure interval runs if steps remain
-        intervalRef.current = window.setInterval(advanceStep, 1200); // Speed
-    } else {
-         setIsPlaying(false); // Reached end after first advance
-    }
-  }, [isPlaying, currentStep, totalSteps, clearSimulationInterval, advanceStep]);
-
-  const pause = useCallback(() => {
-    if (!isPlaying) return;
-    setIsPlaying(false);
-    clearSimulationInterval();
-  }, [isPlaying, clearSimulationInterval]);
-
-  // Reset function now considers strategy and gpu count
-  const reset = useCallback((currentNumGpus = numGpus, currentStrategy = strategy) => {
-    console.log(`Reset called. numGpus: ${currentNumGpus}, strategy: ${currentStrategy}`);
-    setIsPlaying(false);
-    clearSimulationInterval();
-    setCurrentStep(0);
-    setGpuStates(initializeGpuStates(currentNumGpus, currentStrategy));
-    // updateGpuStatesForStep(0); // Call update for step 0 state
-  }, [numGpus, strategy, clearSimulationInterval]); // Include numGpus and strategy
-
-  // --- Strategy and GPU Count Management ---
-  const setNumGpusCallback = useCallback((num: number) => {
-      // Avoid resetting if count hasn't changed
-      if (num !== numGpus) {
-        console.log("Setting num GPUs:", num);
-        setNumGpusInternal(num);
-        reset(num, strategy); // Reset simulation with new GPU count
-      }
-  }, [numGpus, strategy, reset]); // Correct dependencies
-
-  const setStrategyCallback = useCallback((newStrategy: string) => {
-      // Avoid resetting if strategy hasn't changed
-      if (newStrategy !== strategy) {
-        console.log("Setting strategy:", newStrategy);
-        const nextNumGpus = newStrategy === 'single' ? 1 : numGpus; // Force 1 GPU for single mode
-        setStrategyInternal(newStrategy);
-        setNumGpusInternal(nextNumGpus); // Update internal count
-        reset(nextNumGpus, newStrategy); // Reset with new strategy and count
-      }
-  }, [numGpus, strategy, reset]); // Correct dependencies
-
-  // Effect to initialize state correctly on first load or when strategy/gpu changes
-   useEffect(() => {
-     console.log("Strategy or numGpus changed, resetting state for step 0");
-     // This reset ensures gpuStates aligns with numGpus and strategy
-     reset(numGpus, strategy);
-   // eslint-disable-next-line react-hooks/exhaustive-deps
-   }, [strategy, numGpus]); // Run reset when these external controls change state
-
-
-  // Cleanup interval on component unmount
-  useEffect(() => clearSimulationInterval, [clearSimulationInterval]);
-
-  // Context value provided to consumers
-  const value = {
-    currentStep,
-    totalSteps,
-    isPlaying,
-    strategy,
-    numGpus, // Provide actual number used
-    gpuStates,
-    stepDetails,
-    play,
-    pause,
-    nextStep: advanceStep,
-    reset: () => reset(), // Ensure reset uses current state values
-    setStrategy: setStrategyCallback,
-    setNumGpus: setNumGpusCallback,
-  };
-
-  return (
-    <SimulationContext.Provider value={value}>
-      {children}
-    </SimulationContext.Provider>
-  );
+  const value = { currentStep, totalSteps, isPlaying, strategy, numGpus, gpuStates, stepDetails, play, pause, nextStep: () => advanceStep(1), prevStep, reset, setStrategy: setStrategyCallback, setNumGpus: setNumGpusCallback };
+  return ( <SimulationContext.Provider value={value}>{children}</SimulationContext.Provider> );
 };
-
-// Custom hook to use the simulation context
-export const useSimulation = () => {
-  const context = useContext(SimulationContext);
-  if (context === undefined) {
-    throw new Error('useSimulation must be used within a SimulationProvider');
-  }
-  return context;
-};
-
-// Note: generateForwardSteps is internal now and not exported
+export const useSimulation = () => { const context = useContext(SimulationContext); if (context === undefined) throw new Error('useSimulation must be used within a SimulationProvider'); return context; };

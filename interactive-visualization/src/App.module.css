@@ -10,11 +10,17 @@
   padding: 10px 20px;
   color: white;
   text-align: center;
+  flex-shrink: 0; /* Prevent header shrinking */
 }
+
+/* New details panel below header */
+/* OperationDetailsPanel component will have its own internal styles */
 
 .mainContent {
   display: flex;
   flex-grow: 1;
+  /* Prevent shrinking below content size */
+  min-height: 0; /* Fix flexbox overflow issue in some browsers */
 }
 
 .controlPanel {
@@ -22,6 +28,8 @@
   padding: 15px;
   border-right: 1px solid #ccc;
   background-color: #f8f8f8;
+  flex-shrink: 0; /* Prevent controls shrinking */
+  overflow-y: auto; /* Allow controls to scroll if needed */
 }
 
 .visualizationArea {
@@ -30,11 +38,15 @@
   display: flex;
   flex-direction: column;
   background-color: #ffffff;
+  overflow: auto; /* Allow vis area itself to scroll if content overflows */
+  position: relative; /* Needed for overlay wrapper */
 }
 
 .infoPanel {
-  padding: 15px;
+  padding: 10px 20px; /* Smaller padding */
   border-top: 1px solid #ccc;
   background-color: #f0f0f0;
-  min-height: 100px;
+  min-height: auto; /* Allow shrinking */
+  flex-shrink: 0; /* Prevent footer shrinking */
+  text-align: center;
 }

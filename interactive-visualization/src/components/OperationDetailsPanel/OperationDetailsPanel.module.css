@@ -1,0 +1,39 @@
+.detailsPanel {
+  background-color: #f8f9fa; /* Light background */
+  padding: 12px 20px;
+  border-bottom: 1px solid #dee2e6; /* Separator */
+  text-align: center;
+  min-height: 60px; /* Ensure minimum height */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.stepCounter {
+    font-size: 0.9em;
+    color: #6c757d; /* Muted color */
+    font-weight: bold;
+}
+
+.description {
+  font-size: 1em;
+  color: #343a40; /* Darker text */
+}
+
+.notation {
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notationLabel {
+    font-weight: bold;
+    color: #495057;
+    font-size: 0.9em;
+}
+
+/* Style from MathDisplay.module.css will apply to MathDisplay content */

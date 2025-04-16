@@ -1,37 +1,5 @@
-import React from 'react';
-import styles from './MemoryBar.module.css';
-
-interface MemoryBarProps {
-    type: 'Params' | 'Activations' | 'Gradients' | 'OptStates';
-    value: number; // Current value
-    maxValue: number; // Max value for scaling
-    isSharded?: boolean;
-    // Provide a default or ensure shardSize is always passed when isSharded is true
-    shardSize?: number | string; // e.g., 1/N or just N
-}
-
-const MemoryBar: React.FC<MemoryBarProps> = ({ type, value, maxValue, isSharded, shardSize = 'N' }) => {
-    // Ensure value doesn't exceed maxValue for visual representation
-    const clampedValue = Math.min(value, maxValue);
-    const percentage = maxValue > 0 ? (clampedValue / maxValue) * 100 : 0;
-    const shardInfo = typeof shardSize === 'number' ? `1/${shardSize}` : shardSize;
-
-    // Determine bar color based on type
-    const barClass = styles[type.toLowerCase()] || '';
-
-    return (
-        <div className={styles.memoryBarContainer}>
-             {/* Uses the corrected shardInfo variable */}
-            <span className={styles.memoryLabel}>{type}{isSharded ? ` (Shard ${shardInfo})` : ''}: </span>
-            <div className={styles.barBackground}>
-                <div
-                    className={`${styles.barForeground} ${barClass}`}
-                    style={{ width: `${percentage}%` }}
-                    title={`${value} / ${maxValue}`} // Show exact value on hover
-                />
-            </div>
-        </div>
-    );
-};
-
+import React from 'react'; import styles from './MemoryBar.module.css'; import { motion, AnimatePresence } from 'framer-motion';
+interface MemoryBarProps { type: 'Params' | 'Activations' | 'Gradients' | 'OptStates'; value: number; maxValue: number; shardDenom: number; isSharded: boolean; isTempFull?: boolean; }
+const MemoryBar: React.FC<MemoryBarProps> = ({ type, value, maxValue, shardDenom, isSharded, isTempFull }) => { const persistentValue = value; const fullValue = isSharded && shardDenom > 0 ? persistentValue * shardDenom : persistentValue; const clampedPersistentValue = Math.min(persistentValue, maxValue); const clampedFullValue = Math.min(fullValue, maxValue); const persistentPercentage = maxValue > 0 ? (clampedPersistentValue / maxValue) * 100 : 0; const shardPercentage = isSharded && shardDenom > 0 ? (1 / shardDenom) * 100 : persistentPercentage; const solidBarPercentage = isSharded ? shardPercentage : persistentPercentage; const displayValue = isTempFull ? clampedFullValue : clampedPersistentValue; const displayMaxValue = maxValue; const shardInfo = isSharded && shardDenom > 0 ? `1/${shardDenom}` : ''; const labelText = `${type}${isSharded ? ` (Shard ${shardInfo})` : ''}:`; const barClass = styles[type.toLowerCase()] || ''; const tempFullVariants = { hidden: { opacity: 0 }, visible: { opacity: 0.35, transition: { duration: 0.15 } }, exit: { opacity: 0, transition: { duration: 0.1 } } };
+    return ( <div className={styles.memoryBarContainer} title={`Value: ${displayValue.toFixed(1)} / Max: ${displayMaxValue}${isSharded ? ' (sharded)' : ''}`}> <span className={styles.memoryLabel}>{labelText}</span> <div className={styles.barBackground}> <motion.div className={`${styles.barForeground} ${barClass}`} initial={false} animate={{ width: `${solidBarPercentage}%` }} transition={{ duration: 0.3, ease: "easeInOut" }} /> <AnimatePresence> {isSharded && isTempFull && ( <motion.div key={`${type}-temp-overlay`} className={`${styles.barTempFullOverlay} ${barClass}`} variants={tempFullVariants} initial="hidden" animate="visible" exit="exit" style={{ width: '100%' }} /> )} </AnimatePresence> </div> </div> ); };
 export default MemoryBar;

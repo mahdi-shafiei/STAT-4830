@@ -1,0 +1,3 @@
+import type { StepDetail } from './types';
+const MODEL_LAYERS = ['Embed', 'MHA', 'FFN', 'LN', 'Output'];
+export const generateSingleGpuSteps = (): StepDetail[] => { const steps: StepDetail[] = []; steps.push({ step: 0, type: 'INIT', description: 'Single GPU Initial state.', strategy: 'single' }); MODEL_LAYERS.forEach((layer, index) => { steps.push({ step: index + 1, type: 'COMPUTE', direction: 'forward', layer: layer, description: `Forward Pass: Processing ${layer} layer.`, strategy: 'single' }); }); steps.push({ step: MODEL_LAYERS.length + 1, type: 'DONE', description: `Forward Pass Complete.`, strategy: 'single' }); return steps.map((s, index) => ({ ...s, step: index })); };
