@@ -1,0 +1,46 @@
+.visualizationArea {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 10px;
+  position: relative; /* Needed for absolute positioning of communication overlay */
+  min-height: 400px; /* Ensure enough space for overlay */
+}
+
+/* Wrapper for layers AND packet animation */
+.layerContainerWrapper {
+  position: relative;
+  padding: 45px 10px 10px 10px;
+  margin-bottom: 30px;
+  border: 1px dashed lightgrey;
+  min-height: 50px;
+  display: inline-block;
+  min-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Container for the actual layer boxes */
+.layerContainer {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  width: max-content;
+}
+
+/* Style for the absolutely positioned packet */
+.packetWrapper {
+    position: absolute;
+    z-index: 10;
+    will-change: transform, opacity;
+}
+
+/* Container for the GPU(s) */
+.gpuContainer {
+  display: grid; /* Use grid for better alignment */
+  /* grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); */ /* Responsive grid */
+  justify-content: center; /* Center grid items */
+  gap: 20px;
+  margin-top: 20px;
+  padding: 10px; /* Padding around GPUs */
+}

@@ -14,14 +14,15 @@
 !section/*/slides.pdf
 !section/*/utils.py
 !section/*/cheatsheet.md
+# Don't ignore specific directories and their contents
+!interactive-visualization/
+!interactive-visualization/**
 # Don't ignore PNGs in figures directories
 !section/*/figures/
 !section/*/figures/*.png
 !section/*/figures/*.svg
 !section/*/figures/*.gif
 
-!interactive-visualization/*
-!interactive-visualization/*
 # Python
 __pycache__/
 *.py[cod]

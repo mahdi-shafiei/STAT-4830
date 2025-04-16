@@ -1,0 +1,9 @@
+.infoPanel {
+  font-family: monospace;
+  font-size: 0.9em;
+}
+.note {
+    font-size: 0.9em; /* Make note slightly smaller */
+    color: grey;
+    margin-top: 5px;
+}

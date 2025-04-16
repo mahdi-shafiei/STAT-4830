@@ -1,0 +1,40 @@
+.appContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  font-family: sans-serif;
+}
+
+.header {
+  background-color: #282c34;
+  padding: 10px 20px;
+  color: white;
+  text-align: center;
+}
+
+.mainContent {
+  display: flex;
+  flex-grow: 1;
+}
+
+.controlPanel {
+  width: 250px;
+  padding: 15px;
+  border-right: 1px solid #ccc;
+  background-color: #f8f8f8;
+}
+
+.visualizationArea {
+  flex-grow: 1;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+}
+
+.infoPanel {
+  padding: 15px;
+  border-top: 1px solid #ccc;
+  background-color: #f0f0f0;
+  min-height: 100px;
+}

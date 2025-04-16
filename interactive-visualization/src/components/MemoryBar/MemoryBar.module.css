@@ -1,0 +1,31 @@
+.memoryBarContainer {
+  margin-bottom: 4px;
+  font-size: 0.9em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.memoryLabel {
+    width: 100px; /* Allocate fixed space for labels */
+    text-align: right;
+    flex-shrink: 0; /* Prevent label from shrinking */
+    font-size: 0.9em;
+}
+.barBackground {
+  flex-grow: 1;
+  height: 12px;
+  background-color: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid #ccc;
+}
+.barForeground {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease-in-out; /* Animation for later */
+}
+/* Add specific colors */
+.params { background-color: blue; }
+.activations { background-color: green; }
+.gradients { background-color: red; }
+.optstates { background-color: purple; }

@@ -1,0 +1,57 @@
+.communicationOverlay {
+  position: absolute;
+  /* Centered overlay - adjust if needed based on layout */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20; /* Ensure it's above GPUs */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none; /* Important: Allow clicks to pass through */
+  width: 200px; /* Give it some base width */
+}
+
+.arrowBox {
+  background-color: rgba(255, 255, 153, 0.9); /* Lighter Yellow background */
+  border: 2px solid #cca300; /* Darker yellow border */
+  border-radius: 8px;
+  padding: 12px 18px;
+  text-align: center;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px; /* Space between elements */
+  min-width: 150px; /* Ensure minimum width */
+}
+
+.arrowLabel {
+  font-weight: bold;
+  font-size: 1.1em;
+  color: #333;
+}
+
+.dataTypeLabel {
+    font-size: 0.9em;
+    color: #555;
+}
+
+.flowIndicator {
+    font-size: 1.3em; /* Slightly larger arrows */
+    color: #555;
+    margin-top: 5px;
+    animation: flow 1s linear infinite;
+}
+
+/* Data type specific styling (adjust border color) */
+.gradients { border-color: darkred; }
+.params { border-color: darkblue; }
+.activations { border-color: darkgreen; }
+/* Add styles for tokens, kv later */
+
+@keyframes flow {
+  0% { transform: translateX(-4px); opacity: 0.7; }
+  50% { transform: translateX(4px); opacity: 1; }
+  100% { transform: translateX(-4px); opacity: 0.7; }
+}

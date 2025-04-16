@@ -1,0 +1,34 @@
+.controlPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* Reduced gap */
+}
+.controlPanel h2 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+.slider {
+  width: 100%;
+}
+.simulationControls {
+    display: flex;
+    flex-wrap: wrap; /* Allow buttons to wrap */
+    gap: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px; /* Add space before step counter */
+}
+.simulationControls button {
+    padding: 5px 10px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+}
+.simulationControls button:hover:not(:disabled) {
+    background-color: #e0e0e0;
+}
+
+.simulationControls button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
