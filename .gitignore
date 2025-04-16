@@ -20,6 +20,8 @@
 !section/*/figures/*.svg
 !section/*/figures/*.gif
 
+!interactive-visualization/*
+!interactive-visualization/*
 # Python
 __pycache__/
 *.py[cod]
