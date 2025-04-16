@@ -1,43 +1,62 @@
 .memoryBarContainer {
-  margin-bottom: 4px;
-  font-size: 0.9em;
   display: flex;
   align-items: center;
-  gap: 5px;
+  margin-bottom: 4px;
+  font-size: 0.8em;
 }
+
 .memoryLabel {
-    width: 110px; /* Slightly more space for "Shard 1/X" */
-    text-align: right;
-    flex-shrink: 0;
-    font-size: 0.9em;
-    white-space: nowrap;
+  width: 80px; /* Adjust as needed */
+  text-align: right;
+  margin-right: 5px;
+  white-space: nowrap;
 }
+
 .barBackground {
   flex-grow: 1;
-  height: 14px; /* Slightly taller bar */
-  background-color: #e0e0e0;
-  border-radius: 3px;
+  height: 15px;
+  background-color: #e9ecef;
+  border-radius: 4px;
   overflow: hidden;
-  border: 1px solid #ccc;
-  position: relative; /* Needed for absolute positioning of overlay */
+  position: relative; /* Needed for absolute positioning of dividers and overlay */
 }
+
 .barForeground {
   height: 100%;
-  border-radius: 2px;
-  transition: width 0.3s ease-in-out;
-  position: absolute; /* Positioned absolutely within background */
-  left: 0;
-  top: 0;
-  z-index: 1; /* Base layer */
+  border-radius: 4px;
+  transition: width 0.3s ease-in-out; /* Smooth transition */
 }
-/* Style for the temporary full overlay (FSDP AllGather) */
+
+/* Base color defined in component, use these for overlays or specific styles */
+.params .barForeground { /* background-color: #007bff; */ }
+.activations .barForeground { /* background-color: #28a745; */ }
+.gradients .barForeground { /* background-color: #dc3545; */ }
+.optstates .barForeground { /* background-color: #6f42c1; */ }
+
+/* Style for temp full overlay */
 .barTempFullOverlay {
-    height: 100%;
-    position: absolute;
-    left: 0;
-    top: 0;
-    z-index: 2; /* Above foreground */
-    /* Use background color of the type but with opacity */
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  /* background-color: rgba(0, 0, 0, 0.2); Slightly darken the underlying color */
+  border-radius: 2px; /* Match foreground */
+  pointer-events: none;
+  /* Use type-specific colors with alpha */
+}
+.params .barTempFullOverlay { background-color: rgba(0, 123, 255, 0.3); }
+.activations .barTempFullOverlay { background-color: rgba(40, 167, 69, 0.3); }
+.gradients .barTempFullOverlay { background-color: rgba(220, 53, 69, 0.3); }
+.optstates .barTempFullOverlay { background-color: rgba(111, 66, 193, 0.3); }
+
+/* Style for shard dividers */
+.shardDivider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: rgba(255, 255, 255, 0.5); /* Semi-transparent white line */
+  pointer-events: none;
 }
 
 /* Specific colors */

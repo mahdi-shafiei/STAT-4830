@@ -1,7 +1,66 @@
-import React from 'react'; import styles from './Gpu.module.css'; import MemoryBar from '../MemoryBar/MemoryBar'; import type { GpuState, StepDetail } from '../../context/SimulationContext';
-export interface GpuProps extends GpuState { numGpusInGroup: number; isParamsSharded: boolean; isGradsSharded: boolean; isOptStatesSharded: boolean; currentStepDetails?: StepDetail | null; }
-const MAX_MEMORY_PER_TYPE = { Params: 100, Activations: 100, Gradients: 100, OptStates: 100 };
-const Gpu: React.FC<GpuProps> = ({ id: gpuId, paramMemory, activationMemory, gradientMemory, optStateMemory, status, currentLayerName: layerFromState, isParamsTempFull, dataShardId, numGpusInGroup, isParamsSharded, isGradsSharded, isOptStatesSharded, currentStepDetails }) => { const isProcessing = status === 'computing'; const isCommunicating = status === 'communicating'; const gpuClasses = [ styles.gpu, isProcessing ? styles.processing : '', isCommunicating ? styles.communicating : '' ].filter(Boolean).join(' '); let statusText = 'Idle'; const currentLayer = currentStepDetails?.layer || layerFromState;
-  if (status === 'computing' && currentLayer) { const batchShardText = dataShardId !== undefined ? `B_${dataShardId}` : ''; if ((currentStepDetails?.strategy === 'dp' || currentStepDetails?.strategy === 'fsdp') && currentStepDetails?.direction === 'forward' && batchShardText) statusText = `Compute ${batchShardText}: Fwd-${currentLayer}`; else if (currentStepDetails?.direction === 'backward') statusText = `Compute Bwd: ${currentLayer}`; else if (currentLayer === 'Optimizer') statusText = `Computing: ${currentLayer}`; else if (currentLayer === 'Gradients') statusText = `Compute Grads g_${gpuId}`; else statusText = `Computing: ${currentLayer}`; } else if (status === 'communicating' && currentStepDetails?.operation) { statusText = `${currentStepDetails.operation} (${currentStepDetails.dataType})...`; } else if (status === 'communicating') { statusText = 'Communicating...'; }
-  return ( <div className={gpuClasses}> <div className={styles.gpuHeader}>GPU {gpuId} {status !== 'idle' ? '(Active)' : ''}</div> <div className={styles.memorySection}> <MemoryBar type="Params" value={paramMemory} maxValue={MAX_MEMORY_PER_TYPE.Params} shardDenom={numGpusInGroup} isSharded={isParamsSharded} isTempFull={isParamsTempFull} gpuId={gpuId} /> <MemoryBar type="Activations" value={activationMemory} maxValue={MAX_MEMORY_PER_TYPE.Activations} shardDenom={1} isSharded={false} gpuId={gpuId} /> <MemoryBar type="Gradients" value={gradientMemory} maxValue={MAX_MEMORY_PER_TYPE.Gradients} shardDenom={numGpusInGroup} isSharded={isGradsSharded} gpuId={gpuId} /> <MemoryBar type="OptStates" value={optStateMemory} maxValue={MAX_MEMORY_PER_TYPE.OptStates} shardDenom={numGpusInGroup} isSharded={isOptStatesSharded} gpuId={gpuId} /> </div> <div className={styles.computeSection}> {statusText} </div> </div> ); };
+import React from 'react';
+import styles from './Gpu.module.css';
+import MemoryBar from '../MemoryBar/MemoryBar';
+import { GpuState, StepDetail } from '../../context/types';
+import { motion } from 'framer-motion';
+
+interface GpuProps extends GpuState {
+    numGpusInGroup: number; // Total GPUs for calculating shard denom
+    isParamsSharded: boolean;
+    isGradsSharded: boolean;
+    isOptStatesSharded: boolean;
+    currentStepDetails: StepDetail | null;
+}
+
+const Gpu: React.FC<GpuProps> = ({
+    id,
+    paramMemory,
+    activationMemory,
+    gradientMemory,
+    optStateMemory,
+    status,
+    currentLayerName,
+    isParamsTempFull,
+    dataShardId,
+    numGpusInGroup,
+    isParamsSharded,
+    isGradsSharded,
+    isOptStatesSharded,
+    currentStepDetails
+}) => {
+
+    const shardDenom = numGpusInGroup > 0 ? numGpusInGroup : 1;
+    const isTP = currentStepDetails?.strategy === 'tp';
+    const tpShardDenom = isTP ? 2 : shardDenom; // TP fixed at 2 for now
+
+    // Define max values (could be passed as props or from context if dynamic)
+    const MAX_PARAM = 100;
+    const MAX_ACTIVATION = 100;
+    const MAX_GRADIENT = 100;
+    const MAX_OPTSTATE = 100;
+
+    return (
+        <motion.div
+            className={styles.gpuContainer}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: id * 0.05 }}
+            layout
+        >
+            <div className={styles.gpuHeader}>
+                GPU {id} {dataShardId ? `(Data Shard ${dataShardId})` : ''}
+            </div>
+            <div className={styles.memorySection}>
+                <MemoryBar type="Params" value={paramMemory} gpuId={id} isSharded={isParamsSharded} shardDenom={isTP ? tpShardDenom : shardDenom} isTempFull={isParamsTempFull} maxValue={MAX_PARAM} />
+                <MemoryBar type="Activations" value={activationMemory} gpuId={id} isSharded={false} shardDenom={1} maxValue={MAX_ACTIVATION} />{/* Activations not visually sharded yet */}
+                <MemoryBar type="Gradients" value={gradientMemory} gpuId={id} isSharded={isGradsSharded || isTP} shardDenom={isTP ? tpShardDenom : shardDenom} maxValue={MAX_GRADIENT} />
+                <MemoryBar type="OptStates" value={optStateMemory} gpuId={id} isSharded={isOptStatesSharded || isTP} shardDenom={isTP ? tpShardDenom : shardDenom} maxValue={MAX_OPTSTATE} />
+            </div>
+            <div className={`${styles.statusIndicator} ${styles[status]}`}>
+                {status.toUpperCase()}: {currentLayerName || 'N/A'}
+            </div>
+        </motion.div>
+    );
+};
+
 export default Gpu;

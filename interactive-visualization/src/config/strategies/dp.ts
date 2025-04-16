@@ -5,7 +5,7 @@ export const generateDpSteps = (numGpus: number): StepDetail[] => {
     steps.push({ step: 0, type: 'INIT', description: 'DP Init: Model $w$ replicated.', notation: `w_k = w`, strategy: 'dp' });
     MODEL_LAYERS.forEach((layer, index) => {
         const prevLayerAct = index > 0 ? MODEL_LAYERS[index-1] : 'Input';
-        steps.push({ step: index + 1, type: 'COMPUTE', direction: 'forward', parallel: true, layer: layer, description: `Parallel Fwd Pass: Proc. ${layer} (Batch $B_k$).`, notation: `A_{${layer},k} = \\text{Forward}(A_{${prevLayer},k}, w)`, strategy: 'dp', activationProduced: layer }); // Mark activation produced
+        steps.push({ step: index + 1, type: 'COMPUTE', direction: 'forward', parallel: true, layer: layer, description: `Parallel Fwd Pass: Proc. ${layer} (Batch $B_k$).`, notation: `A_{${layer},k} = \\text{Forward}(A_{${prevLayerAct},k}, w)`, strategy: 'dp', activationProduced: layer });
     });
     const forwardEndStep = MODEL_LAYERS.length + 1;
     // Backwards pass steps are simplified here. Activation consumption linking happens in context.
