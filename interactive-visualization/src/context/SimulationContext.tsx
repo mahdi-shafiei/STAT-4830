@@ -210,106 +210,127 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode; initialNu
         const prevStepDetails = (clampedStep > 0) ? currentSimulationSteps[clampedStep - 1] : null;
 
         return prevStates.map((gpu) => {
-            // TP always applies to all GPUs in the group (N=2)
-            // if (!isParallel && strategy !== 'single' && gpu.id !== 0) return gpu; // Remove this line? TP applies to both GPUs.
+            const newState: GpuState = { ...gpu, status: 'idle', statusNotation: null, currentLayerName: undefined }; // Reset status and notation
+            let nextStatus: GpuState['status'] = 'idle'; // Default to idle
 
-            let newState = { ...gpu };
-            let nextStatus: GpuState['status'] = 'idle';
-            newState.currentLayerName = undefined; // Reset per step
-            // Preserve temp full flag ONLY if the current step maintains it (e.g., FSDP AllGather -> Compute)
-            const preserveParamsTempFull = strategy === 'fsdp' && gpu.isParamsTempFull && (details.type === 'COMPUTE' || details.type === 'UPDATE');
-            newState.isParamsTempFull = preserveParamsTempFull ? true : false; // Default to false unless preserved
-
-            // FIX: Set Activation Memory from pre-calculated profile FIRST
+            // FIX: Apply Activation Memory from pre-calculated profile EARLY
             newState.activationMemory = calculatedActivationMemory;
 
-            // --- Result of PREVIOUS step --- Determine state *entering* current step
+            // --- Determine state resulting FROM PREVIOUS step ---
             if (prevStepDetails) {
-                 // FSDP Param Gather/Discard
-                 if (strategy === 'fsdp' && prevStepDetails.type === 'COMM' && prevStepDetails.operation === 'AllGather' && prevStepDetails.dataType === 'Params') newState.isParamsTempFull = true;
-                 else if (strategy === 'fsdp' && prevStepDetails.type === 'MEMORY_OP' && prevStepDetails.operation === 'DiscardParams') newState.isParamsTempFull = false;
-                 // DP/FSDP Gradient Communication
-                 else if (strategy === 'dp' && prevStepDetails.type === 'COMM' && prevStepDetails.operation === 'AllReduce') newState.gradientMemory = MAX_GRADIENT; // DP has full grads after AllReduce
-                 else if (strategy === 'fsdp' && prevStepDetails.type === 'COMM' && prevStepDetails.operation === 'ReduceScatter') newState.gradientMemory = MAX_GRADIENT / shardDenom;
-                 // FIX: Apply grad clear uniformly AFTER update step for all strategies
-                 if (prevStepDetails.type === 'UPDATE') {
-                     newState.gradientMemory = 0;
-                 }
-                 // TP Specific Previous Step Logic (e.g., after activation AllReduce)
-                 // Although profile handles memory size, we might note the logical state change.
-                 // We don't explicitly track hidden vs sequence sharding yet, so not much changes visually here.
+                // FSDP Param Handling
+                if (strategy === 'fsdp' && prevStepDetails.type === 'COMM' && prevStepDetails.operation === 'AllGather' && prevStepDetails.dataType === 'Params') {
+                     newState.isParamsTempFull = true;
+                } else if (strategy === 'fsdp' && prevStepDetails.type === 'MEMORY_OP' && prevStepDetails.operation === 'DiscardParams') {
+                     newState.isParamsTempFull = false;
+                }
 
-            } else if (clampedStep === 0) { // Handle step 0 explicitly
-                 const initState = initializeGpuStates(expectedGpuCount, strategy)[gpu.id];
-                 newState.paramMemory = initState.paramMemory;
-                 newState.activationMemory = 0; // From profile[0]
-                 newState.gradientMemory = 0;
-                 newState.optStateMemory = initState.optStateMemory;
-                 newState.isParamsTempFull = false;
+                // --- GRADIENT UPDATES BASED ON *PREVIOUS* STEP'S COMPLETION ---
+                // 1. After DP AllReduce
+                if (strategy === 'dp' && prevStepDetails.type === 'COMM' && prevStepDetails.operation === 'AllReduce' && prevStepDetails.dataType === 'Gradients') {
+                    newState.gradientMemory = MAX_GRADIENT * 0.6; // Represents averaged grad
+                }
+                // 2. After FSDP ReduceScatter
+                else if (strategy === 'fsdp' && prevStepDetails.type === 'COMM' && prevStepDetails.operation === 'ReduceScatter' && prevStepDetails.dataType === 'Gradients') {
+                     newState.gradientMemory = isGradsSharded ? (MAX_GRADIENT / shardDenom) : MAX_GRADIENT * 0.6; // Final shard
+                }
+                // 3. After Optimizer Update (UPDATE Step) - Reset Gradients to 0
+                else if (prevStepDetails.type === 'UPDATE') {
+                    newState.gradientMemory = 0; // <<<--- FIX: Explicitly reset gradients here
+                }
+                // TP: After RowLinear AllReduce (intermediate output)
+                else if (strategy === 'tp' && prevStepDetails.type === 'COMM' && prevStepDetails.operation === 'AllReduce' && prevStepDetails.dataType === 'Intermediate') {
+                     // Grads aren't directly affected by this, handled during Bwd pass
+                }
+                 // TP: After Bwd AllReduce (Gradients) - Simplified viz: assume averaged/full
+                else if (strategy === 'tp' && prevStepDetails.type === 'COMM' && prevStepDetails.operation === 'AllReduce' && prevStepDetails.dataType === 'Gradients') {
+                     newState.gradientMemory = MAX_GRADIENT * 0.6; // Represents averaged grad conceptually
+                }
+                // Inherit previous gradient state if no relevant change occurred (e.g., compute step -> compute step)
+                // This branch might be less necessary if current step logic below is comprehensive
+                // else {
+                //    newState.gradientMemory = gpu.gradientMemory;
+                // }
+
+            } else if (clampedStep === 0) {
+                // Reset state for step 0
+                const initState = initializeGpuStates(expectedGpuCount, strategy)[gpu.id];
+                newState.paramMemory = initState.paramMemory;
+                newState.gradientMemory = 0;
+                newState.optimizerStateMemory = initState.optStateMemory;
+                // newState.activationMemory = 0; // Already set from profile
+                newState.isParamsTempFull = false;
+                newState.currentLayerName = undefined;
+                newState.statusNotation = null;
             }
 
-            // --- State FOR CURRENT step --- Determine effects of current step
+
+            // --- Determine state FOR CURRENT step ---
             switch (details.type) {
                 case 'INIT':
+                case 'IDLE': // Treat INIT and IDLE similarly for status
                     nextStatus = 'idle';
-                    // Memory already set by initialization logic above
                     break;
                 case 'COMPUTE':
                     nextStatus = 'computing';
-                    newState.currentLayerName = details.layer || 'Compute';
-                    if (strategy === 'tp' && details.subStep) { // TP: Add sub-step info
-                        newState.currentLayerName += ` (${details.subStep})`;
-                    } else if ((strategy === 'dp' || strategy === 'fsdp') && details.direction === 'forward' && newState.dataShardId) {
-                        newState.currentLayerName = `B${newState.dataShardId}: Fwd-${details.layer}`;
-                    } else if (details.direction === 'backward') {
-                         newState.currentLayerName = `Bwd-${details.layer}`;
-                         if (strategy === 'tp' && details.subStep) newState.currentLayerName += ` (${details.subStep})`;
-                         // Handle gradient accumulation during backward
-                         if (strategy === 'fsdp') newState.gradientMemory = MAX_GRADIENT; // FSDP: Temp full local grad before ReduceScatter
-                         if (strategy === 'dp') newState.gradientMemory = MAX_GRADIENT; // DP: Accumulates full gradients locally
-                         if (strategy === 'tp') newState.gradientMemory = MAX_GRADIENT / shardDenom; // TP: Accumulates sharded gradients (simplified)
+                    newState.currentLayerName = details.layer; // Store current layer name
+                    newState.statusNotation = details.notation || null; // Assign notation if available
+                    // Set gradient memory DURING backward compute
+                    if (details.direction === 'backward') {
+                        // Show full local gradient *before* comms in DP
+                        if (strategy === 'dp') newState.gradientMemory = MAX_GRADIENT;
+                        // FSDP computes grads but ReduceScatter happens in subsequent COMM step
+                        else if (strategy === 'fsdp') newState.gradientMemory = MAX_GRADIENT; // Temp full before COMM step handles sharding
+                        // TP computes sharded gradients conceptually
+                        else if (strategy === 'tp') newState.gradientMemory = isGradsSharded ? (MAX_GRADIENT / shardDenom) : MAX_GRADIENT; // Conceptual sharded/full grad
                     }
-                    // Preserve FSDP temp full param flag if set by previous AllGather
-                    if(strategy === 'fsdp' && gpu.isParamsTempFull) newState.isParamsTempFull = true;
+                    // Preserve FSDP temp full param state if it was set by a previous AllGather
+                    if (strategy === 'fsdp' && gpu.isParamsTempFull) newState.isParamsTempFull = true;
                     break;
-                case 'GRADIENTS': // Primarily used in original DP logic
-                    nextStatus = 'computing';
-                    newState.currentLayerName = `Grads g_${gpu.id}`;
-                    newState.gradientMemory = MAX_GRADIENT;
+                case 'GRADIENTS': // Step specifically for *after* BWD compute, *before* COMM (used in some older flows)
+                    nextStatus = 'computing'; // Still active
+                    newState.currentLayerName = `Local Grads g_${gpu.id}`;
+                    newState.gradientMemory = MAX_GRADIENT; // Ensure grads are shown full before comms
+                    // Activation release handled by profile
                     break;
                 case 'COMM':
                     nextStatus = 'communicating';
-                    newState.currentLayerName = `${details.operation} (${details.dataType})`;
-                    // FSDP AllGather Params makes params temporarily full
-                    if (strategy === 'fsdp' && details.operation === 'AllGather' && details.dataType === 'Params') newState.isParamsTempFull = true;
-                    // TP communication doesn't change persistent param sharding state in this viz
-                    // Handle gradient updates post-communication
-                    if (details.operation === 'AllReduce' && details.dataType === 'Gradients' && strategy === 'dp') newState.gradientMemory = MAX_GRADIENT;
-                    if (details.operation === 'ReduceScatter' && details.dataType === 'Gradients' && strategy === 'fsdp') newState.gradientMemory = MAX_GRADIENT / shardDenom;
-                    // Activation comms are handled by the profile
+                    newState.statusNotation = details.notation || `COMM: ${details.operation} ${details.dataType}`;
+                    // Handle FSDP temporary parameter state during AllGather
+                    if (strategy === 'fsdp' && details.operation === 'AllGather' && details.dataType === 'Params') {
+                        newState.isParamsTempFull = true; // Params are temporarily full
+                    }
+                    // Gradient state changes AFTER comms, handled in the 'previous step' logic above for the *next* step cycle.
                     break;
-                case 'MEMORY_OP': // FSDP DiscardParams
-                    nextStatus = 'idle';
-                    newState.currentLayerName = 'Discard Shards';
-                    newState.isParamsTempFull = false;
+                case 'MEMORY_OP':
+                    nextStatus = 'idle'; // Memory ops are often instantaneous/visual state change
+                    if (details.operation === 'DiscardParams' && strategy === 'fsdp') {
+                         newState.isParamsTempFull = false; // Explicitly set back to false after discarding
+                         newState.currentLayerName = 'Discard Shards';
+                     } else if (details.operation === 'Free' && details.dataType === 'Activations') {
+                         // Handled by activation profile
+                     }
                     break;
                 case 'UPDATE':
-                    nextStatus = 'computing';
+                    nextStatus = 'computing'; // Optimizer update is a computation
+                    newState.statusNotation = details.notation || 'Optimizer Step';
                     newState.currentLayerName = 'Optimizer';
-                    // Gradient memory will be cleared *after* this step (handled in next step's logic)
-                    if(strategy === 'fsdp' && gpu.isParamsTempFull) newState.isParamsTempFull = true; // Preserve flag if needed
+                    // Gradient reset happens AFTER this step, handled in 'previous step' logic for the *next* step
+                    if (strategy === 'fsdp' && gpu.isParamsTempFull) newState.isParamsTempFull = true; // Preserve temp full if needed
                     break;
-                case 'DONE':
-                    nextStatus = 'idle';
-                    newState.gradientMemory = 0; // Ensure grads are zero at the end
-                    newState.isParamsTempFull = false;
-                    // Activation memory handled by profile
-                    break;
+                 case 'DONE':
+                      nextStatus = 'idle';
+                      newState.gradientMemory = 0; // Gradients are used/gone by DONE state
+                      newState.isParamsTempFull = false;
+                      break;
                 default:
                     nextStatus = 'idle';
-                    break;
             }
             newState.status = nextStatus;
+
+            // ** Apply Activation Memory from Profile LAST ** (Moved earlier for clarity)
+            // newState.activationMemory = calculatedActivationMemory; // Override any intermediate changes
+
             return newState;
         });
     });

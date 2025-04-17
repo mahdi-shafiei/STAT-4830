@@ -1,78 +1,52 @@
 .memoryBarContainer {
-  margin-bottom: 4px;
-  font-size: 0.9em;
+  margin-bottom: 5px; /* Slightly more space */
+  font-size: 0.85em; /* Slightly smaller */
   display: flex;
   align-items: center;
-  gap: 5px;
-  min-height: 18px; /* Ensure minimum height */
+  gap: 6px;
+  min-height: 16px; /* Adjust height */
 }
 
 .memoryLabel {
-  min-width: 95px; /* Set minimum width */
-  flex-basis: 95px; /* Set flexible basis */
+  min-width: 105px; /* Adjusted min width */
+  flex-basis: 105px; /* Match min width */
   text-align: right;
   flex-shrink: 0;
-  font-size: 0.9em;
-  padding-right: 3px; /* Add padding */
-  white-space: nowrap; /* Prevent label wrapping */
+  padding-right: 4px;
+  white-space: nowrap;
+  color: #444; /* Darker label text */
 }
 
 .barBackground {
   flex-grow: 1;
-  height: 15px;
-  background-color: #e9ecef;
-  border-radius: 4px;
+  height: 10px; /* Slightly thinner bar */
+  background-color: #e0e4e8; /* Light grey-blue */
+  border-radius: 5px;
   overflow: hidden;
-  position: relative; /* Needed for absolute positioning of dividers and overlay */
+  border: 1px solid #d0d4d8;
+  position: relative; /* For dividers/overlay */
 }
 
 .barForeground {
   height: 100%;
-  border-radius: 4px;
-  transition: width 0.3s ease-in-out; /* Smooth transition */
+  border-radius: 5px;
+  transition: width 0.25s ease-out; /* Faster transition */
 }
 
-/* Base color defined in component, use these for overlays or specific styles */
-.params .barForeground { /* background-color: #007bff; */ }
-.activations .barForeground { /* background-color: #28a745; */ }
-.gradients .barForeground { /* background-color: #dc3545; */ }
-.optstates .barForeground { /* background-color: #6f42c1; */ }
+/* Specific colors - make slightly softer */
+.params { background-color: #4a90e2; } /* Softer Blue */
+.activations { background-color: #50e3c2; } /* Tealish Green */
+.gradients { background-color: #e74c3c; } /* Red */
+.optstates { background-color: #9b59b6; } /* Purple */
 
-/* Style for temp full overlay */
-.barTempFullOverlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  /* background-color: rgba(0, 0, 0, 0.2); Slightly darken the underlying color */
-  border-radius: 2px; /* Match foreground */
-  pointer-events: none;
-  /* Use type-specific colors with alpha */
-}
-.params .barTempFullOverlay { background-color: rgba(0, 123, 255, 0.3); }
-.activations .barTempFullOverlay { background-color: rgba(40, 167, 69, 0.3); }
-.gradients .barTempFullOverlay { background-color: rgba(220, 53, 69, 0.3); }
-.optstates .barTempFullOverlay { background-color: rgba(111, 66, 193, 0.3); }
+/* Shard Dividers */
+.barBackground { position: relative; } /* Ensure context for absolute dividers */
+.shardDivider { position: absolute; top: 0; bottom: 0; width: 1px; background-color: rgba(255, 255, 255, 0.6); pointer-events: none; }
 
-/* Style for shard dividers */
-.shardDivider {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background-color: rgba(255, 255, 255, 0.5); /* Semi-transparent white line */
-  pointer-events: none;
-}
-
-/* Specific colors */
-.params { background-color: blue; }
-.activations { background-color: green; }
-.gradients { background-color: red; }
-.optstates { background-color: purple; }
-
-/* Assign semi-transparent colors for the overlay */
-.barTempFullOverlay.params { background-color: rgba(0, 0, 255, 0.3); }
-.barTempFullOverlay.activations { background-color: rgba(0, 128, 0, 0.3); }
-.barTempFullOverlay.gradients { background-color: rgba(255, 0, 0, 0.3); }
-.barTempFullOverlay.optstates { background-color: rgba(128, 0, 128, 0.3); }
+/* Temp Full Overlay */
+.barTempFullOverlay { position: absolute; top: 0; left: 0; height: 100%; border-radius: 5px; pointer-events: none; }
+.params .barTempFullOverlay { background-color: rgba(74, 144, 226, 0.3); }
+.activations .barTempFullOverlay { background-color: rgba(80, 227, 194, 0.3); }
+.gradients .barTempFullOverlay { background-color: rgba(231, 76, 60, 0.3); }
+.optstates .barTempFullOverlay { background-color: rgba(155, 89, 182, 0.3); }
 

@@ -3,51 +3,56 @@
   flex-direction: column;
   min-height: 100vh;
   font-family: sans-serif;
+  background-color: #f4f7f6; /* Light background for whole page */
 }
 
 .header {
-  background-color: #282c34;
-  padding: 10px 20px;
+  background-color: #2c3e50; /* Dark blue-grey */
+  padding: 12px 20px;
   color: white;
   text-align: center;
   flex-shrink: 0; /* Prevent header shrinking */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  z-index: 100; /* Keep header on top */
+  position: sticky; /* Keep header visible */
+  top: 0;
 }
-
-/* New details panel below header */
-/* OperationDetailsPanel component will have its own internal styles */
+.header h1 { margin: 0; font-size: 1.4em; }
 
 .mainContent {
   display: flex;
   flex-grow: 1;
-  overflow: hidden; /* Prevent content changes from affecting overall layout height */
+  /* Use viewport height minus header height */
+  /* Adjust 60px based on actual header height + any padding */
+  height: calc(100vh - 60px);
+  overflow: hidden; /* Prevent layout shifts */
 }
 
 .controlPanel {
-  width: 250px;
-  padding: 15px;
-  border-right: 1px solid #ccc;
-  background-color: #f8f8f8;
-  flex-shrink: 0; /* Prevent control panel from shrinking */
-  height: calc(100vh - 70px); /* Adjust 70px based on header/footer height */
-  overflow-y: auto; /* Allow scrolling within control panel if needed */
-  position: sticky; /* Make it sticky */
-  top: 0; /* Stick to top relative to mainContent */
+  width: 260px; /* Slightly wider */
+  padding: 20px;
+  border-right: 1px solid #d7dbdd; /* Lighter border */
+  background-color: #ffffff; /* White background */
+  flex-shrink: 0;
+  /* Use height of parent container */
+  height: 100%;
+  overflow-y: auto; /* Allow scrolling only if needed */
+  box-shadow: 1px 0 3px rgba(0,0,0,0.05);
 }
 
-.visualizationArea {
+.visualizationAreaContainer { /* Renamed for clarity */
   flex-grow: 1;
-  padding: 15px;
-  /* background-color: #ffffff; */ /* Already set */
-  overflow-x: auto; /* Keep horizontal scroll */
-  overflow-y: auto; /* Allow vertical scroll if content overflows */
-  position: relative; /* Keep relative for absolute positioning inside */
+  padding: 20px;
+  overflow: auto; /* Allow both x and y scroll if content overflows */
+  position: relative; /* For absolute positioning inside */
+   background-color: #eef1f5; /* Very light blue-grey background */
 }
 
 .infoPanel {
-  padding: 10px 20px; /* Smaller padding */
-  border-top: 1px solid #ccc;
-  background-color: #f0f0f0;
-  min-height: auto; /* Allow shrinking */
-  flex-shrink: 0; /* Prevent footer shrinking */
-  text-align: center;
+  padding: 15px 20px;
+  border-top: 1px solid #d7dbdd;
+  background-color: #ffffff;
+  min-height: 60px; /* Adjust min height */
+  flex-shrink: 0; /* Prevent shrinking */
+  box-shadow: 0 -1px 3px rgba(0,0,0,0.05);
 }

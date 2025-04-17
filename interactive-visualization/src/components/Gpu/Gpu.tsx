@@ -86,7 +86,7 @@ const Gpu: React.FC<GpuProps> = ({
             </div>
             <div className={styles.computeSection}>
                 <div className={styles.statusText}>{statusPrefix}</div>
-                {statusNotation && (
+                {statusNotation && statusNotation.trim() && (
                     <div className={styles.statusNotation} title={statusNotation}>
                         <MathDisplay texString={statusNotation} />
                     </div>
