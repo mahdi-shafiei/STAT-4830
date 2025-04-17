@@ -1,7 +1,8 @@
 import React from 'react';
 import styles from './Gpu.module.css';
 import MemoryBar from '../MemoryBar/MemoryBar';
-import { GpuState, StepDetail } from '../../context/types';
+import MathDisplay from '../MathDisplay/MathDisplay';
+import type { GpuState, StepDetail } from '../../context/types';
 import { motion } from 'framer-motion';
 
 interface GpuProps extends GpuState {
@@ -10,87 +11,90 @@ interface GpuProps extends GpuState {
     isGradsSharded: boolean;
     isOptStatesSharded: boolean;
     currentStepDetails: StepDetail | null;
+    strategy?: string;
+    layerFromState?: string;
 }
 
+const MAX_MEMORY_PER_TYPE = {
+    param: 100,
+    activation: 100,
+    gradient: 100,
+    optState: 100,
+};
+
 const Gpu: React.FC<GpuProps> = ({
-    id,
+    id: gpuId,
     paramMemory,
     activationMemory,
     gradientMemory,
     optStateMemory,
     status,
-    currentLayerName,
+    currentLayerName: layerFromState,
     isParamsTempFull,
     dataShardId,
     numGpusInGroup,
     isParamsSharded,
     isGradsSharded,
     isOptStatesSharded,
-    currentStepDetails
+    currentStepDetails,
+    strategy
 }) => {
 
+    const gpuClasses = `${styles.gpuContainer} ${styles[status] || ''}`;
+
     const shardDenom = numGpusInGroup > 0 ? numGpusInGroup : 1;
-    const isTP = currentStepDetails?.strategy === 'tp';
-    const tpShardDenom = isTP ? 2 : shardDenom; // TP fixed at 2 for now
+    const tpShardDenom = strategy === 'tp' ? 2 : shardDenom;
 
-    // Define max values
-    const MAX_PARAM = 100;
-    const MAX_ACTIVATION = 100;
-    const MAX_GRADIENT = 100;
-    const MAX_OPTSTATE = 100;
-
-    // --- Enhanced Status Text Logic ---
-    let statusText = 'Idle';
-    const layerFromState = currentLayerName; // Keep original state name as fallback
-    const layerName = currentStepDetails?.layer || layerFromState; // Prefer details for current step
+    let statusPrefix = 'Idle';
+    let statusNotation = '';
+    const layerName = currentStepDetails?.layer || layerFromState;
 
     if (status === 'computing' && layerName) {
         let stepDesc = '';
-        if (isTP && currentStepDetails?.tpExecutionType) {
-            stepDesc = `(${currentStepDetails.tpExecutionType})`; // Use TP type if present
+        if (currentStepDetails?.tpExecutionType) {
+            stepDesc = `(${currentStepDetails.tpExecutionType})`;
         } else if (currentStepDetails?.subStep) {
             stepDesc = `(${currentStepDetails.subStep})`;
         }
-        statusText = `Compute: ${layerName} ${stepDesc}`;
-
-        // Add notation if available and it's a compute step
+        statusPrefix = `Compute: ${layerName} ${stepDesc}`;
         if (currentStepDetails?.type === 'COMPUTE' && currentStepDetails.notation) {
-            // Keep it concise for the status box
-             const conciseNotation = currentStepDetails.notation.split('=')[0]; // Just show LHS for brevity
-             statusText += ` [${conciseNotation?.trim() ?? ''}]`;
+            statusNotation = currentStepDetails.notation;
         }
-
     } else if (status === 'communicating' && currentStepDetails?.operation) {
-        statusText = `${currentStepDetails.operation} (${currentStepDetails.dataType || ''})...`;
-        // Add notation for communication if useful
+        statusPrefix = `${currentStepDetails.operation} (${currentStepDetails.dataType || 'data'})...`;
         if (currentStepDetails.notation) {
-             statusText += ` [${currentStepDetails.notation}]`;
+            statusNotation = currentStepDetails.notation;
         }
     } else if (status === 'communicating') {
-        statusText = 'Communicating...';
-    } else {
-        statusText = status.charAt(0).toUpperCase() + status.slice(1); // Default: Capitalize status
+        statusPrefix = 'Communicating...';
+    } else if (status !== 'idle') {
+        statusPrefix = status.charAt(0).toUpperCase() + status.slice(1);
     }
 
     return (
         <motion.div
-            className={styles.gpuContainer}
+            className={gpuClasses}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: id * 0.05 }}
+            transition={{ delay: gpuId * 0.05 }}
             layout
         >
             <div className={styles.gpuHeader}>
-                 GPU {id} {dataShardId && !isTP ? `(Data Shard ${dataShardId})` : ''} {isTP ? `(TP Rank ${id})` : ''}
+                GPU {gpuId} {dataShardId && strategy !== 'tp' ? `(Data Shard ${dataShardId})` : ''} {strategy === 'tp' ? `(TP Rank ${gpuId})` : ''} {status !== 'idle' ? '(Active)' : ''}
             </div>
             <div className={styles.memorySection}>
-                <MemoryBar type="Params" value={paramMemory} gpuId={id} isSharded={isParamsSharded || isTP} shardDenom={isTP ? tpShardDenom : shardDenom} isTempFull={isParamsTempFull} maxValue={MAX_PARAM} />
-                <MemoryBar type="Activations" value={activationMemory} gpuId={id} isSharded={false} shardDenom={1} maxValue={MAX_ACTIVATION} />
-                <MemoryBar type="Gradients" value={gradientMemory} gpuId={id} isSharded={isGradsSharded || isTP} shardDenom={isTP ? tpShardDenom : shardDenom} maxValue={MAX_GRADIENT} />
-                <MemoryBar type="OptStates" value={optStateMemory} gpuId={id} isSharded={isOptStatesSharded || isTP} shardDenom={isTP ? tpShardDenom : shardDenom} maxValue={MAX_OPTSTATE} />
+                <MemoryBar type="Params" value={paramMemory} gpuId={gpuId} isSharded={isParamsSharded || strategy === 'tp'} shardDenom={strategy === 'tp' ? tpShardDenom : shardDenom} isTempFull={isParamsTempFull} maxValue={MAX_MEMORY_PER_TYPE.param} />
+                <MemoryBar type="Activations" value={activationMemory} gpuId={gpuId} isSharded={false} shardDenom={1} maxValue={MAX_MEMORY_PER_TYPE.activation} />
+                <MemoryBar type="Gradients" value={gradientMemory} gpuId={gpuId} isSharded={isGradsSharded || strategy === 'tp'} shardDenom={strategy === 'tp' ? tpShardDenom : shardDenom} maxValue={MAX_MEMORY_PER_TYPE.gradient} />
+                <MemoryBar type="OptStates" value={optStateMemory} gpuId={gpuId} isSharded={isOptStatesSharded || strategy === 'tp'} shardDenom={strategy === 'tp' ? tpShardDenom : shardDenom} maxValue={MAX_MEMORY_PER_TYPE.optState} />
             </div>
-            <div className={`${styles.statusIndicator} ${styles[status]}`} title={currentStepDetails?.notation || statusText}>
-                {statusText}
+            <div className={styles.computeSection}>
+                <div className={styles.statusText}>{statusPrefix}</div>
+                {statusNotation && (
+                    <div className={styles.statusNotation} title={statusNotation}>
+                        <MathDisplay texString={statusNotation} />
+                    </div>
+                )}
             </div>
         </motion.div>
     );
