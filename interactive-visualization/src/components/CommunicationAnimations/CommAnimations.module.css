@@ -1,54 +1,56 @@
-/* Replace CommAnimations.module.css content */
+/* src/components/CommunicationAnimations/CommAnimations.module.css */
 .commSvgOverlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%; /* Ensure SVG covers the area needed */
-  z-index: 19; /* Below viz box, above GPUs? */
+  height: 100%;
+  z-index: 19; /* Ensure it's above GPUs but potentially below detailed viz */
   pointer-events: none;
-  overflow: visible; /* Allow packets to move outside bounds if needed */
+  overflow: visible;
 }
 
 .commLine {
-  stroke: #95a5a6; /* Grey */
+  stroke: #adb5bd; /* Medium grey */
   stroke-width: 1.5;
-  stroke-dasharray: 4 4;
+  stroke-dasharray: 3 3;
   stroke-linecap: round;
 }
 
 .dataPacketCircle {
-  stroke: rgba(0, 0, 0, 0.6);
+  stroke: rgba(0, 0, 0, 0.4);
   stroke-width: 1;
-  filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.2));
+  filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.15));
 }
-.inputData { fill: #2ecc71; } /* Emerald Green */
-.outputData { fill: #9b59b6; } /* Amethyst Purple */
-.weightData { fill: #3498db; } /* Peter River Blue */
-.genericData { fill: #f1c40f; } /* Sun Flower Yellow */
-.gradientData { fill: #e74c3c;} /* Alizarin Red */
+.inputData { fill: #2ecc71; } /* Emerald */
+.outputData { fill: #9b59b6; } /* Amethyst */
+.weightData { fill: #3498db; } /* Peter River */
+.genericData { fill: #f39c12; } /* Orange */
+.gradientData { fill: #e74c3c; } /* Red */
 
 .packetText {
-     font-size: 8px;
+     font-family: sans-serif; /* Ensure readable font */
+     font-size: 9px; /* Slightly larger */
      fill: white;
-     font-weight: bold;
+     font-weight: 600; /* Semi-bold */
      pointer-events: none;
      user-select: none;
+     dominant-baseline: middle; /* Better vertical centering */
+     text-shadow: 1px 1px 1px rgba(0,0,0,0.3); /* Slight shadow */
 }
 
-
-.commLabel {
-   font-size: 0.85em;
+.commLabel { /* Label for specific primitive e.g., Broadcast */
+   font-size: 0.9em;
    font-weight: bold;
-   fill: #34495e; /* Dark blue-grey */
+   fill: #34495e;
    text-anchor: middle;
    dominant-baseline: middle;
-   filter: drop-shadow(1px 1px 1px rgba(255,255,255,0.7));
+   filter: drop-shadow(1px 1px 1px rgba(255,255,255,0.8));
 }
-.commLabelLarge {
-     font-size: 1.1em;
+.commLabelLarge { /* Label for AllGather/AllReduce */
+     font-size: 1.2em;
      font-weight: bold;
-     fill: #e67e22; /* Orange */
+     fill: #c0392b; /* Darker Red */
      text-anchor: middle;
      dominant-baseline: middle;
      filter: drop-shadow(1px 1px 1px rgba(255,255,255,0.7));
