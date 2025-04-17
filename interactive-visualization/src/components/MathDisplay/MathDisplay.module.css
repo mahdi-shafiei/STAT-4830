@@ -7,15 +7,20 @@
 
 /* Style for fallback text on KaTeX error */
 .katexError {
-    color: red;
+    color: #e74c3c; /* Red */
     font-style: italic;
-    background-color: #fee;
-    padding: 2px 4px;
-    border-radius: 3px;
+    font-size: 0.9em;
+    margin-left: 4px;
+    cursor: help; /* Indicate tooltip available */
 }
 
 /* Optional: Adjust KaTeX default spacing if needed */
 .mathContainer .katex {
   /* Example: reduce bottom margin slightly */
   /* margin-bottom: 0.1em; */
+}
+
+.mathDisplayContainer {
+  /* Base styling if needed */
+  line-height: 1.2; /* Adjust line height for KaTeX */
 }

@@ -1,4 +1,4 @@
-import type { StepDetail, CommOperation, CommDataType } from '../../context/types';
+import type { StepDetail, CommOperation, CommDataType, TensorInfo } from '../../context/types';
 
 // Re-declare or import MODEL_LAYERS if not globally available
 const MODEL_LAYERS = ['Embed', 'MHA', 'FFN', 'LN', 'Output']; // Consistent layer list
@@ -6,92 +6,84 @@ const N_tp = 2; // Fixed TP size for this chunk
 
 export const generateTpSteps = (): StepDetail[] => {
     const steps: StepDetail[] = [];
-    const Ntp = N_tp; // Use constant
+    const Ntp = N_tp;
+    // Define common tensor shapes (can be more dynamic later)
+    const b = 'B', s = 'S', h = 'H', dff = '4H'; // Use symbolic dimensions
+    const h_tp = `${h}/${Ntp}`;
+    const dff_tp = `${dff}/${Ntp}`;
 
-    // Step 0: Init
-    steps.push({ step: 0, type: 'INIT', description: `TP (N=${Ntp}) Init: Layer params sharded (conceptual).`, notation: `w_{\\text{Layer}} = [w_{\\text{Layer}}^{(0)} | w_{\\text{Layer}}^{(1)}]`, strategy: 'tp' });
+    steps.push({ step: 0, type: 'INIT', description: `TP (N=${Ntp}) Init: Layer params sharded.`, notation: `w_{L} = \\{ w_{L}^{(k)} \\}_{k=0}^{${Ntp-1}}`, strategy: 'tp', phase: 'idle' });
 
-    // --- Forward Pass ---
-    let currentStep = 0; // Will be incremented before first use
-    MODEL_LAYERS.forEach((layer, index) => {
-        currentStep++;
-        const prevLayerAct = index > 0 ? `A_{${MODEL_LAYERS[index-1]}}` : `\\text{Input}`; // Simplified notation for viz
-        let activationProducedLayer: string | null = layer; // Assume layer produces activation by default
+    let currentStep = 0;
+    let previousActivation: TensorInfo = { label: '\\text{Input}', isSharded: false, numShards: Ntp, rows: b, cols: h }; // Assume input is replicated
+
+    MODEL_LAYERS.forEach((layer) => {
+        currentStep++; // Increment step counter for each layer's sequence
+        let currentLayerInput = previousActivation;
+        let activationProducedThisLayer: string | null = layer;
+        let layerOutputTensor: TensorInfo = { label: `A_{${layer}}`, isSharded: false, numShards: Ntp, rows: b, cols: h }; // Default output shape
 
         switch (layer) {
-            case 'MHA':
-                // 1. QKV Proj (Column Parallel)
-                steps.push({ step: currentStep, type: 'COMPUTE', direction: 'forward', parallel: true, layer: layer, subStep: 'QKV (Col)', description: `TP Fwd: Compute sharded Q_k, K_k, V_k from ${prevLayerAct}.`, notation: `Q_k, K_k, V_k = \\text{ColParallel}(${prevLayerAct}, W_{QKV})`, strategy: 'tp' });
-                // 2. Attention Compute (Local/Head-sharded)
-                currentStep++;
-                steps.push({ step: currentStep, type: 'COMPUTE', direction: 'forward', parallel: true, layer: layer, subStep: 'Attn Comp', description: `TP Fwd: Compute local Attention Output O_k.`, notation: `O_k = \\text{Attention}(Q_k, K_k, V_k)`, strategy: 'tp' });
-                // 3. Output Proj (Row Parallel)
-                currentStep++;
-                steps.push({ step: currentStep, type: 'COMPUTE', direction: 'forward', parallel: true, layer: layer, subStep: 'Out (Row)', description: `TP Fwd: Compute partial Output Projection Z_k.`, notation: `Z_k = \\text{RowParallel}(O_k, W_{Out})`, strategy: 'tp' });
-                // 4. AllReduce Output Proj
-                currentStep++;
-                steps.push({ step: currentStep, type: 'COMM', parallel: true, layer: layer, operation: 'AllReduce' as CommOperation, dataType: 'Activations' as CommDataType, subStep: 'Out Reduce', description: `TP Fwd: AllReduce partial outputs Z_k.`, notation: `A_{${layer}} = \\text{AllReduce}_k(Z_k)`, strategy: 'tp', activationProduced: layer });
-                activationProducedLayer = null; // Combined activation produced by COMM step
+            case 'MHA': // Simpler MHA viz for now, focus on Linear Ops
+                 const qkvWeight: TensorInfo = { label: `W_{QKV}`, isSharded: 'col', numShards: Ntp, rows: h, cols: h };
+                 const qkvIntermediate: TensorInfo = { label: `Q_k,K_k,V_k`, isSharded: 'col', numShards: Ntp, rows: b, cols: h_tp };
+                 steps.push({ step: steps.length, type: 'COMPUTE', direction: 'forward', parallel: true, layer: layer, subStep: 'QKV (Col)', tpExecutionType: 'ColumnParallel', phase: 'compute', description: `Compute sharded Q_k, K_k, V_k`, notation: `Q_k, K_k, V_k = A_{prev} W_{QKV,k}`, inputTensor: currentLayerInput, weightTensor: qkvWeight, intermediateTensor: qkvIntermediate, strategy: 'tp' });
+
+                 const attnInput = qkvIntermediate; // Use intermediate as input
+                 const attnIntermediate: TensorInfo = { label: `O_k`, isSharded: 'col', numShards: Ntp, rows: b, cols: h_tp };
+                 steps.push({ step: steps.length, type: 'COMPUTE', direction: 'forward', parallel: true, layer: layer, subStep: 'Attn Comp', tpExecutionType: 'LocalAttention', phase: 'compute', description: `Compute local Attention Output O_k.`, notation: `O_k = \\text{Attn}(Q_k,K_k,V_k)`, inputTensor: attnInput, weightTensor: {label: 'Attn Fn', isSharded: false, numShards: 1}, intermediateTensor: attnIntermediate, strategy: 'tp' });
+
+                 const outProjInput = attnIntermediate;
+                 const outProjWeight: TensorInfo = { label: `W_{Out}`, isSharded: 'row', numShards: Ntp, rows: h_tp, cols: h };
+                 const outProjIntermediate: TensorInfo = { label: `Z_k`, isSharded: 'col', numShards: Ntp, rows: b, cols: h }; // Output of row matmul is sharded along output dim conceptually before sum
+                 layerOutputTensor = { label: `A_{${layer}}`, isSharded: false, numShards: Ntp, rows: b, cols: h }; // Final output is replicated
+                 steps.push({ step: steps.length, type: 'COMPUTE', direction: 'forward', parallel: true, layer: layer, subStep: 'Out (Row)', tpExecutionType: 'RowParallel', phase: 'compute', description: `Compute partial Output Projection Z_k.`, notation: `Z_k = O_k W_{Out,k}`, inputTensor: outProjInput, weightTensor: outProjWeight, intermediateTensor: outProjIntermediate, strategy: 'tp' });
+                 steps.push({ step: steps.length, type: 'COMM', parallel: true, layer: layer, operation: 'AllReduce' as CommOperation, dataType: 'Activations' as CommDataType, subStep: 'Out Reduce', tpExecutionType: 'RowParallel', phase: 'comm_output', description: `AllReduce partial outputs Z_k.`, notation: `A_{${layer}} = \\text{AllReduce}_k(Z_k)`, inputTensor: outProjIntermediate, outputTensor: layerOutputTensor, strategy: 'tp', activationProduced: layer });
+                 activationProducedThisLayer = null;
+                 break;
+
+             case 'FFN':
+                const ffn1Weight: TensorInfo = { label: `W_{FFN1}`, isSharded: 'col', numShards: Ntp, rows: h, cols: dff };
+                const ffn1Intermediate: TensorInfo = { label: `H_k`, isSharded: 'col', numShards: Ntp, rows: b, cols: dff_tp };
+                const ffn2Weight: TensorInfo = { label: `W_{FFN2}`, isSharded: 'row', numShards: Ntp, rows: dff_tp, cols: h };
+                const ffn2Intermediate: TensorInfo = { label: `Z_k`, isSharded: 'col', numShards: Ntp, rows: b, cols: h }; // Output before reduce
+                layerOutputTensor = { label: `A_{${layer}}`, isSharded: false, numShards: Ntp, rows: b, cols: h }; // Final output
+
+                // FFN1 (Column Parallel)
+                // Phase: Comm Input (Broadcast - Implicit in TP Matmul)
+                // Phase: Compute
+                steps.push({ step: steps.length, type: 'COMPUTE', direction: 'forward', parallel: true, layer: layer, subStep: 'FFN1 (Col)', tpExecutionType: 'ColumnParallel', phase: 'compute', description: `Compute sharded FFN Act H_k.`, notation: `H_k = A_{prev} W_{FFN1,k}`, inputTensor: currentLayerInput, weightTensor: ffn1Weight, intermediateTensor: ffn1Intermediate, strategy: 'tp' });
+                const ffn1OutputAsInput = ffn1Intermediate; // Use intermediate as input for next
+
+                // FFN2 (Row Parallel)
+                // Phase: Comm Input (Identity/Local - Input H_k is already sharded correctly)
+                // Phase: Compute
+                steps.push({ step: steps.length, type: 'COMPUTE', direction: 'forward', parallel: true, layer: layer, subStep: 'FFN2 (Row)', tpExecutionType: 'RowParallel', phase: 'compute', description: `Compute partial Output Z_k.`, notation: `Z_k = H_k W_{FFN2,k}`, inputTensor: ffn1OutputAsInput, weightTensor: ffn2Weight, intermediateTensor: ffn2Intermediate, strategy: 'tp' });
+                // Phase: Comm Output (AllReduce)
+                steps.push({ step: steps.length, type: 'COMM', parallel: true, layer: layer, operation: 'AllReduce' as CommOperation, dataType: 'Activations' as CommDataType, subStep: 'FFN2 Reduce', tpExecutionType: 'RowParallel', phase: 'comm_output', description: `AllReduce partial outputs Z_k.`, notation: `A_{${layer}} = \\text{AllReduce}_k(Z_k)`, inputTensor: ffn2Intermediate, outputTensor: layerOutputTensor, strategy: 'tp', activationProduced: layer });
+                activationProducedThisLayer = null;
                 break;
 
-            case 'FFN':
-                // 1. Linear 1 (Column Parallel)
-                steps.push({ step: currentStep, type: 'COMPUTE', direction: 'forward', parallel: true, layer: layer, subStep: 'FFN1 (Col)', description: `TP Fwd: Compute sharded FFN Act H_k from ${prevLayerAct}.`, notation: `H_k = \\text{ColParallel}(${prevLayerAct}, W_{FFN1})`, strategy: 'tp' });
-                // 2. Activation Fn (Local) - Often fused, we'll visually omit
-                // 3. Linear 2 (Row Parallel)
-                currentStep++;
-                steps.push({ step: currentStep, type: 'COMPUTE', direction: 'forward', parallel: true, layer: layer, subStep: 'FFN2 (Row)', description: `TP Fwd: Compute partial Output Z_k from H_k.`, notation: `Z_k = \\text{RowParallel}(H_k, W_{FFN2})`, strategy: 'tp' });
-                // 4. AllReduce Output
-                currentStep++;
-                steps.push({ step: currentStep, type: 'COMM', parallel: true, layer: layer, operation: 'AllReduce' as CommOperation, dataType: 'Activations' as CommDataType, subStep: 'FFN2 Reduce', description: `TP Fwd: AllReduce partial outputs Z_k.`, notation: `A_{${layer}} = \\text{AllReduce}_k(Z_k)`, strategy: 'tp', activationProduced: layer });
-                 activationProducedLayer = null; // Combined activation produced by COMM step
-                break;
-
-            default: // Embed, LN, Output - Assume run replicated on both TP ranks for now (simplification)
-                steps.push({ step: currentStep, type: 'COMPUTE', direction: 'forward', parallel: true, layer: layer, description: `TP Fwd: Processing ${layer} (Replicated).`, notation: `A_{${layer}} = \\text{Layer}(${prevLayerAct}, w_{${layer}})`, strategy: 'tp', activationProduced: layer });
-                // activationProducedLayer remains set
+            default: // Embed, LN, Output - Replicated
+                layerOutputTensor = { label: `A_{${layer}}`, isSharded: false, numShards: Ntp, rows: b, cols: h }; // Output is replicated
+                steps.push({ step: steps.length, type: 'COMPUTE', direction: 'forward', parallel: true, layer: layer, tpExecutionType: 'Replicated', phase: 'compute', description: `Processing ${layer} (Replicated).`, notation: `${layerOutputTensor.label} = \\text{${layer}}(A_{prev}, w_{${layer}})`, inputTensor: currentLayerInput, weightTensor: {label: `w_{${layer}}`, isSharded: false, numShards: 1}, outputTensor: layerOutputTensor, strategy: 'tp', activationProduced: layer });
                 break;
         }
-         // Store the layer name that produced the activation *at the end* of this sequence of steps for the layer
-        // If activationProducedLayer is null (e.g., due to COMM), it means the COMM step was the producer.
-        if(activationProducedLayer) {
-             const lastStepForLayer = steps[steps.length - 1];
-             if(lastStepForLayer && !lastStepForLayer.activationProduced) {
-                 // Only set if not already set (e.g., by the COMM step)
-                lastStepForLayer.activationProduced = activationProducedLayer;
-             }
-        }
+         if(activationProducedThisLayer && steps.length > 0) { steps[steps.length - 1].activationProduced = activationProducedThisLayer; }
+         previousActivation = layerOutputTensor; // Update for next layer's input
     });
 
     // --- Conceptual Backward Pass ---
-    // Add placeholder backward steps for activation tracking
-    [...MODEL_LAYERS].reverse().forEach((layer) => {
-         currentStep++;
-         // Determine which activation is needed based on the model structure
+     [...MODEL_LAYERS].reverse().forEach((layer) => {
          const fwdLayerIndex = MODEL_LAYERS.indexOf(layer);
-         // Activation consumed is the one produced by the *previous* layer in the forward pass
-         const actConsumedLayerName = fwdLayerIndex > 0 ? MODEL_LAYERS[fwdLayerIndex - 1] : 'Input'; // Input is consumed by first layer (Embed)
-
-         // Backward pass for TP also involves AllReduce for certain gradient calculations (e.g., dX in ColParallel) - OMITTED FOR SIMPLICITY IN THIS CHUNK
-          let description = `TP Bwd: Compute Grads for ${layer} (Placeholder).`;
-          let notation = `\\nabla w_{${layer},k}, \\dots`;
-          // Add simple differentiation for comm steps needed in backward (conceptual)
-          if (layer === 'MHA' || layer === 'FFN') {
-              // Backward of RowParallel needs AllReduce on input gradient
-              // Backward of ColParallel needs AllReduce on weight gradient
-               description = `TP Bwd: Compute Grads for ${layer} (Comm Placeholder).`;
-               notation = `\\text{AllReduce}(\\dots)`
-          }
-
-         steps.push({ step: currentStep, type: 'COMPUTE', direction: 'backward', parallel: true, layer: layer, description: description, notation: notation, strategy: 'tp', activationConsumedLayer: actConsumedLayerName });
-    });
+         const actConsumedLayerName = fwdLayerIndex > 0 ? MODEL_LAYERS[fwdLayerIndex - 1] : null;
+         const gradNotation = `\\nabla w_{${layer},k}, \\dots`; // Keep simple for now
+         steps.push({ step: steps.length, type: 'COMPUTE', direction: 'backward', parallel: true, layer: layer, phase: 'compute', description: `TP Bwd: Compute Grads for ${layer}.`, notation: gradNotation, strategy: 'tp', activationConsumedLayer: actConsumedLayerName });
+     });
 
     // --- Conceptual Update ---
-    currentStep++;
-    steps.push({ step: currentStep, type: 'UPDATE', parallel: true, layer: 'Optimizer', description: `TP Optimizer: Update sharded params $w^{(k)}$ (Placeholder).`, notation: `w^{(k)} \\leftarrow \\text{Optim}(w^{(k)}, \\nabla w^{(k)})`, strategy: 'tp' });
-    currentStep++;
-    steps.push({ step: currentStep, type: 'DONE', description: `TP Step Complete.`, strategy: 'tp' });
+    steps.push({ step: steps.length, type: 'UPDATE', parallel: true, layer: 'Optimizer', phase: 'compute', description: `TP Optimizer: Update params $w^{(k)}$.`, notation: `w^{(k)} \\leftarrow \\text{Optim}(w^{(k)}, \\nabla w_{Layer,k}^{(k)})`, strategy: 'tp' });
+    steps.push({ step: steps.length, type: 'DONE', description: `TP Step Complete.`, strategy: 'tp', phase: 'idle' });
 
-    // Re-assign step numbers sequentially after collecting all steps
     return steps.map((s, index) => ({ ...s, step: index }));
 };

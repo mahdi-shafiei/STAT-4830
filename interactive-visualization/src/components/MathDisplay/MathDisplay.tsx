@@ -1,41 +1,59 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, memo } from 'react';
 import katex from 'katex';
-import 'katex/dist/katex.min.css'; // Import KaTeX CSS
 import styles from './MathDisplay.module.css';
 
 interface MathDisplayProps {
-  texString?: string; // Make optional
-  displayMode?: boolean; // Render as block or inline
+  texString: string | null | undefined; // Allow null/undefined input
+  inline?: boolean;
+  className?: string; // Allow passing additional classes
 }
 
-const MathDisplay: React.FC<MathDisplayProps> = ({ texString, displayMode = false }) => {
+// Memoize the component to prevent unnecessary re-renders if props haven't changed
+const MathDisplay: React.FC<MathDisplayProps> = memo(({ texString, inline = false, className = '' }) => {
   const containerRef = useRef<HTMLSpanElement>(null);
+  const errorRef = useRef<HTMLSpanElement>(null); // Separate span for errors
 
   useEffect(() => {
-    if (containerRef.current && texString) {
+    const container = containerRef.current;
+    const errorSpan = errorRef.current;
+
+    // Clear previous content on every render where container exists
+    if (container) container.innerHTML = '';
+    if (errorSpan) errorSpan.textContent = '';
+
+    if (container && texString) { // Only render if container and string exist
       try {
-        katex.render(texString, containerRef.current, {
-          throwOnError: false, // Don't crash the app on KaTeX error
-          displayMode: displayMode,
-          output: 'html', // Ensure HTML output
+        katex.render(texString, container, {
+          throwOnError: true, // Use KaTeX specific errors
+          displayMode: !inline,
+          output: 'html',
+          // Consider adding macros or trust options if needed later
         });
-      } catch (error) {
-        console.error('KaTeX rendering error:', error);
-        // Display the original string as fallback
-        if (containerRef.current) {
-            containerRef.current.textContent = texString;
-            containerRef.current.classList.add(styles.katexError); // Add error style
+      } catch (error: any) {
+        console.error("KaTeX rendering error:", error, "Input:", texString);
+        if (errorSpan) {
+           // Display a user-friendly error message
+           errorSpan.textContent = `[KaTeX Error]`;
+           errorSpan.title = error.message || String(error); // Put details in title
         }
+         // Optionally display raw string as fallback in main container
+         // container.textContent = texString;
       }
-    } else if (containerRef.current) {
-        // Clear content if texString is empty or undefined
-        containerRef.current.textContent = '';
-        containerRef.current.classList.remove(styles.katexError);
     }
-  }, [texString, displayMode]); // Re-render if texString or displayMode changes
+  // Dependency array ensures effect runs only when texString or inline changes
+  }, [texString, inline]);
 
-  // Use a span, KaTeX will handle block/inline based on displayMode
-  return <span ref={containerRef} className={styles.mathContainer}></span>;
-};
+  // Combine passed className with component's own class
+  const combinedClassName = `${styles.mathDisplayContainer} ${className}`.trim();
 
-export default React.memo(MathDisplay); // Memoize for performance
+  return (
+    // Use spans for flexible inline/block rendering based on context
+    <span className={combinedClassName}>
+      <span ref={containerRef} />
+      <span ref={errorRef} className={styles.katexError} />
+    </span>
+  );
+});
+// Add display name for React DevTools
+MathDisplay.displayName = 'MathDisplay';
+export default MathDisplay;
