@@ -8,7 +8,7 @@ import { AnimatePresence } from 'framer-motion';
 import TpLayerExecutionViz from '../TpLayerExecutionViz/TpLayerExecutionViz';
 import type { TpStepInfo, TpOperationType } from '../TpLayerExecutionViz/TpLayerExecutionViz';
 import { useGpuPositions, Point } from '../../hooks/useGpuPositions';
-import { useRef } from 'react';
+import { useRef, useMemo } from 'react';
 import { DetailedTpLinearOpViz } from '../DetailedTpOperationViz/DetailedTpOperationViz';
 import type { OperationPhase, TensorInfo } from '../DetailedTpOperationViz/DetailedTpOperationViz';
 import { BroadcastAnim } from '../CommunicationAnimations/BroadcastAnim';
@@ -26,13 +26,33 @@ const VisualizationArea: React.FC = () => {
   const isCommunicating = stepDetails?.type === 'COMM';
   const commDataType = stepDetails?.dataType;
   const commOperation = stepDetails?.operation;
-  const commType = stepDetails?.operation; // Using commType for clarity in arrow logic
 
-  // Calculate center position (needed for some animations)
+  // Get container ref offset once
+  // NOTE: This offset calculation is relative to viewport, not the parent div.
+  // For SVG overlay positioned absolute 0,0 within VisualizationArea, we likely don't need this.
+  // Let's start with containerOffset = {x:0, y:0} and adjust if needed.
+  // const containerOffset = useMemo(() => {
+  //     if (gpuContainerRef.current) {
+  //         const rect = gpuContainerRef.current.getBoundingClientRect();
+  //         // Get the offset of the parent (.visualizationArea) to make it relative to the parent
+  //         const parentRect = gpuContainerRef.current.parentElement?.getBoundingClientRect();
+  //         const offsetX = rect.left - (parentRect?.left ?? 0);
+  //         const offsetY = rect.top - (parentRect?.top ?? 0);
+  //         return { x: offsetX, y: offsetY };
+  //     }
+  //     return { x: 0, y: 0 };
+  // }, [gpuContainerRef.current]); // Depends only on the ref
+
+  // Use calculated center relative to the *container* for CenterPos
+  // Use containerRect from the hook if available
   const calculatedCenterPos = containerRect ? {
-       x: containerRect.width / 2,
-       y: containerRect.height / 2 - 80 // Adjust Y offset to be above GPUs
-  } : { x: 300, y: 150 }; // Fallback center
+    x: containerRect.width / 2,
+    y: containerRect.height / 2 - 50 // Position above GPU centers
+  } : { x: 300, y: 150 }; // Fallback
+
+  // Filter out null positions before passing
+  // Ensure the Point type includes center
+  const validGpuCenters: Point[] = gpuDomPositions.filter(p => p !== null).map(p => p.center);
 
   // Determine TP operation/phase for Detailed Viz
   let detailedTpOperation: 'ColumnLinear' | 'RowLinear' | null = null;
@@ -47,27 +67,19 @@ const VisualizationArea: React.FC = () => {
       const execType = stepDetails.tpExecutionType;
       if (execType === 'ColumnParallel') {
           detailedTpOperation = 'ColumnLinear';
-           // Column Linear doesn't have explicit comm steps in our simplified tp.ts
-           // but we can show compute phase
-           if(detailedTpPhase === 'compute') {
-               // input/weight/intermediate are set by step generator
-           } else { detailedTpOperation = null; } // Hide viz if not compute phase
-
+           if(detailedTpPhase !== 'compute') { detailedTpOperation = null; }
       } else if (execType === 'RowParallel') {
           detailedTpOperation = 'RowLinear';
-           // Viz handles display based on compute/comm_output phase prop
            if(detailedTpPhase === 'compute') {
-                // input/weight/intermediate set by step generator
+                // Compute phase logic
            } else if (detailedTpPhase === 'comm_output') {
-                // input is intermediate, output is final. weight maybe hidden.
-                inputTensor = stepDetails.inputTensor; // Should be Z_k from COMM step
-                outputTensor = stepDetails.outputTensor; // Should be final A_layer
-                weightTensor = undefined; // Hide weight during communication viz
+                inputTensor = stepDetails.inputTensor;
+                outputTensor = stepDetails.outputTensor;
+                weightTensor = undefined;
                 intermediateTensor = undefined;
-           } else { detailedTpOperation = null; } // Hide if not compute/comm_output
-
+           } else { detailedTpOperation = null; }
       } else {
-           detailedTpOperation = null; // Don't show for LocalAttention/Replicated yet
+           detailedTpOperation = null;
       }
   }
 
@@ -77,16 +89,21 @@ const VisualizationArea: React.FC = () => {
         {/* Placeholder for layer icons area */}
 
         {/* Render NEW Detailed TP Linear Op Viz */}
-        <DetailedTpLinearOpViz
-            isActive={detailedTpOperation !== null}
-            operation={detailedTpOperation}
-            phase={detailedTpPhase}
-            Ntp={numGpus}
-            inputTensor={inputTensor}
-            weightTensor={weightTensor}
-            outputTensor={outputTensor}
-            intermediateTensor={intermediateTensor}
-        />
+        <AnimatePresence>
+            {detailedTpOperation !== null && (
+                <DetailedTpLinearOpViz
+                    key={detailedTpOperation + detailedTpPhase}
+                    isActive={true}
+                    operation={detailedTpOperation}
+                    phase={detailedTpPhase}
+                    Ntp={numGpus}
+                    inputTensor={inputTensor}
+                    weightTensor={weightTensor}
+                    outputTensor={outputTensor}
+                    intermediateTensor={intermediateTensor}
+                />
+            )}
+        </AnimatePresence>
 
         {/* --- GPU Container --- */}
         <div ref={gpuContainerRef} className={styles.gpuContainer} style={{ gridTemplateColumns: `repeat(${Math.min(numGpus, 4)}, 1fr)` }}>
@@ -114,27 +131,40 @@ const VisualizationArea: React.FC = () => {
             </AnimatePresence>
         </div>
 
-        {/* NEW: Render Specific Communication Animations */}
-        {/* These rely on accurate gpuDomPositions */} 
-        {strategy === 'tp' && commOperation === 'Broadcast' && (
-             <BroadcastAnim isActive={isCommunicating} sourcePos={calculatedCenterPos} targetPositions={gpuDomPositions.map(p => p.center)} dataType={commDataType}/>
-        )}
-        {strategy === 'tp' && commOperation === 'Scatter' && (
-             <ScatterAnim isActive={isCommunicating} sourcePos={calculatedCenterPos} targetPositions={gpuDomPositions.map(p => p.center)} dataType={commDataType}/>
-        )}
-         {strategy === 'tp' && commOperation === 'AllReduce' && (
-             <AllReduceAnim isActive={isCommunicating} gpuPositions={gpuDomPositions.map(p => p.center)} centerPos={calculatedCenterPos} dataType={commDataType}/>
-         )}
-         {strategy === 'tp' && commOperation === 'AllGather' && (
-             <AllGatherAnim isActive={isCommunicating} gpuPositions={gpuDomPositions.map(p => p.center)} dataType={commDataType}/>
-         )}
+        {/* Communication Animations Container (relative to VisualizationArea) */}
+        {/* Pass containerOffset = {x:0, y:0} since the SVG is positioned relative to this container */}
+        <div className={styles.communicationAnimationContainer}>
+            {strategy === 'tp' && commOperation === 'Broadcast' && (
+                 <BroadcastAnim isActive={isCommunicating} sourcePos={calculatedCenterPos} targetPositions={validGpuCenters} dataType={commDataType} containerOffset={{x:0, y:0}}/>
+            )}
+             {strategy === 'tp' && commOperation === 'Scatter' && (
+                 <ScatterAnim isActive={isCommunicating} sourcePos={calculatedCenterPos} targetPositions={validGpuCenters} dataType={commDataType} containerOffset={{x:0, y:0}}/>
+             )}
+              {strategy === 'tp' && commOperation === 'AllReduce' && (
+                  <AllReduceAnim isActive={isCommunicating} gpuPositions={validGpuCenters} centerPos={calculatedCenterPos} dataType={commDataType} containerOffset={{x:0, y:0}}/>
+              )}
+              {strategy === 'tp' && commOperation === 'AllGather' && (
+                  <AllGatherAnim isActive={isCommunicating} gpuPositions={validGpuCenters} dataType={commDataType} containerOffset={{x:0, y:0}}/>
+              )}
 
-        {/* Keep non-TP communication arrow if needed */}
-        <AnimatePresence>
-         {isCommunicating && strategy !== 'tp' && commOperation && commDataType && (
-              <CommunicationArrow key="comm-arrow" type={commOperation as any} dataType={commDataType as any} isActive={true} />
-          )}
-         </AnimatePresence>
+              {/* Add DP / FSDP Communication Animations Here Later */}
+              {/* Example for DP AllReduce */}
+               {strategy === 'dp' && commOperation === 'AllReduce' && (
+                  <AllReduceAnim isActive={isCommunicating} gpuPositions={validGpuCenters} centerPos={calculatedCenterPos} dataType={commDataType} containerOffset={{x:0, y:0}}/>
+               )}
+              {/* Example for FSDP AllGather */}
+               {strategy === 'fsdp' && commOperation === 'AllGather' && (
+                  <AllGatherAnim isActive={isCommunicating} gpuPositions={validGpuCenters} dataType={commDataType} containerOffset={{x:0, y:0}}/>
+               )}
+               {/* Example for FSDP ReduceScatter */}
+                {strategy === 'fsdp' && commOperation === 'ReduceScatter' && (
+                   // Need a ReduceScatterAnim component
+                   // <ReduceScatterAnim isActive={...} />
+                    <AllReduceAnim isActive={isCommunicating} gpuPositions={validGpuCenters} centerPos={calculatedCenterPos} dataType={commDataType} containerOffset={{x:0, y:0}}/> // Placeholder using AllReduce visual
+                )}
+
+
+        </div>
 
         {/* Display KaTeX notation - Potentially integrate into OperationDetailsPanel later */}
         {/* <NotationDisplay notation={stepDetails?.notation || ''} description={stepDetails?.description || ''} /> */}

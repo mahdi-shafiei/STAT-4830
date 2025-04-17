@@ -19,8 +19,7 @@
 .mainContent {
   display: flex;
   flex-grow: 1;
-  /* Prevent shrinking below content size */
-  min-height: 0; /* Fix flexbox overflow issue in some browsers */
+  overflow: hidden; /* Prevent content changes from affecting overall layout height */
 }
 
 .controlPanel {
@@ -28,18 +27,20 @@
   padding: 15px;
   border-right: 1px solid #ccc;
   background-color: #f8f8f8;
-  flex-shrink: 0; /* Prevent controls shrinking */
-  overflow-y: auto; /* Allow controls to scroll if needed */
+  flex-shrink: 0; /* Prevent control panel from shrinking */
+  height: calc(100vh - 70px); /* Adjust 70px based on header/footer height */
+  overflow-y: auto; /* Allow scrolling within control panel if needed */
+  position: sticky; /* Make it sticky */
+  top: 0; /* Stick to top relative to mainContent */
 }
 
 .visualizationArea {
   flex-grow: 1;
   padding: 15px;
-  display: flex;
-  flex-direction: column;
-  background-color: #ffffff;
-  overflow: auto; /* Allow vis area itself to scroll if content overflows */
-  position: relative; /* Needed for overlay wrapper */
+  /* background-color: #ffffff; */ /* Already set */
+  overflow-x: auto; /* Keep horizontal scroll */
+  overflow-y: auto; /* Allow vertical scroll if content overflows */
+  position: relative; /* Keep relative for absolute positioning inside */
 }
 
 .infoPanel {
