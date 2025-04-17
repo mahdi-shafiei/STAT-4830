@@ -16,4 +16,10 @@ export interface StepDetail {
     // Fields for activation memory tracking
     activationProduced?: string | null; // Name of the layer whose activation is produced by this step
     activationConsumedLayer?: string | null; // Name of the layer whose activation is consumed by this backward step
+
+    // Fields for TP Visualization
+    tpExecutionType?: string; // e.g., 'ColumnParallel', 'RowParallel', 'LocalAttention', 'Replicated'
+    inputDesc?: string; // For TpLayerExecutionViz
+    weightDesc?: string; // For TpLayerExecutionViz
+    outputDesc?: string; // For TpLayerExecutionViz
 }

@@ -28,109 +28,127 @@ const initializeGpuStates = (numGpus: number, strategy: string): GpuState[] => {
     });
 };
 
-// --- Helper: Pre-calculate Activation Memory Profile (REFINED) ---
+// --- Helper: Pre-calculate Activation Memory Profile (REFINED for TP) ---
 const calculateActivationProfile = (steps: StepDetail[]): number[] => {
     const profile: number[] = Array(steps.length).fill(0);
-    if (steps.length === 0) return profile; // Handle empty steps case
+    if (!steps || steps.length === 0) return profile;
 
-    const activationMemoryCosts: Record<string, number> = {};
+    const activationMemoryCosts: Record<string, number> = {}; // Cost to store the *full* activation tensor
     const activationReleaseStep: Record<string, number> = {};
-
-    // Assign memory cost per layer (can be refined later)
-    const costPerLayer = MAX_ACTIVATION / MODEL_LAYERS.length;
+    const costPerLayer = MODEL_LAYERS.length > 0 ? MAX_ACTIVATION / MODEL_LAYERS.length : 0;
     MODEL_LAYERS.forEach(layer => activationMemoryCosts[layer] = costPerLayer);
-    activationMemoryCosts['Input'] = 0; // No cost for input
+    // Input cost is 0
+    activationMemoryCosts['Input'] = 0;
+    const Ntp = 2; // Fixed TP size for calculation consistency
+    const currentStrategy = steps[0]?.strategy || 'unknown';
 
-    // Find the step *immediately after* an activation is last needed
-    steps.forEach((step, index) => {
-        // Layer L's backward compute consumes activation from L-1
-        if (step.type === 'COMPUTE' && step.direction === 'backward' && step.activationConsumedLayer) {
-            const releaseAfterStepIndex = index; // Activation needed *during* this step
-             // We only update if this release step is *earlier* than a previously recorded one
-            if (!activationReleaseStep[step.activationConsumedLayer] || activationReleaseStep[step.activationConsumedLayer] > releaseAfterStepIndex + 1) {
-                 activationReleaseStep[step.activationConsumedLayer] = releaseAfterStepIndex + 1; // Memory freed *after* this step completes
+    // Find release step (step *after* activation is consumed)
+    steps.forEach((step, index) => { // Added index for clarity
+        if (step.type === 'COMPUTE' && step.direction === 'backward' && step.activationConsumedLayer !== null) { // Input is null
+            const layerToRelease = step.activationConsumedLayer as string; // Type assertion
+            const releaseAfterStepIndex = index; // Activation is needed *during* this step
+            // Release happens *after* this step completes. Update only if this is an earlier release point.
+            if (!activationReleaseStep[layerToRelease] || activationReleaseStep[layerToRelease] > releaseAfterStepIndex + 1) {
+                activationReleaseStep[layerToRelease] = releaseAfterStepIndex + 1;
             }
         }
-        // DP: Simplified GRADIENTS step consumes all activations (handled by DONE)
-        // DONE step releases anything still held
-        if (step.type === 'DONE') {
+        // Handle DP/Other strategies where GRADIENTS or DONE implies release
+        if ((step.type === 'GRADIENTS' && step.strategy === 'dp') || step.type === 'DONE') {
              MODEL_LAYERS.forEach(layer => {
-                if (!activationReleaseStep[layer]) {
-                    activationReleaseStep[layer] = index; // Release during DONE step (or slightly before)
-                }
+                // Release after step, unless it's DONE (release during)
+                 const releasePoint = index + (step.type === 'DONE' ? 0 : 1);
+                 if (!activationReleaseStep[layer] || activationReleaseStep[layer] > releasePoint ) {
+                     activationReleaseStep[layer] = releasePoint;
+                 }
              });
-             // Also release 'Input' if somehow held
-             if (!activationReleaseStep['Input']) {
-                  activationReleaseStep['Input'] = index;
-             }
+             // Also release Input if held
+              const releasePoint = index + (step.type === 'DONE' ? 0 : 1);
+              if (!activationReleaseStep['Input'] || activationReleaseStep['Input'] > releasePoint ) {
+                     activationReleaseStep['Input'] = releasePoint;
+              }
         }
     });
-    // Ensure all layers have a release point (default to DONE step if not consumed earlier)
-    const doneStepIndex = steps.findIndex(s => s.type === 'DONE');
-    if (doneStepIndex !== -1) {
-      MODEL_LAYERS.forEach(layer => {
-        if (!activationReleaseStep[layer]) {
-           activationReleaseStep[layer] = doneStepIndex; // Default release at DONE
-        }
-      });
-       if (!activationReleaseStep['Input']) {
-            activationReleaseStep['Input'] = doneStepIndex;
-       }
-    }
-    console.log("Activation Release Step Indices (Memory Freed After Step i):", activationReleaseStep);
+    // Ensure last step always releases everything not already scheduled
+    const lastStepIndex = steps.length > 0 ? steps.length - 1 : 0;
+     MODEL_LAYERS.forEach(layer => {
+         if (!activationReleaseStep[layer]) activationReleaseStep[layer] = lastStepIndex; // Release at end
+     });
+     if (!activationReleaseStep['Input']) activationReleaseStep['Input'] = lastStepIndex;
 
-    // Calculate cumulative memory profile based on production and release steps
+
+    // Calculate profile step-by-step
     let memoryHeld = 0;
-    const activeActivations = new Set<string>();
+    const activeActivations = new Map<string, number>(); // Store activation name and its *current* cost (full or sharded)
 
     for (let i = 0; i < steps.length; i++) {
-        const stepDetails = steps[i];
+        const currentStepDetails = steps[i];
 
-        // Check for releases *before* processing the current step's production
+        // --- Release Memory FIRST ---
+        // Check activations against their release step for *this* step i
         const releasedLayers: string[] = [];
-        activeActivations.forEach(layerName => {
-            if (activationReleaseStep[layerName] === i) {
-                memoryHeld -= (activationMemoryCosts[layerName] ?? 0);
+        activeActivations.forEach((cost, layerName) => {
+            // Release if the release step is *this* step or earlier (robustness)
+            if (activationReleaseStep[layerName] !== undefined && activationReleaseStep[layerName] <= i) {
+                // console.log(`Step ${i} (${currentStrategy}): Releasing ${layerName} (cost ${cost.toFixed(1)}), release scheduled at ${activationReleaseStep[layerName]}`);
+                memoryHeld -= cost;
                 releasedLayers.push(layerName);
-                 if (steps[0]?.strategy === 'dp') { // Log only for DP
-                     console.log(`DP Profile Calc Step ${i}: Releasing activation for ${layerName}, Mem Held: ${memoryHeld}`);
-                 }
             }
         });
         releasedLayers.forEach(layerName => activeActivations.delete(layerName));
 
-        // Add memory for activations produced by the current step
-        let producedLayerName: string | null = null;
-        if (stepDetails?.activationProduced) { // Check the explicit field
-            producedLayerName = stepDetails.activationProduced;
+
+        // --- Add Memory produced by PREVIOUS step's output ---
+        // We look at the *previous* step (i-1) to see what activation it produced, which is now stored.
+        const prevStepDetails = i > 0 ? steps[i - 1] : null;
+        if (prevStepDetails?.activationProduced) {
+            const layerName = prevStepDetails.activationProduced;
+
+            if (!activeActivations.has(layerName)) { // Only add if not already active
+                 let costToAdd = activationMemoryCosts[layerName] ?? 0;
+
+                // --- TP Sharding Logic ---
+                // If the *producing* step (prevStepDetails) was a TP compute step that outputs a hidden-sharded activation
+                // (e.g., ColParallel, LocalAttention), store sharded cost.
+                // If it was a TP COMM step (AllReduce), it produces a full replicated activation.
+                 const producingStrategy = prevStepDetails.strategy;
+                 const producingType = prevStepDetails.type;
+                 const producingTpExecution = prevStepDetails.tpExecutionType as string | undefined; // Get TP execution type
+
+                 if (producingStrategy === 'tp' && producingType === 'COMPUTE' &&
+                    (producingTpExecution === 'ColumnParallel' ||
+                     producingTpExecution === 'LocalAttention' ||
+                     (producingTpExecution === 'RowParallel' && !prevStepDetails.subStep?.includes('Reduce')) // RowParallel *compute* produces sharded Z_k
+                    )) {
+                     costToAdd /= Ntp; // Store only the sharded activation cost
+                     // console.log(`Step ${i} (${currentStrategy}): Adding SHARDED activation for ${layerName} (cost ${costToAdd.toFixed(1)}) produced by prev step ${i-1} (${producingTpExecution})`);
+                 } else {
+                     // console.log(`Step ${i} (${currentStrategy}): Adding FULL activation for ${layerName} (cost ${costToAdd.toFixed(1)}) produced by prev step ${i-1} (${producingStrategy}, ${producingType}, ${producingTpExecution})`);
+                 }
+                 // Else (TP AllReduce comm, non-TP steps) store full cost
+
+                activeActivations.set(layerName, costToAdd);
+                memoryHeld += costToAdd;
+
+            } else {
+                // Activation already present? This shouldn't happen if logic is correct.
+                // If it does, maybe update cost if sharding changes? For now, assume it doesn't overwrite.
+                 console.warn(`Step ${i}: Activation ${layerName} produced by step ${i-1} was already active?`);
+            }
         }
 
-        if (producedLayerName && !activeActivations.has(producedLayerName)) {
-             activeActivations.add(producedLayerName);
-             memoryHeld += (activationMemoryCosts[producedLayerName] ?? 0);
-             if (steps[0]?.strategy === 'dp') { // Log only for DP
-                 console.log(`DP Profile Calc Step ${i}: Producing activation for ${producedLayerName}, Mem Held: ${memoryHeld}`);
-             }
+        // Assign memory for the *current* step i
+        profile[i] = Math.max(0, Math.min(memoryHeld, MAX_ACTIVATION));
+
+        // Explicitly ensure step 0 and DONE are 0 if calculation leads elsewhere
+        if (currentStepDetails?.type === 'INIT') profile[i] = 0;
+        // Ensure DONE step is 0 (release logic should handle this, but enforce)
+        if (currentStepDetails?.type === 'DONE') {
+             profile[i] = 0;
+             activeActivations.clear(); // Clear all remaining activations at DONE
+             memoryHeld = 0;
         }
-
-        // Assign the calculated memory level for this step
-        profile[i] = Math.max(0, Math.min(memoryHeld, MAX_ACTIVATION)); // Clamp memory
-
-        // Ensure memory is zero at INIT and DONE steps explicitly
-        if (stepDetails?.type === 'INIT') profile[i] = 0;
-        // Don't force zero at DONE, let release logic handle it
-        // if (stepDetails?.type === 'DONE') profile[i] = 0;
     }
-    // Ensure final step (DONE) has zero activation memory
-    if (profile.length > 0 && steps[profile.length - 1]?.type === 'DONE') {
-       profile[profile.length - 1] = 0;
-    }
-
-    // Log the final profile only for DP
-    if (steps[0]?.strategy === 'dp') {
-        console.log("DP Calculated Activation Memory Profile:", profile);
-    }
-    // console.log("Calculated Activation Memory Profile:", profile);
+    console.log(`Activation Profile (${currentStrategy}):`, profile.map(p => p.toFixed(1)));
     return profile;
 };
 

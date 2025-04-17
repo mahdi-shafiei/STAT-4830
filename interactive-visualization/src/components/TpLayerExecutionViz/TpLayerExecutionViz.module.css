@@ -1,0 +1,108 @@
+.vizOverlay {
+  position: absolute;
+  /* Position above the layer icons or between layers and GPUs */
+  top: 50px; /* Adjust as needed */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15; /* Below communication arrows but above layers/GPUs potentially */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  width: 80%;
+  max-width: 600px;
+}
+
+.vizBox {
+  background-color: rgba(240, 248, 255, 0.95); /* Light Alice blue background */
+  border: 1px solid dodgerblue;
+  border-radius: 8px;
+  padding: 15px 20px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  width: 100%;
+}
+
+.vizTitle {
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 1.1em;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+}
+
+.vizContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-around; /* Distribute items */
+  gap: 10px;
+}
+
+.tensor {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 5px;
+  background-color: #fff;
+  min-width: 80px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.inputTensor { border-color: green; }
+.outputTensor { border-color: purple; }
+
+
+.tensorLabel {
+  font-size: 0.8em;
+  color: #555;
+  margin-bottom: 5px;
+  min-height: 1.2em; /* Ensure space */
+}
+
+/* Ensure MathDisplay component within the label renders correctly */
+.tensorLabel > div {
+  display: inline-block; /* Allow KaTeX/MathJax rendering */
+}
+
+
+.matrix {
+  display: flex;
+  width: 60px; /* Fixed width for matrix visual */
+  height: 40px; /* Fixed height */
+  border: 1px solid #eee;
+  background: linear-gradient(45deg, #f9f9f9 25%, #efefef 25%, #efefef 50%, #f9f9f9 50%, #f9f9f9 75%, #efefef 75%, #efefef 100%);
+  background-size: 8px 8px;
+}
+
+.matrixShard {
+  height: 100%;
+  border-right: 1px dashed lightblue; /* Divider for sharded view */
+  box-sizing: border-box;
+}
+.matrixShard:last-child {
+  border-right: none;
+}
+.matrix .sharded:last-child { border-right: none; }
+
+
+.operationSymbol {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #555;
+}
+
+.commIndicator {
+    text-align: center;
+    margin-top: 10px;
+    font-style: italic;
+    color: orange;
+    font-weight: bold;
+}
+
+/* Add styles for highlighted shard if needed */
+.highlightedShard {
+    background-color: rgba(0, 191, 255, 0.2); /* Light blue highlight */
+} 
