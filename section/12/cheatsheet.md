@@ -349,6 +349,12 @@ $$ O_{FFN} = \text{GELU}(X'' W_1 + b_1) W_2 + b_2 $$
 *   Use case: Routing tokens to specific "expert" networks in MoE models (Expert Parallelism).
 
 ---
+## A helpful visualization
+
+[Visualization for DP, FSDP, and TP](../../transformer_parallelism){:target="_blank"}
+
+
+---
 
 ## Slide 20: Parallelism Strategy 1: Data Parallelism (DP)
 
