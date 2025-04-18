@@ -7,6 +7,8 @@ title: Scaling Transformers - Parallelism Strategies from the Ultrascale Playboo
 
 [Cheatsheet](cheatsheet.md){:target="_blank"}
 
+[Visualization for DP, FSDP, and TP](../../transformer_parallelism){:target="_blank"}
+
 ## Table of Contents
 1.  [Introduction: The Scaling Challenge](#1-introduction-the-scaling-challenge)
 2.  [Transformers: Anatomy of a Large Model](#2-transformers-anatomy-of-a-large-model)
@@ -261,6 +263,9 @@ These collective operations are typically implemented in specialized communicati
 ## 6. Parallelism Strategies
 
 Having established the structure of large transformer models, the activation memory bottleneck, and the utility of activation recomputation, we now turn to the primary strategies used to distribute the training workload across multiple accelerator devices. These techniques, detailed in the [Hugging Face Ultrascale Playbook](https://huggingface.co/spaces/nanotron/ultrascale-playbook){:target="_blank"}, allow us to overcome the memory and compute limitations of a single device by partitioning the model state and computation in different ways.
+
+> Note: I've made a little visualization of [data parallelism, fully sharded data parallelism, and transformer parallelism](../../transformer_parallelism/){:target="_blank"}, which you can view here. There are some small errors in the visualization, but it should more or less give you the idea. It was an absolute nightmare to make. I tried Gemini 2.5 pro, cursor, and only claude code was able to make something that was somewhat satisfactory. 
+
 
 ### 6.1 Data Parallelism (DP)
 

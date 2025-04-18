@@ -1,0 +1,18 @@
+# Local configuration for transformer_parallelism folder
+# This will override the main Jekyll configuration for this directory
+
+# Exclude this directory from inheriting the site's theme
+exclude_from_localizations: ["/transformer_parallelism/**/*"]
+
+# Don't process Markdown and don't use layouts for files in this directory 
+# unless specifically specified (index.html already has layout: null)
+markdown: false
+sass:
+  enabled: false
+
+# Don't include header, footer or any other site-wide includes
+defaults:
+  - scope:
+      path: ""  # all files in the project
+    values:
+      layout: null
