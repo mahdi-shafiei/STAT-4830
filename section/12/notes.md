@@ -9,6 +9,8 @@ title: Scaling Transformers - Parallelism Strategies from the Ultrascale Playboo
 
 [Visualization for DP, FSDP, and TP](../../transformer_parallelism){:target="_blank"}
 
+[Minimalist 0-6D Parallelism from Main Horse](https://main-horse.github.io/parallel-comm-viz/){:target="_blank"}
+
 ## Table of Contents
 1.  [Introduction: The Scaling Challenge](#1-introduction-the-scaling-challenge)
 2.  [Transformers: Anatomy of a Large Model](#2-transformers-anatomy-of-a-large-model)
