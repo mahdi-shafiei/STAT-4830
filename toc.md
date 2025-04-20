@@ -43,3 +43,6 @@ title: Table of Contents
 
 [12. Scaling Transformers: Parallelism Strategies from the Ultrascale Playbook](section/12/notes.md) | [Cheatsheet](section/12/cheatsheet.md)
    > How do we scale training of transformers to 100s of billions of parameters?
+
+[Recap](section/recap/notes.md) | [Cheatsheet](section/recap/cheatsheet.md)
+   > A recap of the course.
