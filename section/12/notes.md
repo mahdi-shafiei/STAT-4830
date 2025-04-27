@@ -7,9 +7,21 @@ title: Scaling Transformers - Parallelism Strategies from the Ultrascale Playboo
 
 [Cheatsheet](cheatsheet.md){:target="_blank"}
 
+## Resources
+
+### Visualizations
+
 [Visualization for DP, FSDP, and TP](../../transformer_parallelism){:target="_blank"}
 
 [Minimalist 0-6D Parallelism from Main Horse](https://main-horse.github.io/parallel-comm-viz/){:target="_blank"}
+
+### Blogs/books
+
+[Ultrascale Playbook (main source for this lecture)](https://huggingface.co/spaces/nanotron/ultrascale-playbook){:target="_blank"}
+
+[Lilian Weng's blog: How to Train Really Large Models on Many GPUs?](https://lilianweng.github.io/posts/2021-09-25-train-large/){:target="_blank"}
+
+[How to scale your model](https://jax-ml.github.io/scaling-book/){:target="_blank"}
 
 ## Table of Contents
 1.  [Introduction: The Scaling Challenge](#1-introduction-the-scaling-challenge)
