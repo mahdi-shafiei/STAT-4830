@@ -56,6 +56,40 @@ title: Table of Contents
   const button = document.getElementById("export-lectures");
   if (!button) return;
 
+  const REPO_OWNER = "damek";
+  const REPO_NAME = "STAT-4830";
+  const BRANCH = "main";
+
+  function normalizePath(href) {
+    const urlPath = (href || "").replace(/^https?:\/\/[^/]+/, "");
+    const withoutHash = urlPath.replace(/(#.*$)/, "");
+    const withoutSitePrefix = withoutHash.replace(/^\/?STAT-4830\//, "");
+    const path = withoutSitePrefix.endsWith(".md")
+      ? withoutSitePrefix
+      : withoutSitePrefix.endsWith(".html")
+        ? withoutSitePrefix.replace(/\.html$/, ".md")
+        : `${withoutSitePrefix}.md`;
+    return path.replace(/^\//, "");
+  }
+
+  async function fetchRaw(path) {
+    const cleanPath = normalizePath(path);
+    const primary = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${BRANCH}/${cleanPath}`;
+    const fallback = `https://cdn.jsdelivr.net/gh/${REPO_OWNER}/${REPO_NAME}@${BRANCH}/${cleanPath}`;
+
+    const tryFetch = async (url) => {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error(`${res.status} ${url}`);
+      return res.text();
+    };
+
+    try {
+      return await tryFetch(primary);
+    } catch (e) {
+      return await tryFetch(fallback);
+    }
+  }
+
   async function exportLectures() {
     const links = Array.from(
       document.querySelectorAll('a[href*="section/"][href*="notes"]')
@@ -73,23 +107,7 @@ title: Table of Contents
       for (const link of links) {
         const title = (link.textContent || link.href).trim();
         const href = link.getAttribute("href") || "";
-        const urlPath = href.replace(/^https?:\/\/[^/]+/, "");
-        const normalized = urlPath.replace(/(#.*$)/, "");
-        const path = normalized.endsWith(".md")
-          ? normalized
-          : normalized.endsWith(".html")
-            ? normalized.replace(/\.html$/, ".md")
-            : `${normalized}.md`;
-        const rawUrl = `https://raw.githubusercontent.com/damek/STAT-4830/main/${path.replace(
-          /^\//,
-          ""
-        )}`;
-
-        const res = await fetch(rawUrl, { cache: "no-store" });
-        if (!res.ok) {
-          throw new Error(`Failed to fetch ${title}: ${res.status}`);
-        }
-        const text = await res.text();
+        const text = await fetchRaw(href);
         parts.push(`\n\n---\n\n# ${title}\n\n${text.trim()}\n`);
       }
 
