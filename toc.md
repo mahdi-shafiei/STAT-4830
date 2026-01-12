@@ -7,7 +7,7 @@ title: Table of Contents
 
 [2025 version of the course](archive/2025/toc.md)
 
-<button id="export-lectures" type="button">Export lectures to markdown</button>
+<a id="export-lectures" href="#">Export lectures to markdown</a>
 
 [0. Introduction](section/0/notes.md) | [Slides](section/0/slides.pdf) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/0/notebook.ipynb)
    > Course content, a deliverable, and spam classification in PyTorch.
@@ -58,14 +58,13 @@ title: Table of Contents
 
   async function exportLectures() {
     const links = Array.from(
-      document.querySelectorAll('a[href$="notes.md"][href*="section/"]')
+      document.querySelectorAll('a[href*="section/"][href*="notes"]')
     );
     if (!links.length) {
       alert("No lecture notes found on this page.");
       return;
     }
 
-    button.disabled = true;
     const originalLabel = button.textContent;
     button.textContent = "Exporting...";
 
@@ -73,9 +72,20 @@ title: Table of Contents
       const parts = [];
       for (const link of links) {
         const title = (link.textContent || link.href).trim();
-        const href = link.getAttribute("href");
-        const url = new URL(href, window.location.href).toString();
-        const res = await fetch(url, { cache: "no-store" });
+        const href = link.getAttribute("href") || "";
+        const urlPath = href.replace(/^https?:\/\/[^/]+/, "");
+        const normalized = urlPath.replace(/(#.*$)/, "");
+        const path = normalized.endsWith(".md")
+          ? normalized
+          : normalized.endsWith(".html")
+            ? normalized.replace(/\.html$/, ".md")
+            : `${normalized}.md`;
+        const rawUrl = `https://raw.githubusercontent.com/damek/STAT-4830/main/${path.replace(
+          /^\//,
+          ""
+        )}`;
+
+        const res = await fetch(rawUrl, { cache: "no-store" });
         if (!res.ok) {
           throw new Error(`Failed to fetch ${title}: ${res.status}`);
         }
@@ -93,11 +103,13 @@ title: Table of Contents
       console.error(err);
       alert(`Export failed: ${err.message}`);
     } finally {
-      button.disabled = false;
       button.textContent = originalLabel;
     }
   }
 
-  button.addEventListener("click", exportLectures);
+  button.addEventListener("click", (e) => {
+    e.preventDefault();
+    exportLectures();
+  });
 })();
 </script>
