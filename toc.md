@@ -61,15 +61,15 @@ title: Table of Contents
   const BRANCH = "main";
 
   function normalizePath(href) {
-    const urlPath = (href || "").replace(/^https?:\/\/[^/]+/, "");
-    const withoutHash = urlPath.replace(/(#.*$)/, "");
-    const withoutSitePrefix = withoutHash.replace(/^\/?STAT-4830\//, "");
-    const path = withoutSitePrefix.endsWith(".md")
-      ? withoutSitePrefix
-      : withoutSitePrefix.endsWith(".html")
-        ? withoutSitePrefix.replace(/\.html$/, ".md")
-        : `${withoutSitePrefix}.md`;
-    return path.replace(/^\//, "");
+    const url = new URL(href, window.location.href);
+    const pathname = url.pathname || "";
+    const withoutPrefix = pathname.replace(/^\/?STAT-4830\//, "");
+    const mdPath = withoutPrefix.endsWith(".md")
+      ? withoutPrefix
+      : withoutPrefix.endsWith(".html")
+        ? withoutPrefix.replace(/\.html$/, ".md")
+        : `${withoutPrefix}.md`;
+    return mdPath.replace(/^\//, "");
   }
 
   async function fetchRaw(path) {
