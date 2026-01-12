@@ -7,6 +7,8 @@ title: Table of Contents
 
 [2025 version of the course](archive/2025/toc.md)
 
+<button id="export-lectures" type="button">Export lectures to markdown</button>
+
 [0. Introduction](section/0/notes.md) | [Slides](section/0/slides.pdf) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/0/notebook.ipynb)
    > Course content, a deliverable, and spam classification in PyTorch.
 
@@ -48,3 +50,54 @@ title: Table of Contents
 
 [Recap](section/recap/notes.md) | [Cheatsheet](section/recap/cheatsheet.md)
    > A recap of the course.
+
+<script>
+(() => {
+  const button = document.getElementById("export-lectures");
+  if (!button) return;
+
+  async function exportLectures() {
+    const links = Array.from(
+      document.querySelectorAll('a[href$="notes.md"][href*="section/"]')
+    );
+    if (!links.length) {
+      alert("No lecture notes found on this page.");
+      return;
+    }
+
+    button.disabled = true;
+    const originalLabel = button.textContent;
+    button.textContent = "Exporting...";
+
+    try {
+      const parts = [];
+      for (const link of links) {
+        const title = (link.textContent || link.href).trim();
+        const href = link.getAttribute("href");
+        const url = new URL(href, window.location.href).toString();
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) {
+          throw new Error(`Failed to fetch ${title}: ${res.status}`);
+        }
+        const text = await res.text();
+        parts.push(`\n\n---\n\n# ${title}\n\n${text.trim()}\n`);
+      }
+
+      const blob = new Blob(parts, { type: "text/markdown" });
+      const download = document.createElement("a");
+      download.href = URL.createObjectURL(blob);
+      download.download = "lectures-export.md";
+      download.click();
+      URL.revokeObjectURL(download.href);
+    } catch (err) {
+      console.error(err);
+      alert(`Export failed: ${err.message}`);
+    } finally {
+      button.disabled = false;
+      button.textContent = originalLabel;
+    }
+  }
+
+  button.addEventListener("click", exportLectures);
+})();
+</script>
