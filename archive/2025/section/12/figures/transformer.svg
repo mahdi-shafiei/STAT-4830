@@ -1,0 +1,97 @@
+<svg width="1100" height="160" viewBox="0 0 1100 160" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif">
+
+  <defs>
+    <!-- Define an arrowhead marker -->
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto" markerUnits="strokeWidth">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#555" />
+    </marker>
+  </defs>
+
+  <!-- Styles can be defined here or inline -->
+  <style>
+    .box {
+      stroke-width: 1.5;
+      rx: 8; /* Rounded corners */
+      ry: 8;
+    }
+    .label-main {
+      font-size: 15px;
+      font-weight: 500; /* Slightly bolder than normal */
+      fill: #2d3748; /* Dark gray text */
+      text-anchor: middle;
+      dominant-baseline: central;
+    }
+    .label-sub {
+      font-size: 12px;
+      fill: #4a5568; /* Medium gray text */
+      text-anchor: middle;
+      dominant-baseline: central;
+    }
+    .connector {
+      stroke: #555;
+      stroke-width: 2;
+      marker-end: url(#arrowhead);
+    }
+    .input-output-box {
+      fill: #EBF8FF; /* Light blue */
+      stroke: #90CDF4; /* Blue border */
+    }
+    .core-process-box {
+      fill: #E6FFFA; /* Light teal/mint */
+      stroke: #4FD1C5; /* Teal border */
+    }
+    .final-output-box {
+       fill: #FFFBEB; /* Light yellow */
+       stroke: #F6E05E; /* Yellow border */
+    }
+  </style>
+
+  <!-- Input Sequence -->
+  <g transform="translate(20, 30)">
+    <rect class="box input-output-box" width="160" height="90"/>
+    <text class="label-main" x="80" y="40">Input Sequence</text>
+    <text class="label-sub" x="80" y="60">(Tokens)</text>
+  </g>
+
+  <!-- Arrow 1 -->
+  <line class="connector" x1="185" y1="75" x2="225" y2="75" />
+
+  <!-- Embedding + Positional Encoding -->
+  <g transform="translate(230, 30)">
+    <rect class="box input-output-box" width="180" height="90"/>
+    <text class="label-main" x="90" y="40">Embedding +</text>
+    <text class="label-main" x="90" y="60">Pos. Encoding</text>
+  </g>
+
+  <!-- Arrow 2 -->
+  <line class="connector" x1="415" y1="75" x2="455" y2="75" />
+
+  <!-- N x Transformer Blocks (Core Processing) -->
+  <g transform="translate(460, 25)">
+    <rect class="box core-process-box" width="200" height="100"/>
+    <text class="label-main" x="100" y="35" font-weight="600">L x Transformer</text>
+    <text class="label-main" x="100" y="55" font-weight="600">Blocks</text>
+    <text class="label-sub" x="100" y="78">(Core Processing)</text>
+  </g>
+
+  <!-- Arrow 3 -->
+  <line class="connector" x1="665" y1="75" x2="705" y2="75" />
+
+  <!-- Output Layer -->
+  <g transform="translate(710, 30)">
+    <rect class="box input-output-box" width="160" height="90"/>
+    <text class="label-main" x="80" y="40">Output Layer</text>
+    <text class="label-sub" x="80" y="60">(e.g., LM Head)</text>
+  </g>
+
+   <!-- Arrow 4 -->
+  <line class="connector" x1="875" y1="75" x2="915" y2="75" />
+
+   <!-- Final Output -->
+  <g transform="translate(920, 30)">
+    <rect class="box final-output-box" width="160" height="90"/>
+    <text class="label-main" x="80" y="40">Final Output</text>
+    <text class="label-sub" x="80" y="60">(e.g., Logits)</text>
+  </g>
+
+</svg>

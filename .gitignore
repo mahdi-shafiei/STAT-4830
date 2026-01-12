@@ -21,6 +21,22 @@
 !section/*/figures/*.svg
 !section/*/figures/*.gif
 
+# Allow archived 2025 content (same allowlist as section)
+!archive/
+!archive/2025/
+!archive/2025/toc.md
+!archive/2025/section/*/notes.md
+!archive/2025/section/*/notebook.ipynb
+!archive/2025/section/*/live-demo.ipynb
+!archive/2025/section/*/slides.md
+!archive/2025/section/*/slides.pdf
+!archive/2025/section/*/utils.py
+!archive/2025/section/*/cheatsheet.md
+!archive/2025/section/*/figures/
+!archive/2025/section/*/figures/*.png
+!archive/2025/section/*/figures/*.svg
+!archive/2025/section/*/figures/*.gif
+
 # Allow transformer_parallelism
 !transformer_parallelism/
 !transformer_parallelism/**

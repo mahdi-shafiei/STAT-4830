@@ -1,0 +1,101 @@
+<svg width="800" height="355" viewBox="0 0 800 355" xmlns="http://www.w3.org/2000/svg" font-family="Arial, Verdana, sans-serif" font-size="12px">
+
+  <title>Summary of Parallelism Strategies for LLM Training</title>
+  <desc>Compares different methods based on memory savings, parallel dimension, and disadvantages.</desc>
+
+  <style>
+    .header { font-weight: bold; fill: #333; text-anchor: middle; }
+    .cell-text { fill: #333; text-anchor: start; dominant-baseline: middle; }
+    .method-name { font-weight: bold; }
+    .grid-line { stroke: #ccc; stroke-width: 1; }
+    .zero-group-rect { fill: #f0f4f8; stroke: #d0d7de; stroke-width: 1; }
+  </style>
+
+  <!-- Headers -->
+  <rect x="0" y="0" width="800" height="35" fill="#e8edf3"/>
+  <text x="40" y="17.5" class="header" dominant-baseline="middle">Method</text>
+  <text x="205" y="17.5" class="header" dominant-baseline="middle">Memory Savings Focus</text>
+  <text x="440" y="17.5" class="header" dominant-baseline="middle">Parallel/Sharding Dimension</text>
+  <text x="675" y="17.5" class="header" dominant-baseline="middle">Primary Disadvantage</text>
+  <line x1="0" y1="35" x2="800" y2="35" class="grid-line"/>
+
+  <!-- Data Rows -->
+  <g id="row-dp">
+    <text x="10" y="55" class="cell-text method-name">DP</text>
+    <text x="90" y="55" class="cell-text">Activations (via smaller microbatch)</text>
+    <text x="340" y="55" class="cell-text">Batch</text>
+    <text x="560" y="55" class="cell-text">Memory Redundancy per device</text>
+    <line x1="0" y1="75" x2="800" y2="75" class="grid-line"/>
+  </g>
+
+  <g id="row-pp">
+     <text x="10" y="95" class="cell-text method-name">PP</text>
+     <text x="90" y="95" class="cell-text">Model Parameters</text>
+     <text x="340" y="95" class="cell-text">Model Layers</text>
+     <text x="560" y="95" class="cell-text">Pipeline Bubble / Sched. Complexity</text>
+     <line x1="0" y1="115" x2="800" y2="115" class="grid-line"/>
+  </g>
+
+  <g id="row-tp-sp">
+     <text x="10" y="135" class="cell-text method-name">TP/SP</text>
+     <!-- FIXED: Replaced & with "and" -->
+     <text x="90" y="135" class="cell-text">Params and Activations</text> 
+     <text x="340" y="135" class="cell-text">Hidden Dim / Sequence Length</text>
+     <text x="560" y="135" class="cell-text">Requires High Intra-Node Bandwidth</text>
+     <line x1="0" y1="155" x2="800" y2="155" class="grid-line"/>
+  </g>
+
+   <g id="row-cp">
+     <text x="10" y="175" class="cell-text method-name">CP</text>
+     <text x="90" y="175" class="cell-text">Activations (for long sequences)</text>
+     <text x="340" y="175" class="cell-text">Sequence Length</text>
+     <text x="560" y="175" class="cell-text">Attention Comm. Overhead (Ring)</text>
+     <line x1="0" y1="195" x2="800" y2="195" class="grid-line"/>
+  </g>
+
+   <g id="row-ep">
+     <text x="10" y="215" class="cell-text method-name">EP</text>
+     <text x="90" y="215" class="cell-text">Expert Parameters</text>
+     <text x="340" y="215" class="cell-text">Expert Dimension</text>
+     <text x="560" y="210" class="cell-text">Requires MoE /</text>
+     <text x="560" y="225" class="cell-text">All-to-All Overhead</text>
+     <line x1="0" y1="235" x2="800" y2="235" class="grid-line"/>
+  </g>
+
+  <!-- ZeRO Group -->
+  <rect x="0" y="235" width="800" height="120" class="zero-group-rect"/>
+
+  <g id="row-zero1">
+     <text x="10" y="255" class="cell-text method-name">ZeRO-1</text>
+     <text x="90" y="255" class="cell-text">Optimizer States</text>
+     <text x="340" y="255" class="cell-text">Sharded across DP Replicas</text>
+     <text x="560" y="255" class="cell-text">Added Param Comm. (AllGather)</text>
+     <line x1="0" y1="275" x2="800" y2="275" class="grid-line"/>
+  </g>
+
+   <g id="row-zero2">
+     <text x="10" y="295" class="cell-text method-name">ZeRO-2</text>
+     <text x="90" y="290" class="cell-text">Optimizer States,</text>
+     <text x="90" y="305" class="cell-text">Gradients</text>
+     <text x="340" y="295" class="cell-text">Sharded across DP Replicas</text>
+     <text x="560" y="295" class="cell-text">Added Param Comm. (AllGather)</text>
+     <line x1="0" y1="315" x2="800" y2="315" class="grid-line"/>
+  </g>
+
+   <g id="row-zero3">
+     <text x="10" y="335" class="cell-text method-name">ZeRO-3</text>
+     <text x="90" y="330" class="cell-text">Params, Gradients,</text>
+     <text x="90" y="345" class="cell-text">Optimizer States</text>
+     <text x="340" y="335" class="cell-text">Sharded across DP Replicas</text>
+     <text x="560" y="330" class="cell-text">Increased Param Comm.</text>
+     <text x="560" y="345" class="cell-text">Volume (Many AllGathers)</text>
+     <line x1="0" y1="355" x2="800" y2="355" class="grid-line"/>
+  </g>
+
+  <!-- Column Lines -->
+  <line x1="80" y1="0" x2="80" y2="355" class="grid-line"/>
+  <line x1="330" y1="0" x2="330" y2="355" class="grid-line"/>
+  <line x1="550" y1="0" x2="550" y2="355" class="grid-line"/>
+  <line x1="800" y1="0" x2="800" y2="355" class="grid-line"/>
+
+</svg>

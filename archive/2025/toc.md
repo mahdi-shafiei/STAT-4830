@@ -5,21 +5,19 @@ title: Table of Contents
 
 # Table of Contents
 
-[2025 version of the course](archive/2025/toc.md)
-
-[0. Introduction](section/0/notes.md) | [Slides](section/0/slides.pdf) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/0/notebook.ipynb)
+[0. Introduction](section/0/notes.md) | [Slides](section/0/slides.pdf) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/archive/2025/section/0/notebook.ipynb)
    > Course content, a deliverable, and spam classification in PyTorch.
 
-[1. Basic linear Algebra in PyTorch](section/1/notes.md) | [Slides](section/1/slides.pdf) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/1/notebook.ipynb) | [Live Demo](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/1/live-demo.ipynb)
+[1. Basic linear Algebra in PyTorch](section/1/notes.md) | [Slides](section/1/slides.pdf) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/archive/2025/section/1/notebook.ipynb) | [Live Demo](https://colab.research.google.com/github/damek/STAT-4830/blob/main/archive/2025/section/1/live-demo.ipynb)
    > Basic linear algebra operations in PyTorch.
 
-[2. Linear Regression: Direct Methods](section/2/notes.md) | [Slides](section/2/slides.pdf) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/2/notebook.ipynb)
+[2. Linear Regression: Direct Methods](section/2/notes.md) | [Slides](section/2/slides.pdf) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/archive/2025/section/2/notebook.ipynb)
    > Direct methods for solving least squares problems, comparing LU and QR factorization.
 
-[3. Linear Regression: Gradient Descent](section/3/notes.md) | [Slides](section/3/slides.pdf) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/3/notebook.ipynb)
+[3. Linear Regression: Gradient Descent](section/3/notes.md) | [Slides](section/3/slides.pdf) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/archive/2025/section/3/notebook.ipynb)
    > Linear regression via gradient descent. 
 
-[4. How to compute gradients in PyTorch](section/4/notes.md) | [Slides](section/4/slides.pdf) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/4/notebook.ipynb)
+[4. How to compute gradients in PyTorch](section/4/notes.md) | [Slides](section/4/slides.pdf) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/archive/2025/section/4/notebook.ipynb)
    > Introduction to PyTorch's automatic differentiation system.
 
 [5. How to think about derivatives through best linear approximation](section/5/notes.md)
@@ -31,10 +29,10 @@ title: Table of Contents
 [7. Stochastic gradient descent: insights from the Noisy Quadratic Model](section/7/notes.md)
    > When should we use exponential moving averages, momentum, and preconditioning?
 
-[8. Stochastic Gradient Descent: The general problem and implementation details](section/8/notes.md) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/8/notebook.ipynb)
+[8. Stochastic Gradient Descent: The general problem and implementation details](section/8/notes.md) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/archive/2025/section/8/notebook.ipynb)
    > Stochastic optimization problems, SGD, tweaks, and implementation in PyTorch
 
-[9. Adaptive Optimization Methods](section/9/notes.md) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/9/notebook.ipynb) | [Cheatsheet](section/9/cheatsheet.md)
+[9. Adaptive Optimization Methods](section/9/notes.md) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/archive/2025/section/9/notebook.ipynb) | [Cheatsheet](section/9/cheatsheet.md)
    > Intro to adaptive optimization methods: Adagrad, Adam, and AdamW.
 
 [10. Benchmarking Optimizers: Challenges and Some Empirical Results](section/10/notes.md) | [Cheatsheet](section/10/cheatsheet.md)
