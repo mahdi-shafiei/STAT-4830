@@ -37,6 +37,11 @@
 !archive/2025/section/*/figures/*.svg
 !archive/2025/section/*/figures/*.gif
 
+# Allow Rouge CSS and assets
+!assets/
+!assets/css/
+!assets/css/rouge.css
+
 # Allow transformer_parallelism
 !transformer_parallelism/
 !transformer_parallelism/**

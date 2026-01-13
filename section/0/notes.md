@@ -6,7 +6,6 @@ title: Introduction
 # 0. Introduction
 
 ## Notebooks and Slides
-- [Lecture slides](slides.pdf)
 - [Colab notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/0/notebook.ipynb)
 
 ## Table of contents
@@ -27,7 +26,7 @@ Welcome to STAT 4830: Numerical optimization for data science and machine learni
 
 ### Schedule and format
 
-- This is primarily a lecture-based course with weekly programming exercises.
+- This is primarily a lecture-based course that will also include frequent group meetings with the professor. 
 - We will introduce theory (convexity, gradient-based methods, constraints, etc.) and then apply it in Python notebooks using PyTorch (and occasionally other libraries like CVXPY).
 
 ### Deliverables
@@ -46,6 +45,29 @@ Welcome to STAT 4830: Numerical optimization for data science and machine learni
 - Targeted at junior/senior undergrads, but also valuable for PhD students wanting to incorporate numerical optimization into their research. Students who have met the prerequisites are welcome to join.
 - If you already have a research project that involves model fitting or data analysis, this course may deepen your toolkit and sharpen your understanding of optimization.
 - We will keep refining the course content based on your interests. If you have a particular topic, domain, or application you’d like to see, let me know.
+
+### A Brief History of Optimization
+
+
+```
+EVOLUTION OF OPTIMIZATION
+========================
+
+1950s                1960s-1990s              2000s                  TODAY
+├─────────────────┐  ├────────────────┐  ┌────────────────┐  ┌─────────────────┐
+│ LINEAR PROGRAM. │  │ CONVEX OPTIM.  │  │ SOLVER ERA     │  │ DEEP LEARNING   │
+│ Dantzig's       │──│ Interior-point │--│ CVX & friends  │──│ PyTorch         │
+│ Simplex Method  │  │ Large-scale    │  │ "Write it,     │  │ Custom losses   │
+└─────────────────┘  └────────────────┘  │  solve it"     │  │ LLM boom        │
+       │                    │            └────────────────┘  └─────────────────┘
+       │                    │                   │                    │
+       ▼                    ▼                   ▼                    ▼
+ APPLICATIONS:        APPLICATIONS:       APPLICATIONS:        APPLICATIONS:
+ • Logistics         • Control           • Signal Process    • Language Models
+ • Planning          • Networks          • Finance           • Image Gen
+ • Military          • Engineering       • Robotics          • RL & Control
+```
+
 
 
 ## Preview: Solving spam classification with optimization
@@ -359,7 +381,7 @@ Throughout this course and especially in your projects, you will execute thse sa
 
 ## Tentative course structure
 
-This is my second time teaching this course. You may find the first version of this course [here](../../archive/2025/toc.md). I'm significantly revamping this course based on student feedback to make it the lectures quickly relevant to your final projects. Below is the current structure that I've settled on, but the content may shift.
+This is my second time teaching this course. You may find the first version of this course [here](../../archive/2025/toc.md). I'm significantly revamping this course based on student feedback to make the lectures quickly relevant to your final projects. Below is the current structure that I've settled on, but the content may shift.
 
 We start in one dimension. We will define the decision variable, the loss function, and what we mean by an approximate minimizer. We will derive why gradients are the right primitive, write down gradient descent and stochastic gradient descent explicitly, and implement them twice: first by hand in NumPy, then using automatic differentiation in PyTorch. We will discuss how PyTorch computes gradients via autodifferentiaion. We will also discuss basic hyperparameter tuning strategies. Finally, we will touch on constraints early, because many practical problems come with them.
 
