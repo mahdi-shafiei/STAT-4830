@@ -48,8 +48,8 @@ title: Introduction (Cheatsheet)
 **Purpose:** Place “optimization for ML” in a larger arc.
 
 ```
-
-# EVOLUTION OF OPTIMIZATION
+EVOLUTION OF OPTIMIZATION
+========================
 
 1950s                1960s-1990s              2000s                  TODAY
 ├─────────────────┐  ├────────────────┐  ┌────────────────┐  ┌─────────────────┐
@@ -57,15 +57,14 @@ title: Introduction (Cheatsheet)
 │ Dantzig's       │──│ Interior-point │--│ CVX & friends  │──│ PyTorch         │
 │ Simplex Method  │  │ Large-scale    │  │ "Write it,     │  │ Custom losses   │
 └─────────────────┘  └────────────────┘  │  solve it"     │  │ LLM boom        │
-│                    │            └────────────────┘  └─────────────────┘
-│                    │                   │                    │
-▼                    ▼                   ▼                    ▼
-APPLICATIONS:        APPLICATIONS:       APPLICATIONS:        APPLICATIONS:
-• Logistics         • Control           • Signal Process    • Language Models
-• Planning          • Networks          • Finance           • Image Gen
-• Military          • Engineering       • Robotics          • RL & Control
-
-````
+       │                    │            └────────────────┘  └─────────────────┘
+       │                    │                   │                    │
+       ▼                    ▼                   ▼                    ▼
+ APPLICATIONS:        APPLICATIONS:       APPLICATIONS:        APPLICATIONS:
+ • Logistics         • Control           • Signal Process    • Language Models
+ • Planning          • Networks          • Finance           • Image Gen
+ • Military          • Engineering       • Robotics          • RL & Control
+```
 
 - Mid-20th Century: linear programming and operations research (simplex; logistics and planning).
 - 1960s–1990s: convex optimization matured (gradient methods, interior-point methods, large-scale solvers).
