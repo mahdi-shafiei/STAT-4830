@@ -50,7 +50,13 @@ Welcome to STAT 4830: Numerical optimization for data science and machine learni
 
 ## Preview: Solving spam classification with optimization
 
-Let's start with a classic problem: sorting important emails from spam. 
+Let's start with a classic problem: sorting important emails from spam.
+
+The point of this preview is to show how a machine learning task turns into an optimization problem:
+1. We define features: how an email becomes a vector $x$.
+2. We define decision variables: weights $w$ that turn features into a prediction.
+3. We define an objective: a loss function that scores the weights (cross-entropy).
+4. We solve the optimization problem by minimizing the loss with gradient descent.
 
 ### How computers read email
 
@@ -68,23 +74,26 @@ Subject: Team meeting tomorrow
 Hi everyone, Just a reminder about our 2pm project sync.
 Please review the attached agenda.
 """
-```
+````
 
 Computers can't directly understand text like we do. Instead, we convert each email into numbers called features. Think of features as measurements that help distinguish spam from real mail:
 
 ```python
-def extract_features(email):
+def extract_features(email, time_sent_hour):
+    keywords = {"urgent", "act", "now", "prize"}
+    tokens = set(email.lower().split())
+
     features = {
         'exclamation_count': email.count('!'),
-        'urgent_words': len(['urgent', 'act now', 'prize'] & set(email.lower().split())),
-        'suspicious_links': len([link for link in email.split() if 'www' in link]), # Any link is suspicious imo
-        'time_sent': email.timestamp.hour,  # Spam often sent at odd hours
-        'length': len(email)
+        'urgent_words': len(keywords & tokens),
+        'suspicious_links': sum('www' in token for token in email.split()),
+        'time_sent': time_sent_hour,   # Spam often sent at odd hours
+        'length': len(email),
     }
     return features
 
 # Our spam email gets turned into numbers
-spam_features = extract_features(email1)
+spam_features = extract_features(email1, time_sent_hour=3)
 print(spam_features)
 # {'exclamation_count': 8,
 #  'urgent_words': 3,
@@ -104,12 +113,12 @@ weights = {
     'exclamation_count': 0.5,    # More ! marks → more suspicious
     'urgent_words': 0.8,         # "Urgent" language → very suspicious
     'suspicious_links': 0.6,     # Unknown links → somewhat suspicious
-    'time_sent': 0.1,           # Time matters less
-    'length': -0.2              # Longer emails might be less suspicious
+    'time_sent': 0.1,            # Time matters less
+    'length': -0.2               # Longer emails might be less suspicious
 }
 
 # PyTorch needs numbers in tensor form
-features = torch.tensor([1.0, 3.0, 1.0, 3.0, 142.0])
+features = torch.tensor([8.0, 3.0, 1.0, 3.0, 142.0])
 w = torch.tensor(list(weights.values()), requires_grad=True)
 ```
 
@@ -118,6 +127,7 @@ w = torch.tensor(list(weights.values()), requires_grad=True)
 ![Spam Classification Process](figures/spam_classification_process.png)
 
 Features flow through a sequence of transformations:
+
 1. Extract numeric features from raw text
 2. Multiply each feature by its weight
 3. Sum up the weighted features
@@ -140,9 +150,10 @@ def spam_score(features, weights):
 ```
 
 The sigmoid function provides crucial properties:
-- Very negative scores → probabilities near 0 (definitely not spam)
-- Very positive scores → probabilities near 1 (definitely spam)
-- Zero score → probability of 0.5 (maximum uncertainty)
+
+* Very negative scores → probabilities near 0 (definitely not spam)
+* Very positive scores → probabilities near 1 (definitely spam)
+* Zero score → probability of 0.5 (maximum uncertainty)
 
 ### The mathematical problem: finding optimal weights
 
@@ -153,12 +164,13 @@ $$
 $$
 
 Where:
-- $w$ are the weights we're trying to find (a vector with 5 entries)
-- $x_i$ are the features of email $i$ (another vector with 5 entries)
-- $x_i^\top w$ is the dot product of $x_i$ and $w$ (a scalar)
-- $y_i$ is $1$ if email $i$ is spam, $0$ if not
-- $\sigma$ is the sigmoid function 
-- $n$ is the number of training emails
+
+* $w$ are the weights we're trying to find (a vector with 5 entries)
+* $x_i$ are the features of email $i$ (another vector with 5 entries)
+* $x_i^\top w$ is the dot product of $x_i$ and $w$ (a scalar)
+* $y_i$ is $1$ if email $i$ is spam, $0$ if not
+* $\sigma$ is the sigmoid function
+* $n$ is the number of training emails
 
 This formula measures our mistakes (called "cross-entropy loss").
 
@@ -167,6 +179,7 @@ This formula measures our mistakes (called "cross-entropy loss").
 The cross-entropy loss teaches our model to make confident, correct predictions while severely punishing mistakes. Let's see how it works by examining the two curves in our plot, which show how we penalize predictions for spam and non-spam emails.
 
 ![Cross-Entropy Loss](figures/cross_entropy.png)
+
 <!-- [Figure: Cross-Entropy Loss - See cross_entropy.tex] -->
 
 Consider a legitimate email (not spam, label = 0). Our model assigns it a probability of being spam:
@@ -178,9 +191,10 @@ confident_right = 0.1       # "Probably not spam (10% chance)"
 ```
 
 The green curve ("Wrong: Not Spam") shows how we penalize mistakes on legitimate emails:
-- An uncertain wrong prediction (0.3) receives a moderate penalty
-- A confident wrong prediction (0.8) triggers a severe penalty
-- The penalty approaches infinity as the prediction approaches 1.0
+
+* An uncertain wrong prediction (0.3) receives a moderate penalty
+* A confident wrong prediction (0.8) triggers a severe penalty
+* The penalty approaches infinity as the prediction approaches 1.0
 
 The red curve ("Right: Spam") works similarly but for actual spam emails. Together, the curves create a powerful learning dynamic:
 
@@ -191,11 +205,13 @@ The red curve ("Right: Spam") works similarly but for actual spam emails. Togeth
 3. **Catastrophic mistakes get prevented**: Both curves shoot upward at their edges, creating enormous penalties for high-confidence mistakes. This prevents the model from becoming overly confident in the wrong direction.
 
 The two curves meet at 0.5 (our decision boundary), creating perfect symmetry between spam and non-spam mistakes. This balance means our model:
-- Learns equally from both types of examples
-- Develops appropriate uncertainty when evidence is weak
-- Gains confidence only with strong supporting evidence
+
+* Learns equally from both types of examples
+* Develops appropriate uncertainty when evidence is weak
+* Gains confidence only with strong supporting evidence
 
 The mathematics behind this intuition uses the logarithm:
+
 ```python
 # For legitimate email (label = 0):
 loss = -log(1 - prediction)   # Penalize high predictions
@@ -204,39 +220,62 @@ loss = -log(1 - prediction)   # Penalize high predictions
 loss = -log(prediction)       # Penalize low predictions
 ```
 
-Through training, these penalties guide the model from uncertainty toward confident, correct predictions:
+Through training, these penalties push the average loss down by moving spam probabilities toward 1 on spam emails and toward 0 on non-spam emails:
+
 ```python
 # Before training (uncertain)
-email1 = 0.48  # Struggles to classify
-email2 = 0.51  # Nearly random guesses
+email1 = 0.48  # spam email, nearly random guess
+email2 = 0.51  # non-spam email, nearly random guess
 
 # After training (confident + correct)
-email1 = 0.02  # Confidently marks non-spam
-email2 = 0.97  # Confidently marks spam
+email1 = 0.97  # spam email, high predicted probability of spam
+email2 = 0.02  # non-spam email, low predicted probability of spam
 ```
 
-Each training step pushes predictions away from the uncertain middle and toward confident extremes - but only when the evidence justifies that confidence. This careful balance between confidence and caution produces a robust spam filter that makes reliable decisions.
+### How the optimization process works: gradients
 
-### How the optimization process works: following the gradient
+At this point, we have an objective function $L(w)$ (the average cross-entropy loss on the training set). 
+To find the minimum of the function, *gradient methods* follow the gradient of the function (or a modification thereof) towards the minimum. Why is this a reasonable strategy?
 
-Imagine you're hiking in a valley and want to reach the lowest point. A natural strategy is to:
+The gradient $\nabla L(w)$ is a vector of partial derivatives:
 
-1. Look at the ground around you
-2. Take a step in the steepest downhill direction
-3. Repeat until you can't go lower
+$$
+\nabla L(w)=\left(\frac{\partial L}{\partial w_1},\ldots,\frac{\partial L}{\partial w_d}\right).
+$$
+
+It tells you how the loss changes if you nudge each weight coordinate.
+
+The key idea behind gradient descent is the first-order Taylor approximation:
+
+$$
+L(w+\Delta)\approx L(w)+\langle \nabla L(w),\Delta\rangle .
+$$
+
+To make this approximation smaller, a natural choice is to move in a direction $\Delta$ that makes the inner product negative. The *steepest instantaneous decrease* (for a fixed step length) is achieved by taking $\Delta$ proportional to $-\nabla L(w)$.
+
+That produces the update rule:
+
+$$
+w \leftarrow w - \eta \nabla L(w),
+$$
+
+equivalently
+
+$$
+w_j \leftarrow w_j - \eta \frac{\partial L}{\partial w_j}.
+$$
+
+Here $\eta > 0$ is called the *learning rate* or *stepsize*.
+
+A dramatically oversimplified picture of gradient descent is that we are walking downhill on a surface and the gradient always points towards the current steepest direction downwards. In reality there are many obstacles to reaching the minimum, including local minima, saddle points, and even [ravines](https://x.com/damekdavis/status/1841596498204880924)
 
 ![Gradient descent visualization showing path from high point to minimum](figures/gradient_descent.png)
-This is exactly how the most well-known algorithm for optimization--called gradient descent--works. 
 
 ### Finding the weights with PyTorch
 
-We can implement the gradient descent algorithm in PyTorch. Here's how each step or iteration works:
-
-1. Measure how each weight affects our mistakes
-2. Adjust weights to reduce future mistakes
-3. Get closer to weights that separate spam from legitimate email
-
-The process repeats until the mistakes can't be reduced further: 
+In PyTorch, `loss.backward()` computes $\nabla L(w)$ for you and stores it in `weights.grad`. The update line
+`weights -= learning_rate * weights.grad`
+is exactly the gradient descent update $w \leftarrow w - \eta \nabla L(w)$.
 
 ```python
 # Start with random weights
@@ -257,121 +296,99 @@ for _ in range(1000):
         weights.grad.zero_()
 ```
 
-More formally, each iteration measures how well our current weights classify *all* of our training emails, calculates a *gradient* of the loss function with respect the weights $w$ (an "error-reducing" direction), and updates all weights by taking a small step in this error-reducing direction. The learning rate (0.01) controls these steps - smaller values move more reliably toward better weights but take longer, while larger values move faster but risk overshooting good solutions.
+Two details matter here:
 
-The optimization process continues until it takes 1000 steps in the gradient direction. This is just one way to stop the algorithm; others exist. For example, we could instead halt when the loss plateaus (stops decreasing significantly) or reaches a target threshold. Each approach balances computation time against solution quality.
+* `loss.backward()` computes all partial derivatives and puts them into `weights.grad`.
+* We reset gradients with `weights.grad.zero_()` because PyTorch accumulates gradients by default.
+
+The loop above runs a fixed number of steps. Other stopping rules are common (stop when the loss plateaus, stop after a fixed time budget, stop after a target accuracy).
 
 ### Numerical results
-When you checkout the [notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/0/notebook.ipynb) for this lecture, this is what you'll see as you run the training loop: 
+
+When you checkout the [notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/0/notebook.ipynb) for this lecture, this is what you'll see as you run the training loop:
 ![Loss curves](figures/training_run.png)
-The first plot shows the value of the cross-entropy loss as we train the model. This and the "training accuracy" (shown in the second plot) are both metrics that measure how well our model performs on the training data. They are are diagnostic plots -- they say at least the optimization part of the code is working. 
+The first plot shows the value of the cross-entropy loss as we train the model. This and the "training accuracy" (shown in the second plot) are diagnostics: they show whether the optimization loop is reducing the objective on the training set.
 
-The third plot is far more important. It shows the performance of the model on a test set of emails that were not used to train the model.  A gap between training and test accuracy would signal overfitting, but here both metrics converge and stay stable, indicating the model generalizes well to new examples.
-
-Together, these plots confirm our model learns a robust set of rules for distinguishing spam from legitimate email. The rapid initial progress followed by stability suggests the feature set captures the essential patterns in our data.
+The third plot is the test accuracy, computed on emails that were not used to train the model. A key goal in machine learning is for our our performance on the training set to *generalize* to the test set. A large gap between training and test accuracy would suggest overfitting. In this run, the training and test curves are close and stabilize, so these plots do not show an obvious generalization gap for this dataset.
 
 ### The what, how, and why of PyTorch
 
-PyTorch makes this optimization process painless by automating the most challenging part - computing gradients. As calculations flow through our code, PyTorch builds a record of operations (a computational graph). When we call `backward()`, this graph enables automatic calculation of all required derivatives.
+Once you write down a loss $L(w)$, gradient descent needs $\nabla L(w)$. For realistic models, computing gradients by hand is tedious and error-prone.
 
-The framework achieves this automation through tensors - its fundamental building blocks that store numbers in grid structures representing single values, lists, tables, or higher-dimensional arrays. PyTorch uses tensors because they track operation history for automatic gradients and enable parallel computation. This design lets code run efficiently on both CPUs and GPUs with minimal changes.
+PyTorch computes gradients automatically. If you build a scalar-valued loss using PyTorch operations, PyTorch records the operations used to compute that loss. When you call `backward()`, it applies the chain rule through that recorded computation and produces derivatives with respect to any variables that have `requires_grad=True`.
 
-We'll talk more about these intricacies as the course progresses.
+Here is a one-dimensional example where you can see the chain rule explicitly. Fix a number $y$ and define
+
+$$
+f(x) = (x^2 - y)^2.
+$$
+
+Write this as a composition: $h(x)=x^2$ and $g(z)=(z-y)^2$, so $f=g\circ h$. The chain rule gives
+
+$$
+f'(x) = g'(h(x))h'(x) = 2(x^2-y)\cdot 2x = 4x(x^2-y).
+$$
+
+PyTorch computes the same derivative automatically because it tracks the operations used to build the function $f$:
+
+```python
+import torch
+
+y = 3.0
+x = torch.tensor(2.0, requires_grad=True)
+
+f = (x**2 - y)**2
+f.backward()
+
+print("f(x) =", f.item())
+print("df/dx =", x.grad.item())  # 4*x*(x**2 - y)
+```
+
+The practical payoff is that we can change the model or the loss and keep the same optimization loop. We will use that constantly in this course.
 
 ### What you'll learn in this course
 
-While our spam filter demonstrates these concepts simply, the same pattern powers most machine learning: predict outputs, measure errors, compute gradients, adjust parameters. Different problems require different loss functions or model architectures, but this optimization loop remains central and is the focus of this course.
+This spam filter example is intentionally simple, but it has the same structure as most machine learning problems:
 
-Our spam filter illustrates the key ideas you'll learn in this course:
-1. Converting real problems into optimization problems
-2. Choosing appropriate optimization methods
-3. Implementing solutions in PyTorch
+* represent data as vectors (features),
+* choose parameters $w$ that produce predictions,
+* define an objective $L(w)$ that measures performance,
+* compute $\nabla L(w)$ and update $w$ with a gradient-based method.
+
+Throughout this course and especially in your projects, you will execute thse same four steps. While they seem straightforward in this example, they require extensive tuning, and have a [surprising amount of detail.](http://johnsalvatier.org/blog/2017/reality-has-a-surprising-amount-of-detail)
 
 ## Tentative course structure
 
-So what will we cover in this course?
+This is my second time teaching this course. You may find the first version of this course [here](../../archive/2025/toc.md). I'm significantly revamping this course based on student feedback to make it the lectures quickly relevant to your final projects. Below is the current structure that I've settled on, but the content may shift.
 
-### 1. Linear algebra, regression, and direct methods
-We begin with the essential tools: norms, inner products, and matrix decompositions. Linear regression serves as our first optimization problem, solvable through direct methods like LU factorization and Gaussian elimination. These methods work well for moderate problem sizes but struggle with large datasets, motivating our transition to iterative methods.
+We start in one dimension. We will define the decision variable, the loss function, and what we mean by an approximate minimizer. We will derive why gradients are the right primitive, write down gradient descent and stochastic gradient descent explicitly, and implement them twice: first by hand in NumPy, then using automatic differentiation in PyTorch. We will discuss how PyTorch computes gradients via autodifferentiaion. We will also discuss basic hyperparameter tuning strategies. Finally, we will touch on constraints early, because many practical problems come with them.
 
-### 2. Problem formulations and classical software
+Next we move to higher dimensions and build the linear algebra interface we need in PyTorch: tensors, norms, inner products, and matrix products. We will talk about efficiency as it shows up in code, including broadcasting and memory layout. We will also use SVD as a first tool for looking at structure in data.
 
-This section introduces optimization formulations in several core application areas, and classical formulations that are solveable by existing software tools.
+With that tooling, we will build a menu of problems in signal processing, machine learning, and reinforcement learning and focus on how to formulate them cleanly in code. We will look at classical ML problems (linear and logistic regression, SVMs), modern deep learning problems (neural networks, transformers, diffusion models), and a few inverse problems (compressed sensing, phase retrieval, low-rank recovery). We wil also provide a quick introduction to RL problems as they're currently being used in large language models. Finally, we introduce classical optimization templates (LPs, QPs, SDPs) and describe how one can solve them with existing solver-based workflows (CVXPY and solvers such as [Clarabel](https://clarabel.org/stable/)).
 
-First, we explore problem formulations in three core application areas:
+Once you can formulate problems, we will treat algorithms as objects with an API: what update they implement, what hyperparameters they expose, and what regimes they tend to work in. We will cover gradient descent, stochastic gradient descent, Adam and AdamW, and a handful of other methods that show up in current practice (SignGD, Muon, Shampoo). We will also discuss modifiers like weight decay, EMA, momentum, batch size, and constraints.
 
-**Statistical Estimation and Inverse Problems**
-Reconstruct signals from indirect observations - as in the reconstruction of the first black hole image from radio telescope data.
+Then we will shift to benchmarking and tuning methods. We will learn how to run comparisons that answer a question (time-to-result, final accuracy, stability) rather than comparisons that just produce a nice plot. Some of this material will draw from the previous course benchmarking notes (e.g., [section 10 notes](../../archive/2025/section/10/notes.md) and [section 11 notes](../../archive/2025/section/11/).
 
-**Machine Learning Models**
-Train models that learn patterns from data, whether for prediction (spam detection) or generation (language models).
+Next, we will take a brief look at ML systems. We will describe how to think about [GPUs](https://damek.github.io/random/basic-facts-about-gpus/), the core accelerator of modern ML research. We will also talk about how one [trains large-scale models over multiple GPUs](../../archive/2025/section/12/notes.md).
 
-**Sequential Decision Making**
-Make decisions in sequence where each choice reshapes future possibilities - from chess strategies to spacecraft navigation.
-
-Second, we study classical **convex formulations**, such as Linear Programs (LP), Quadratic Programs (QP), and Semidefinite Programs (SDP). These formulations have well-understood properties and moderately sized problem can be solved efficiently by existing software tools, such as CVXPY and others (e.g., [Google's MathOpt](https://developers.google.com/optimization/math_opt)). While our core applications often involve more complex optimization problems, recognizing when parts of them fit into these classical templates allows us to leverage powerful, ready-made solvers.
-
-### 3. Calculus for optimization
-Gradients, Hessians, and Taylor expansions provide the mathematical foundation for optimization algorithms. This section explains how these tools guide algorithm design and implementation.
-
-### 4. Automatic differentiation and PyTorch
-Automatic differentiation (AD) powers modern deep learning frameworks. We examine how AD works, starting with a minimal implementation (Micrograd) before moving to PyTorch. This progression reveals how frameworks handle derivatives automatically, enabling rapid iteration on complex models.
-
-### 5. First-order methods: (Stochastic) gradient descent
-Large datasets make computing exact gradients impractical. Stochastic and mini-batch variants of gradient descent offer a solution by sampling data subsets. We examine theoretical guarantees (global minima for convex problems, critical points for nonconvex ones) and practical modifications like Adam, momentum, and learning rate schedules.
-
-### 6. Second-order methods
-Some optimization landscapes require more than gradient information. Newton, Gauss-Newton, and quasi-Newton methods reshape the optimization landscape for faster convergence. Linear solvers (Conjugate Gradient, CoLA) make these approaches practical for large problems.
-
-### 7. Advanced topics
-Based on class interests, we may cover:
-- Zeroth-order methods for settings without gradients
-- Constrained optimization via projections and proximal operators
-- Distributed optimization for data across multiple machines
-- Privacy-preserving methods using differential privacy
-
-### 8. Modern practice in deep learning
-We conclude with practical strategies for large-scale optimization:
-- Scaling laws and performance prediction (Mu_p)
-- Implementation strategies from Google's Deep Learning Tuning Playbook
-- Benchmarking frameworks for comparing optimization algorithms
-- Case studies in text generation (Transformers) and image generation (Diffusion Models)
-
-The details of this outline shift based on class interests. By the end of the course, you will have a toolbox of optimization methods, an understanding of their theoretical underpinnings, and practical experience in applying them to real problems.
+Finally, we will discuss what theory can tell us. We will highlight the differences between convexity and nonconvexity, how conditioning impacts algorithmic speed, and, provide complexity estimates for GD and SGD. We will also introduce a few simple, but predictive models for deep learning: random features, [noisy quadratic models](../../archive/2025/section/7/notes.md), [mean estimation](../../archive/2025/section/6/notes.md). Finally we will briefly discuss [scaling laws](https://arxiv.org/abs/2001.08361) and MuP as heuristics for scaling large models.
 
 ## Expectations and learning outcomes
 
-What will you learn by the end of this course?
+By the end of the course, you should be able to do the following.
 
-1. **Modeling and Formulation**  
-   By the end of this course, you should be able to take a real-world problem (in data science, machine learning, or sequential decision-making) and translate it into a formal optimization problem with well-defined objectives and constraints.
+1. **Formulate optimization problems.** Identify decision variables, objectives, and constraints for a given problem, and write them down clearly in both math and code.
 
-2. **Algorithm Selection and Analysis**  
-   You will learn how to choose an appropriate algorithm—from basic gradient descent to more advanced quasi-Newton methods—and understand the trade-offs of different approaches (speed, accuracy, scalability).
+2. **Implement and debug gradient-based training loops in PyTorch.** Build a model, compute a loss, call `backward()`, update parameters, and debug common failure modes.
 
-3. **Software Proficiency**  
-   We will use modern libraries like PyTorch (possibly Jax) to implement and experiment with these algorithms. You will gain experience with auto differentiation and learn best practices for tuning and debugging iterative solvers.
+3. **Choose reasonable algorithms and hyperparameters.** Know when to start with GD/SGD/Adam. Understand what learning rate, batch size, momentum, and weight decay are doing. Recognize symptoms of bad tuning (divergence, noise floor, slow progress).
 
-4. **Optimization in Practice**  
-   Although we’ll cover fundamental optimization theory (convexity, convergence rates, saddle points, etc.), the focus is on practical usage. You will learn which methods to try first and how to iterate quickly when working with large datasets and complicated models.
+4. **Benchmark methods in a way that is not misleading.** Run fair comparisons and report results that answer a question (time-to-result, final accuracy, stability).
 
-5. **Research Methods**  
-   This course also prepares you for research or advanced development tasks. You’ll see how to benchmark optimization methods, reproduce existing studies, and innovate ways to handle constraints like privacy and distributed data.
+5. **Have basic systems awareness.** Understand when compute, memory, or data loading is the bottleneck. Have a working vocabulary for GPUs and lightweight distributed training, even if you do not implement full-scale systems.
 
-When you finish, you’ll be equipped to handle the optimization component of modern data science and machine learning projects, appreciating both the theoretical and practical dimensions.
+6. **Produce a portfolio-quality project.** Build a clean repo with a clear objective, a working implementation, and a short write-up that explains what you did and what worked.
 
 
-
-
-<!-- 
-> This course will teach you how to formulate these problems mathematically, choose appropriate algorithms to solve them, and implement and tune the algorithms in PyTorch. Tentative topics include:
-
-* Optimization-based formulations of statistical estimation and inverse problems in data science; predictive and generative models in machine learning; and control, bandit, and reinforcement learning problems in sequential decision-making. 
-
-* A high-level tour of the foundations of mathematical optimization, viewed as an algorithmic discipline, and what to expect from theory; key considerations such as convexity, smoothness, saddle points, and stochasticity; classical formulations, such as linear, quadratic, and semidefinite programs; numerical solvers such as CVXPY.
-
-* Popular optimization methods such as (online and stochastic) gradient methods, (quasi) Newton methods, algorithmic extensions to constrained, regularized, and distributed problems, as well as optimization methods that preserve privacy of sensitive data. 
-
-* Modern software libraries such as PyTorch and Jax and the principles underlying "automatic differentiation" techniques. Best practices in tuning optimization methods, e.g., in deep learning problems.
-
-By the end of this course, you will become an intelligent consumer of numerical methods and software for solving modern optimization problems.  -->
