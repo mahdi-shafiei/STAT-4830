@@ -661,6 +661,21 @@
             const rawUrl = url.startsWith('http') ? url : `https://raw.githubusercontent.com/damek/STAT-4830/main/${url}`;
             return `<a href="https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(rawUrl)}" target="_blank" rel="noopener">${text}</a>`;
           }
+
+          // Handle cheatsheet links (section-scoped or relative)
+          if (url.match(/^cheatsheet\\.md$/) || url.match(/^section\\/\\d+(?:\\.\\d+)?\\/cheatsheet\\.md/)) {
+            const urlObj = new URL(window.location.href);
+            // Determine current section, if present in query param n
+            const params = new URLSearchParams(urlObj.search);
+            const sectionNum = params.get('n');
+            if (sectionNum) {
+              return `[${text}](/STAT-4830/section/${sectionNum}/cheatsheet.html)`;
+            }
+            // Fallback: resolve relative to current path
+            const basePath = urlObj.pathname.replace(/\\/*.html$/, '/');
+            const resolved = new URL('cheatsheet.html', `https://damek.github.io${basePath}`).pathname;
+            return `[${text}](${resolved})`;
+          }
           
           // Handle notes links - new format
           if (url.match(/^section\/\d+(?:\.\d+)?\/notes\.md/)) {

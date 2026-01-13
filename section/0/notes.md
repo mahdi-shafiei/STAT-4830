@@ -5,7 +5,9 @@ title: Introduction
 
 # 0. Introduction
 
-## Notebooks and Slides
+[cheatsheet](cheatsheet.html)
+
+## Notebooks
 - [Colab notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/0/notebook.ipynb)
 
 ## Table of contents
@@ -68,6 +70,14 @@ EVOLUTION OF OPTIMIZATION
  • Military          • Engineering       • Robotics          • RL & Control
 ```
 
+It's useful to appreciate how optimization evolved as an algorithmic discipline over the last seventy years:
+
+- Mid-20th Century: Linear Programming emerged as a critical tool in operations research, fueled by George Dantzig’s simplex method. This was pivotal for industrial logistics, military planning, and resource allocation.
+- 1960s–1990s: Convex optimization grew more important, driven by work on gradient-based methods, interior-point methods, and software that could solve large-scale linear and convex problems.
+- 2000s: Tools like CVX (MATLAB-based) made formulating and solving standard convex problems more accessible to a broad audience—i.e., “specify your problem in a solver-friendly language, and let the solver handle it.”
+- Modern Era: Deep learning frameworks (e.g., PyTorch, TensorFlow, Jax) have shifted the emphasis to a “build and iterate” approach. Instead of specifying problems in a polished convex form, we often “get our hands dirty” with nonconvex models, direct gradient-based methods, and custom loss functions. This iterative exploration is precisely what enabled the explosion of large language models (LLMs) and other powerful neural architectures.
+
+In this course, we will appreciate both sides: solver-based approaches for classical, well-structured problems (via CVXPY) and more flexible, high-powered frameworks (via PyTorch) for data-driven, nonconvex tasks.
 
 
 ## Preview: Solving spam classification with optimization
@@ -288,6 +298,15 @@ w_j \leftarrow w_j - \eta \frac{\partial L}{\partial w_j}.
 $$
 
 Here $\eta > 0$ is called the *learning rate* or *stepsize*.
+
+How much descent do we get from a step of gradient descent? If we take $\Delta = -\eta \nabla L(w)$ in the first-order approximation
+
+$$
+L(w-\eta \nabla L(w)) \approx L(w) - \eta \langle \nabla L(w),\nabla L(w)\rangle
+= L(w) - \eta \|\nabla L(w)\|^2.
+$$
+
+So, for small enough $\eta>0$, stepping in the negative gradient direction decreases the loss to first order.
 
 A dramatically oversimplified picture of gradient descent is that we are walking downhill on a surface and the gradient always points towards the current steepest direction downwards. In reality there are many obstacles to reaching the minimum, including local minima, saddle points, and even [ravines](https://x.com/damekdavis/status/1841596498204880924)
 
