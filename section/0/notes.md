@@ -192,7 +192,7 @@ The sigmoid function provides crucial properties:
 Our spam filter needs to find weights that correctly classify emails. We can write this as an optimization problem:
 
 $$
-\min_{w} \frac{1}{n} \sum_{i=1}^n \left[-y_i \log(\sigma(x_i^\top w)) - (1-y_i) \log(1-\sigma(x_i^\top w)) \right]
+\min_{w}\;  L(w) := \frac{1}{n} \sum_{i=1}^n \left[-y_i \log(\sigma(x_i^\top w)) - (1-y_i) \log(1-\sigma(x_i^\top w)) \right]
 $$
 
 Where:
@@ -206,7 +206,7 @@ Where:
 
 This formula measures our mistakes (called "cross-entropy loss").
 
-### Why cross-entropy loss works
+### Why cross-entropy is an appropriate loss function
 
 The cross-entropy loss teaches our model to make confident, correct predictions while severely punishing mistakes. Let's see how it works by examining the two curves in our plot, which show how we penalize predictions for spam and non-spam emails.
 
