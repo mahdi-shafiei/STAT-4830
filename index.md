@@ -32,9 +32,12 @@ For lecture notes see [table of contents](toc.md).
 * **What is the goal of the course?** By the end of the course, my goal is for you to be able to *intelligently apply numerical optimization techniques* in a research project in machine learning, data science, or related fields. We will discuss optimization theory in the course, but that will not be the focus.
 * **Production vs. Research-level code?** We will mainly be coding Python notebooks developing research-level code that focuses on the intricacies of optimization methods. Taking research-level code to production is a separate skill that we will not focus on in this course. 
 * **Are there similar courses at Penn or other universities?** Not that I am aware of—if you find some, let me know! I will develop this course from scratch and adapt it to student interests as we go.
-* **Which IDE should I use?** For local development, use [Cursor](https://www.cursor.com/). For remote development, use [Google Colab](https://colab.research.google.com/). 
+* **Which IDE should I use?** For local development, use [Cursor](https://www.cursor.com/)--it's free for students with a .edu address. For remote development, use [Google Colab](https://colab.research.google.com/). 
 
-## Overview 
+## Official Syllabus 
+
+> See [tentative course schedule](section/0/notes.md#tentative-course-structure) for the tentative course schedule.
+
 Optimization is the modeling language in which modern data science, machine learning, and sequential decision-making problems are formulated and solved numerically. This course will teach you how to formulate these problems mathematically, choose appropriate algorithms to solve them, and implement and tune the algorithms in PyTorch. Tentative topics include:
 * Optimization-based formulations of statistical estimation and inverse problems in data science; predictive and generative models in machine learning; and control, bandit, and reinforcement learning problems in sequential decision-making. 
 * A high-level tour of the foundations of mathematical optimization, viewed as an algorithmic discipline, and what to expect from theory; key considerations such as convexity, smoothness, saddle points, and stochasticity; classical formulations, such as linear, quadratic, and semidefinite programs; numerical solvers such as CVXPY.
@@ -66,19 +69,22 @@ VERY detailed instructions on how to get started with your project are available
 ### Timeline and milestones
 
 Deliverables (Due Fridays):
-- Week 3 (Jan 31): Report Draft 1 + Code + Self Critique
-- Week 4 (Feb 7): Slides Draft 1
-- Week 5 (Feb 14): Report Draft 2 + Code + Self Critique
-- Week 6 (Feb 21): Slides Draft 2
-- Week 7 (Feb 28): Report Draft 3 + Code + Self Critique
-- Week 8: ⚡ Lightning Talks in Class (Mar 5/7) & Slides Draft 3 due Friday ⚡
-- Spring Break (Mar 8-16)
-- Week 9 (Mar 21): Report Draft 4 + Code + Self Critique
-- Week 10 (Mar 28): Slides Draft 4
-- Week 11 (Apr 4): Report Draft 5 + Code + Self Critique
-- Week 12 (Apr 11): Slides Draft 5
-- Week 13: Final Presentations in Class (Apr 24/29) & Report Draft 6 + Code + Self Critique due Friday (Apr 18)
-- Week 14 (Apr 29): Final Report + Code + Self Critique Due
+- Week 2 (Jan 23): Email Project Team Names to yihuihe@wharton.upenn.edu
+- Week 3 (Jan 30): Report Draft 1 + Code + Self Critique
+- Week 4 (Feb 6): Slides Draft 1
+- Week 5 (Feb 13): Report Draft 2 + Code + Self Critique
+- Week 6 (Feb 20): Slides Draft 2
+- Week 7 (Feb 27): Report Draft 3 + Code + Self Critique
+- Week 8: ⚡ Lightning Talks in Class (Mar 3/5) & Slides Draft 3 due Friday ⚡
+- Spring Break (Mar 7-15)
+- Week 9 (Mar 20): Report Draft 4 + Code + Self Critique
+- Week 10 (Mar 27): Slides Draft 4
+- Week 11 (Apr 3): Report Draft 5 + Code + Self Critique
+- Week 12 (Apr 10): Slides Draft 5
+- Week 13 (Apr 17): Report Draft 6 + Code + Self Critique
+- Week 14 (Apr 21/23): Final Presentations in Class
+- Week 15 (Apr 28): Final Report + Code + Self Critique
+
 
 Note: Instructions for peer feedback will be added throughout the semester for each deliverable.
 
@@ -123,6 +129,7 @@ By developing your projects in iterative steps, you will receive feedback multip
 ### Course project ideas
 In the course project, you will apply the optimization skills you learned in the course. For example, your final project could include: 
 * Training/fine-tuning a model: A detailed write-up of your strategy for training or fine-tuning a model (e.g., language, code, math, or vision model). Describe failures, successes, and rabbit holes. Illustrate the use of the final model. Use GPUs to scale up. Compare multiple optimization methods and choose one with the "best" performance.
+* Build a useful, novel [RL environment](https://app.primeintellect.ai/dashboard/environments?ex_sort=by_sections) on Prime Intellect's environment hub. Demonstrate that performing RL on the environment leads to desired behavior.
 * Reproducibility: A detailed write-up of your attempt to reproduce, falsify, or improve numerical results from the optimization literature. 
 * Augmenting an existing research project: Let's say you're already working on a research project with Penn faculty that includes an optimization component. We can likely find a way to align your project in the course with your research project by improving the optimization component of your project. We must discuss a bit to ensure the optimization component is extensive enough for course credit.
 * Improving optimizers on an existing/new benchmark: Several benchmarks have recently been proposed for optimization methods in ML. For example, (1) in [Modded-NanoGPT repo](https://github.com/KellerJordan/modded-nanogpt), some independent researchers are attempting to train small versions of GPT as fast as possible; (2) in [the AlgoPerf repo](https://github.com/mlcommons/algorithmic-efficiency) the ML Commons project is benchmarking optimization methods for training deep learning models. A potential project is to improve existing methods on such benchmarks or develop your own and set the initial records. 
