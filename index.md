@@ -69,7 +69,7 @@ VERY detailed instructions on how to get started with your project are available
 ### Timeline and milestones
 
 Deliverables (Due Fridays):
-- Week 2 (Jan 23): Email Project Team Names to yihuihe@wharton.upenn.edu
+- Week 2 (Jan 23): Email Project Team Names to Ai, Jiahao <jiahaoai@wharton.upenn.edu>
 - Week 3 (Jan 30): Report Draft 1 + Code + Self Critique
 - Week 4 (Feb 6): Slides Draft 1
 - Week 5 (Feb 13): Report Draft 2 + Code + Self Critique
