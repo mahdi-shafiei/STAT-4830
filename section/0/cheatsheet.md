@@ -15,7 +15,7 @@ title: Introduction (Cheatsheet)
 
 ## Slide 2: Course syllabus and key points
 
-**Purpose:** Orient you to what this course is actually about.
+**Purpose:** Orient you to what this course is about.
 
 - We will learn to **formulate** optimization problems from machine learning problems.
 - We will learn to **implement** and **debug** gradient-based methods in PyTorch.
@@ -99,7 +99,7 @@ We turn that into an optimization problem by specifying:
 
 ## Slide 7: Features — email $\mapsto$ vector $x$
 
-**Purpose:** Make “features” concrete.
+**Purpose:** Convert emails to features.
 
 Example feature set (here $x \in \mathbb{R}^5$):
 - `exclamation_count`
@@ -140,7 +140,7 @@ $$
 
 ## Slide 10: Objective (cross-entropy) and what we minimize
 
-**Purpose:** State the loss and make the minimization goal explicit.
+**Purpose:** State the loss and make the goal of minimization explicit.
 
 Training data: $(x_i,y_i)$ with $y_i \in \{0,1\}$.
 
@@ -159,7 +159,7 @@ $$
 
 ## Slide 11: Gradients and gradient descent
 
-**Purpose:** Explain why the negative gradient direction is the basic update.
+**Purpose:** Explain why the negative gradient direction is decreases the loss.
 
 The gradient collects partial derivatives:
 
@@ -193,11 +193,11 @@ Here $\eta>0$ is the learning rate (stepsize).
 
 ## Slide 12: A picture (useful, but limited)
 
-**Purpose:** Give intuition without replacing the mechanism.
+**Purpose:** Give a cartoon picture of optimization landscape.
 
 ![Gradient descent visualization showing path from high point to minimum](figures/gradient_descent.png)
 
-This visualization is a simplification. In higher dimensions, the optimization landscape can have local minima, saddle points, and narrow valleys.
+This visualization is a simplification. In higher dimensions, the optimization landscape can have local minima, saddle points, and ravines.
 
 ---
 
@@ -220,7 +220,7 @@ for _ in range(1000):
     with torch.no_grad():
         weights -= learning_rate * weights.grad
         weights.grad.zero_()
-````
+```
 
 Two details:
 
@@ -231,7 +231,7 @@ Two details:
 
 ## Slide 14: Numerical results (diagnostics vs generalization)
 
-**Purpose:** Explain what the plots can and cannot tell you.
+**Purpose:** Explain what the plots.
 
 ![Loss curves](figures/training_run.png)
 
@@ -278,12 +278,15 @@ The payoff: you can change the model or the loss and keep the same training loop
 
 **Course structure (high-level)**
 
-* Start in one dimension: decision variables, loss functions, gradients, GD and SGD, implementations (NumPy, then PyTorch).
-* Move to higher dimensions: the linear algebra interface in PyTorch (tensors, norms, matrix products) and efficiency basics.
-* A menu of problems: classic ML, deep learning, inverse problems, and a brief RL introduction.
-* A menu of algorithms: GD, SGD, Adam/AdamW, and other methods that show up in current practice.
-* Benchmarking and tuning: how to compare methods without fooling yourself.
-* Systems and theory: GPUs/distributed training basics, and what theory can and cannot explain.
+* Basics in dimension one: decision variables, loss functions, gradients, constraints, GD and SGD, implementations (NumPy, then PyTorch), tuning.
+* Move to higher dimensions: the linear algebra interface in PyTorch (tensors, norms, matrix products) and efficiency basics (broadcasting, memory layout).
+* A menu of problems: classic ML, deep learning and large language models, inverse problems, and a brief RL introduction.
+* A menu of algorithms: GD, SGD, Adam/AdamW, Muon, and others (e.g., policy gradient methods).
+* Benchmarking: how to compare methods without fooling yourself.
+* Tuning: how to tune parameters systematically.
+* Systems: GPUs/distributed training basics. 
+* Theory: Convexity vs nonconvexity, rates, geometry, tractable theoretical models: noisy quadratic models, random features, and scaling laws.
+
 
 **By the end of the course, you should be able to**
 
