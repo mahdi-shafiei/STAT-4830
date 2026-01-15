@@ -37,7 +37,7 @@ size: 16:9
 
 </div>
 
-![w:800](/figures/achiam_tweet.png)
+![w:800](../../../../figures/achiam_tweet.png)
 
 </div>
 

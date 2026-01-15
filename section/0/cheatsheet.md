@@ -11,6 +11,17 @@ title: Introduction (Cheatsheet)
 - Today: how a machine learning task becomes an optimization problem, and how we implement the optimizer in PyTorch.
 - Notebook: [Colab notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/0/notebook.ipynb)
 
+**Why Optimization?**
+
+To quote [Joshua Achiam](https://x.com/jachiam0/status/1872849427653902744) (OpenAI):
+> If you want to know something deep, fundamental, and maximally portable between virtually every field: study mathematical optimization.
+
+![Joshua Achiam's tweet about mathematical optimization]({{ site.baseurl }}/figures/achiam_tweet.png)
+
+**What did students think?**
+
+![Khush's tweet]({{ site.baseurl }}/figures/khush_tweet.png)
+
 ---
 
 ## Slide 2: Course syllabus and key points
@@ -20,6 +31,8 @@ title: Introduction (Cheatsheet)
 - We will learn to **formulate** optimization problems from machine learning problems.
 - We will learn to **implement** and **debug** gradient-based methods in PyTorch.
 - We will use the same spine repeatedly: decision variables, objective, update rule, diagnostics.
+
+
 
 ---
 
@@ -306,3 +319,40 @@ The payoff: you can change the model or the loss and keep the same training loop
 5. Have basic systems awareness (compute, memory, data loading bottlenecks).
 6. Produce a portfolio-quality project (clean repo, working implementation, short write-up).
 
+---
+
+## Slide 17: Final project structure
+
+Project instructions: [STAT-4830-project-base](https://github.com/damek/STAT-4830-project-base)
+
+```
+ITERATIVE DEVELOPMENT PROCESS    PROJECT COMPONENTS
+=============================    ==================
+
+┌─────────────────┐  ┌─────────────────┐  ┌────────────────────┐
+│  INITIAL SETUP  │  │  DELIVERABLES   │  │  PROJECT OPTIONS   │
+│  Teams: 3-4     ├──┤  • GitHub Repo  │  │ • Model Training   │
+│  Week 2 Start   │  │  • Colab Demo   │  │ • Reproducibility  │
+└───────┬─────────┘  │  • Final Paper  │  │ • Benchmarking     │
+        │            │  • Slide Deck   │  │ • Research Extend  │
+        │            └───────┬─────────┘  │ • ...              │
+        │                    │            └────────────────────┘
+        │                    ▼
+        │            ┌─────────────────┐  BIWEEKLY SCHEDULE
+        ▼            │    FEEDBACK     │  ════════════════
+┌─────────────────┐  │ PEER REVIEWS:   │  Week 3:  Report
+│   IMPLEMENT     │◀─┤ • Run Code      │  Week 4:  Slides Draft
+│ • Write Code    │  │ • Test Demo     │  Week 5:  Report
+│ • Test & Debug  ├─▶│ • Give Feedback │  Week 6:  Slides Draft
+│ • Document      │  │                 │  Week 7:  Report
+└─────────────────┘  │ PROF MEETINGS:  │  Week 8:  LIGHTNING TALK
+                     │ • Week 3 Scope  │  Week 9:  Report
+                     │ • Week 7 Mid    │  Week 10: Slides Draft
+                     │ • Week 11 Final │  Week 11: Report
+                     └─────────────────┘  Week 12: Slides Draft
+                                           Week 13: Final Report
+DEVELOPMENT WITH LLMs                       Week 14: Final Present
+• Write & review reports, documentation
+• Develop & test code (verify outputs!)
+• Regular commits with clear documentation
+```
