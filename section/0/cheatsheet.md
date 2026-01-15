@@ -33,8 +33,7 @@ title: Introduction (Cheatsheet)
 - Python programming.
 
 **Format**
-- Lecture-based, with frequent group meetings with the professor.
-- Weekly programming exercises in notebooks.
+- Lectures and group meetings with the professor.
 
 **Deliverables (final project)**
 - Start drafting by Week 3; refine throughout the semester.
@@ -78,7 +77,7 @@ EVOLUTION OF OPTIMIZATION
 **Purpose:** Explain why this course is centered on PyTorch.
 
 - Deep learning’s success was driven in part by modern auto-differentiation frameworks.
-- These frameworks let you change a model or loss quickly while keeping the same optimization loop.
+- **Fast iteration:** These frameworks let you change a model or loss quickly while keeping the same optimization loop. 
 - Older solver-based workflows excel for classical, well-structured problems; PyTorch excels when we want to build nonconvex models and iterate fast.
 
 ---
@@ -108,8 +107,7 @@ Example feature set (here $x \in \mathbb{R}^5$):
 - `time_sent`
 - `length`
 
-The point is not that these are perfect features. The point is that we can turn text into numbers and then optimize over a model built on those numbers.
-
+We must choose some way of representing an email as a vector. Here we use a rudimentary feature set that counts the number of exclamation marks, the number of urgent words, the number of suspicious links, the hour the email was sent, and the length of the email.
 ---
 
 ## Slide 8: Prediction rule (decision variable = $w$)
@@ -198,6 +196,10 @@ Here $\eta>0$ is the learning rate (stepsize).
 ![Gradient descent visualization showing path from high point to minimum](figures/gradient_descent.png)
 
 This visualization is a simplification. In higher dimensions, the optimization landscape can have local minima, saddle points, and ravines.
+
+![Saddle point example in an optimization landscape](figures/saddle.png)
+
+![Ravine example: narrow curved valley in an optimization landscape](figures/ravine.png)
 
 ---
 

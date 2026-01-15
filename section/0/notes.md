@@ -312,6 +312,11 @@ A dramatically oversimplified picture of gradient descent is that we are walking
 
 ![Gradient descent visualization showing path from high point to minimum](figures/gradient_descent.png)
 
+![Saddle point example in an optimization landscape](figures/saddle.png)
+
+![Ravine example: narrow curved valley in an optimization landscape](figures/ravine.png)
+
+
 ### Finding the weights with PyTorch
 
 In PyTorch, `loss.backward()` computes $\nabla L(w)$ for you and stores it in `weights.grad`. The update line
