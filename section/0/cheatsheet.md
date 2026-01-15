@@ -40,7 +40,7 @@ title: Introduction (Cheatsheet)
 - Start drafting by Week 3; refine throughout the semester.
 - Several checkpoints (drafts, presentations) for feedback.
 - Final submission: GitHub repo (code, report, slides) plus a polished demo (for example, a Colab notebook).
-
+- [Project Instructions](https://github.com/damek/STAT-4830-project-base)
 ---
 
 ## Slide 4: A brief history of optimization
