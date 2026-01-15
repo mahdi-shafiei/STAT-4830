@@ -24,7 +24,7 @@ To quote [Joshua Achiam](https://x.com/jachiam0/status/1872849427653902744) (Ope
 
 ---
 
-## Slide 2: Course abstract and key points
+## Slide 2: Course abstract 
 
 **Purpose:** Orient you to what this course is about.
 
@@ -97,7 +97,7 @@ EVOLUTION OF OPTIMIZATION
 
 - Deep learning’s success was driven in part by modern auto-differentiation frameworks.
 - **Fast iteration:** These frameworks let you change a model or loss quickly while keeping the same optimization loop. 
-- Older solver-based workflows excel for classical, well-structured problems; PyTorch excels when we want to build nonconvex models and iterate fast.
+- Older solver-based workflows excel for classical, well-structured problems; PyTorch super useful for building models any type of model (e.g., transformer, diffusion models) and iterating fast.
 
 ---
 
