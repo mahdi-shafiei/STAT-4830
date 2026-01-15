@@ -158,22 +158,27 @@ $$
 
 ---
 
-## Slide 10: Objective (cross-entropy) and what we minimize
+## Slide 10: Objective (cross-entropy) = add up penalties over positive and negative samples
 
-**Purpose:** State the loss and make the goal of minimization explicit.
+**Purpose:** Show how the two curves combine into one objective.
 
-Training data: $(x_i,y_i)$ with $y_i \in \{0,1\}$.
+For each email $i$, the model predicts $p_i=\sigma(x_i^\top w)$, interpreted as “probability of spam.”
 
-We choose $w$ by minimizing the average cross-entropy loss:
+Let $P=\{i:y_i=1\}$ (spam examples) and $N=\{i:y_i=0\}$ (not-spam examples). We minimize the average loss
 
 $$
-L(w)=\frac{1}{n}\sum_{i=1}^n \left[-y_i\log(\sigma(x_i^\top w))-(1-y_i)\log(1-\sigma(x_i^\top w))\right].
+L(w)=\frac{1}{n}\left[\sum_{i\in P}-\log(p_i)+\sum_{i\in N}-\log(1-p_i)\right].
 $$
 
 ![Cross-Entropy Loss](figures/cross_entropy.png)
 
-- The loss is small when predicted probabilities match the labels.
-- Confident wrong predictions are heavily penalized, which is exactly what you want when training a classifier.
+* Each training example contributes **one** penalty term evaluated at its predicted probability $p_i$.
+* If $i\in P$ (spam), we pay $-\log(p_i)$ (red curve): small when $p_i\approx 1$, large when $p_i\approx 0$.
+* If $i\in N$ (not spam), we pay $-\log(1-p_i)$ (green curve): small when $p_i\approx 0$, large when $p_i\approx 1$.
+* The two curves meet at $p=0.5$ with loss $-\log(0.5)=\log 2$.
+* Training chooses $w$ to push spam examples toward the low-loss side of the red curve ($p\to 1$) and not-spam examples toward the low-loss side of the green curve ($p\to 0$).
+* PyTorch: compute using logits $s_i=x_i^\top w$ and use `torch.nn.BCEWithLogitsLoss` (numerical stability).
+
 
 ---
 
