@@ -310,10 +310,13 @@ So, for small enough $\eta>0$, stepping in the negative gradient direction decre
 
 A dramatically oversimplified picture of gradient descent is that we are walking downhill on a surface and the gradient always points towards the current steepest direction downwards. In reality there are many obstacles to reaching the minimum, including local minima, saddle points, and even [ravines](https://x.com/damekdavis/status/1841596498204880924)
 
+**Gradient descent path (cartoon).**
 ![Gradient descent visualization showing path from high point to minimum](figures/gradient_descent.png)
 
+**Saddle point example.**
 ![Saddle point example in an optimization landscape](figures/saddle.png)
 
+**Ravine example.**
 ![Ravine example: narrow curved valley in an optimization landscape](figures/ravine.png)
 
 

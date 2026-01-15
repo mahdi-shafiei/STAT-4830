@@ -199,8 +199,10 @@ Here $\eta>0$ is the learning rate (stepsize).
 
 This visualization is a simplification. In higher dimensions, the optimization landscape can have local minima, saddle points, and ravines.
 
+**Saddle point example.**
 ![Saddle point example in an optimization landscape](figures/saddle.png)
 
+**Ravine example.**
 ![Ravine example: narrow curved valley in an optimization landscape](figures/ravine.png)
 
 ---
