@@ -109,7 +109,10 @@ Example feature set (here $x \in \mathbb{R}^5$):
 - `time_sent`
 - `length`
 
-We must choose some way of representing an email as a vector. Here we use a rudimentary feature set that counts the number of exclamation marks, the number of urgent words, the number of suspicious links, the hour the email was sent, and the length of the email.
+We must choose some way of representing an email as a vector. Here we use a rudimentary feature set that counts the number of exclamation marks, the number of urgent words, the number of suspicious links, the hour the email was sent, and the length of the email. 
+
+In modern approaches, features are typically *learned* rather than hard-coded.
+
 ---
 
 ## Slide 8: Prediction rule (decision variable = $w$)
@@ -237,7 +240,7 @@ Two details:
 
 ## Slide 14: Numerical results (diagnostics vs generalization)
 
-**Purpose:** Explain what the plots.
+**Purpose:** Introduce several useful plots when training a model.
 
 ![Loss curves](figures/training_run.png)
 
@@ -249,7 +252,7 @@ Two details:
 
 ## Slide 15: What, how, and why of PyTorch (autodiff)
 
-**Purpose:** Explain the mechanism: recorded composition + chain rule.
+**Purpose:** Explain how PyTorch computes gradients: recorded composition + chain rule.
 
 If you build a scalar loss using PyTorch operations, PyTorch records the operations used to compute it. When you call `backward()`, it applies the chain rule through that recorded computation and produces derivatives with respect to variables that have `requires_grad=True`.
 
