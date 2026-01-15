@@ -24,13 +24,17 @@ To quote [Joshua Achiam](https://x.com/jachiam0/status/1872849427653902744) (Ope
 
 ---
 
-## Slide 2: Course syllabus and key points
+## Slide 2: Course abstract and key points
 
 **Purpose:** Orient you to what this course is about.
 
-- We will learn to **formulate** optimization problems from machine learning problems.
-- We will learn to **implement** and **debug** gradient-based methods in PyTorch.
-- We will use the same spine repeatedly: decision variables, objective, update rule, diagnostics.
+Optimization is the modeling language in which modern data science, machine learning, and sequential decision-making problems are formulated and solved numerically. This course will teach you how to formulate these problems mathematically, choose appropriate algorithms to solve them, and implement and tune the algorithms in PyTorch. Tentative topics include:
+* Optimization-based formulations of statistical estimation and inverse problems in data science; predictive and generative models in machine learning; and control, bandit, and reinforcement learning problems in sequential decision-making.
+* A high level tour of the foundations of mathematical optimization, viewed as an algorithmic discipline, and what to expect from theory; key considerations such as convexity, smoothness, saddle points, and stochasticity; classical formulations, such as linear, quadratic, and semidefinite programs; numerical solvers such as CVXPY.
+* Popular optimization methods such as (online and stochastic) gradient methods, (quasi) Newton methods, algorithmic extensions to constrained, regularized, and distributed problems, as well as optimization methods that preserve privacy of sensitive data.
+* Modern software libraries such as PyTorch and JAX and the principles underlying automatic differentiation techniques. Best practices in tuning optimization methods, e.g., in deep learning problems.
+By the end of this course, you will become an intelligent consumer of numerical methods and software for solving modern optimization problems.
+
 
 
 
