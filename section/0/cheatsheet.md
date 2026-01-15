@@ -332,7 +332,7 @@ ITERATIVE DEVELOPMENT PROCESS    PROJECT COMPONENTS
 ┌─────────────────┐  ┌─────────────────┐  ┌────────────────────┐
 │  INITIAL SETUP  │  │  DELIVERABLES   │  │  PROJECT OPTIONS   │
 │  Teams: 3-4     ├──┤  • GitHub Repo  │  │ • Model Training   │
-│  Week 2 Start   │  │  • Colab Demo   │  │ • Reproducibility  │
+│  Week 2 Start   │  │  • Demo         │  │ • Reproducibility  │
 └───────┬─────────┘  │  • Final Paper  │  │ • Benchmarking     │
         │            │  • Slide Deck   │  │ • Research Extend  │
         │            └───────┬─────────┘  │ • ...              │
@@ -350,9 +350,38 @@ ITERATIVE DEVELOPMENT PROCESS    PROJECT COMPONENTS
                      │ • Week 7 Mid    │  Week 10: Slides Draft
                      │ • Week 11 Final │  Week 11: Report
                      └─────────────────┘  Week 12: Slides Draft
-                                           Week 13: Final Report
-DEVELOPMENT WITH LLMs                       Week 14: Final Present
+                                          Week 13: Final Report
+DEVELOPMENT WITH LLMs                     Week 14: Final Presentation
 • Write & review reports, documentation
 • Develop & test code (verify outputs!)
 • Regular commits with clear documentation
 ```
+
+---
+
+## Slide 18: Be systematic with **megaprompts** (coding agents)
+
+**Purpose:** Treat prompting like engineering: a stable spec + iterative refinement.
+
+**Why megaprompts now?**
+* Long context makes it feasible to keep a *project-long* prompt + style guide.
+* Coding agents are strong. The bottleneck is usually **spec clarity**.
+
+**Getting started with a megaprompt: some ideas** 
+* Make it a repo artifact: `PROMPT.md` (versioned, diffable, improved over time).
+* Contains stable information, not today's task: 
+  * Stable: project goal, data, definitions, constraints, style, conventions.
+  * Today: the exact task you want done right now.
+* Write like a spec:
+  * inputs/outputs, shapes, edge cases, acceptance criteria.
+  * “definition of done” (tests pass, plots produced, metrics logged).
+* Bake in efficiency constraints (more important than syntax):
+  * broadcasting rules, shapes, device/dtype, avoid slow Python loops, memory layout awareness.
+* Force a reliable workflow from the agent:
+  * plan => implement => add tests => run/check => summarize results + next steps.
+* Maintain an error log:
+  * paste the failure, write the fix, and promote it into `PROMPT.md`.
+* Include case studies of successful interactions with the agent.
+* Tell the megaprompt how to update itself!
+
+This will be an element of your final deliverable.
