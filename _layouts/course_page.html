@@ -811,11 +811,13 @@
 
       <script>
         // Configure MathJax rendering for all pages
-        document.addEventListener('DOMContentLoaded', function() {
-          if (window.MathJax) {
-            MathJax.typesetPromise();
+        window.addEventListener('load', function() {
+          if (window.MathJax && MathJax.typesetPromise) {
+            MathJax.typesetPromise().catch((error) => {
+              console.error('MathJax error:', error);
+            });
           }
-        });
+        }, { once: true });
       </script>
     </div>
     <script src="{{ "/assets/js/scale.fix.js" | relative_url }}"></script>
