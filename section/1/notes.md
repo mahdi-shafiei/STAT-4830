@@ -25,7 +25,7 @@ title: Optimization Terminology, Philosophy, and Basics in 1D
 
 ## 1. Setup: what is an optimization problem?
 
-This course is about one recurring template:
+Reminder from last time: 
 
 1. **Decision variables:** what we are allowed to choose.
 2. **Objective (loss):** what we want to make small.
@@ -81,47 +81,7 @@ The scaling $\tfrac{1}{2}$ is cosmetic. It keeps some derivatives simple.
 ![Convex vs nonconvex 1D losses](figures/convex_nonconvex_1d.png)
 *Figure 1.1: A convex quadratic (one minimizer) versus a nonconvex double well (two minimizers). Convexity is global geometry. Nonconvexity is the default in modern ML.*
 
-<!--
-CODEX PLOT TASK (Figure 1.1): Convex vs nonconvex 1D losses
 
-Goal: generate figures/convex_nonconvex_1d.png.
-
-1) Create a Python script at: script/plot_convex_nonconvex_1d.py
-2) Use only: numpy, matplotlib (no seaborn).
-3) Make sure the script:
-   - creates the directories "script" and "figures" if they do not exist
-   - is runnable from the lecture directory via: python script/plot_convex_nonconvex_1d.py
-
-Plot specification:
-- Use a dense grid: x = np.linspace(-2.5, 2.5, 2000).
-- Define:
-    f1 = 0.5*(x - 1)**2
-    f2 = 0.5*(x**2 - 1)**2
-- Create a single figure with 1 row and 2 columns:
-    fig, ax = plt.subplots(1, 2, figsize=(10, 3.5), sharey=True)
-- Left panel:
-    - plot f1 vs x with a clean line
-    - mark the minimizer x=1 with a dot
-    - title: "Convex quadratic"
-- Right panel:
-    - plot f2 vs x
-    - mark minimizers x=-1 and x=1 with dots
-    - mark the stationary point x=0 with a different marker (e.g., x or triangle)
-    - title: "Nonconvex double well"
-- Axes:
-    - x-label on both: "x"
-    - y-label on left only: "f(x)"
-    - light grid on both panels
-    - y-limits chosen so both plots are readable (e.g., 0 to 3)
-- Styling:
-    - no legend needed if titles are clear
-    - use tight_layout or constrained_layout
-- Save:
-    figures/convex_nonconvex_1d.png
-    dpi=200
-    bbox_inches="tight"
-- Do not show the plot in an interactive window (no plt.show()).
--->
 
 ## 2. Solutions, optimal values, and stationarity
 
@@ -164,7 +124,7 @@ $$
 \|f'(x)\| \le \varepsilon
 $$
 
-One might think "minimizer means derivative is zero." However, that statement is only guaranteed for **interior** local minimizers in unconstrained problems (or more generally when the minimizer is not stuck on the boundary of the feasible set). With constraints, minimizers can sit at the boundary and have nonzero derivative. We will return to constraints later (projection methods and KKT conditions).
+It's a bit more complicated to explain stationarity in constrained problems. Indeed, for constrained problems minimizers can occur at the "boundary" of constraint sets, and we need to introduce appropriate "lagrange multipliers" to quantify how "stationary" a given point is. We will leave this discussion. to another lecture.
 
 Nonconvex problems can have many stationary points: local minima, local maxima, and flat points. In nonconvex ML, convergence guarantees often target stationarity rather than global optimality.
 
@@ -241,29 +201,7 @@ On a semilog-$y$ plot, geometric decay is a straight line. Sublinear decay bends
 ![Sublinear vs linear convergence](figures/convergence_rates_semilogy.png)
 *Figure 1.2: Semilog-$y$ plot of two toy error sequences. Geometric decay (called "linear convergence" in optimization) appears as a straight line. Sublinear decay bends.*
 
-<!--
-CODEX PLOT TASK (Figure 1.2): Sublinear vs linear convergence on a semilogy plot
 
-Goal: generate figures/convergence_rates_semilogy.png.
-
-1) Create a Python script at: script/plot_convergence_rates_semilogy.py
-2) Use only: numpy, matplotlib.
-3) k-range: k = np.arange(0, 201)
-
-Define two sequences:
-- sublinear: e_sub = 1.0 / (k + 1.0)
-- linear (geometric): e_lin = 0.9**k
-
-Plot:
-- Use plt.semilogy(k, e_sub, label="sublinear: 1/(k+1)")
-- Use plt.semilogy(k, e_lin, label="linear (geometric): 0.9^k")
-- Axis labels: x-axis "iteration k", y-axis "error e_k"
-- Title: "Sublinear vs linear (geometric) convergence"
-- Add a legend.
-- Add a light grid that works well with semilogy (major and minor if possible).
-- Save to figures/convergence_rates_semilogy.png, dpi=200, bbox_inches="tight"
-- No plt.show().
--->
 
 ## 4. Gradient descent in 1D via the local model
 
@@ -499,7 +437,7 @@ f'(x) &= 2x(x^2-1)
 \end{aligned}
 $$
 
-For simple formulas this is manageable. As soon as the loss becomes a long composition of operations, it becomes easy to make a derivative mistake. That is where automatic differentiation becomes valuable.
+For simple formulas this is manageable. As soon as the loss becomes a long composition of operations, it becomes easy to make a mistake. That is where automatic differentiation becomes valuable.
 
 ## 6. PyTorch basics: tensors, `requires_grad`, and `backward()`
 
@@ -903,4 +841,4 @@ What you should take from this lecture:
   - clear `x.grad` each iteration,
   - update parameters under `torch.no_grad()`.
 
-Next lecture: we move from full gradients to **stochastic gradient descent**, where gradients are estimated from samples.
+Next lecture: we move from full gradients to **stochastic gradient descent**, where gradients are estimated from training samples.
