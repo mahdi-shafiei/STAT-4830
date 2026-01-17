@@ -1,16 +1,11 @@
 ---
 layout: course_page
-title: Optimization Terminology, Philosophy, and Basics in 1D
+title: Optimization and PyTorch Basics in 1D
 ---
 
-# 1. Optimization Terminology, Philosophy, and Basics in 1D
+# 1. Optimization and PyTorch Basics in 1D:
 
 [cheatsheet](cheatsheet.html)
-
-## Notebooks and Slides
-- [Lecture slides](slides.pdf)
-- [Colab notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/1/notebook.ipynb)
-- [Live demo notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/1/live-demo.ipynb)
 
 ## Table of contents
 1. [Setup: what is an optimization problem?](#1-setup-what-is-an-optimization-problem)

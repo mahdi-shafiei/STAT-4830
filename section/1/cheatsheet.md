@@ -1,6 +1,6 @@
 ---
 layout: course_page
-title: Optimization Terminology, Philosophy, and Basics in 1D
+title: Optimization and PyTorch Basics in 1D
 ---
 
 ## Slide 1: Course Template (Reminder)

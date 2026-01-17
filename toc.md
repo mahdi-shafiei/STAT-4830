@@ -12,8 +12,8 @@ title: Table of Contents
 [0. Introduction](section/0/notes.md) | [Slides](section/0/slides.pdf) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/0/notebook.ipynb)
    > Course content, a deliverable, and spam classification in PyTorch.
 
-[1. Optimization Terminology, Philosophy, and Basics in 1D](section/1/notes.md)
-   > Optimization terminology, philosophy, and basics in 1D.
+[1. Optimization and PyTorch Basics in 1D](section/1/notes.md)
+  > Optimization setup, minimizers and stationarity, 1D gradient descent, diagnostics, step-size tuning, and PyTorch autodiff basics.
 
 [2. Linear Regression: Direct Methods](section/2/notes.md) | [Slides](section/2/slides.pdf) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/2/notebook.ipynb)
    > Direct methods for solving least squares problems, comparing LU and QR factorization.
