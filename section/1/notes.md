@@ -299,39 +299,41 @@ So for small enough $\eta$, the objective decreases to first order.
 
 In higher dimensions, $f'(x)$ becomes $\nabla f(x)$, and $\|f'(x)\|^2$ becomes $\|\nabla f(x)\|^2$. The mechanism is the same.
 
-## 5. Implementation in NumPy: gradients by hand
+## 5. Implementation in pure Python: derivatives by hand
 
-We will implement gradient descent in NumPy first. The point is not that NumPy is better. The point is that in plain NumPy you must compute derivatives yourself, so you feel what autodiff is saving you from.
+We will implement gradient descent using ordinary Python floats. In 1D, the loop is small enough that you can see every moving piece.
 
-### The anatomy of a minimal training loop
+We will start with the quadratic objective
 
-A minimal 1D “training loop” has the same basic parts you will see in ML code:
+$$
+\begin{aligned}
+f(x) &= \tfrac{1}{2}x^2 \\
+f'(x) &= x
+\end{aligned}
+$$
 
-1. **Initialize** the parameter (here: a scalar $x_0$).
-2. Repeat for $k=0,1,2,\dots$:
-   - **Forward pass:** compute objective value $f(x_k)$.
-   - **Gradient:** compute derivative $f'(x_k)$.
-   - **Log diagnostics:** store or print $f(x_k)$ and $\|f'(x_k)\|$.
-   - **Stop** if a termination rule fires.
-   - **Update:** $x_{k+1} = x_k - \eta f'(x_k)$.
+### A minimal gradient descent loop
 
-We will build this in three runnable versions. In class, you can overwrite the same file and rerun.
+A minimal loop has the following ingredients:
 
-### Version 1: update rule + printing (no history, no stopping)
+1. **Initialize** a starting point $x_0$.
+2. Repeat:
+   - compute the loss $f(x)$,
+   - compute the derivative $f'(x)$,
+   - update $x \leftarrow x - \eta f'(x)$,
+   - log what happened (so you can debug and tune),
+   - stop when a rule triggers.
+
+### Minimal version: update + printing
 
 ```python
-# Save as: script/gd_1d_numpy.py  (Version 1)
+# Save as: script/gd_1d_python_minimal.py
 
-import numpy as np
+def f(x: float) -> float:
+    return 0.5 * x * x
 
-
-def f(x):
-    return 0.5 * x**2
-
-
-def grad_f(x):
+def df(x: float) -> float:
     return x
-
 
 def main():
     x = 5.0
@@ -340,110 +342,49 @@ def main():
 
     for k in range(max_iters):
         fx = f(x)
-        gx = grad_f(x)
-        print(f"k={k:2d}  x={x:+.6f}  f(x)={fx:.3e}  ||f'(x)||={abs(gx):.3e}")
+        gx = df(x)
+        print(f"k={k:2d}  x={x:+.6f}  f(x)={fx:.3e}  |f'(x)|={abs(gx):.3e}")
         x = x - eta * gx
 
     print(f"final x={x:+.6f}  final f(x)={f(x):.3e}")
-
-
-if __name__ == "__main__":
-    main()
-````
-
-At this point we have the update rule and a way to see whether the iterates are moving in the right direction.
-
-### Version 2: add logging + stopping rules
-
-Now we add two things that show up in essentially every optimization loop:
-
-* **a history object** (so we can plot later)
-* **termination criteria**
-
-```python
-# Save as: script/gd_1d_numpy.py  (Version 2)
-
-import numpy as np
-
-
-def gradient_descent_1d(f, grad_f, x0, eta, max_iters=200, eps_grad=1e-8, eps_obj=None):
-    """
-    1D gradient descent with simple logging.
-
-    Stops when:
-      - k reaches max_iters, or
-      - ||f'(x)|| <= eps_grad, or
-      - f(x) <= eps_obj  (if eps_obj is not None)
-
-    Returns:
-      x (final iterate), hist dict
-    """
-    x = float(x0)
-
-    hist = {"k": [], "x": [], "f": [], "abs_grad": []}
-
-    for k in range(max_iters):
-        fx = float(f(x))
-        gx = float(grad_f(x))
-
-        hist["k"].append(k)
-        hist["x"].append(x)
-        hist["f"].append(fx)
-        hist["abs_grad"].append(abs(gx))
-
-        if eps_grad is not None and abs(gx) <= eps_grad:
-            break
-        if eps_obj is not None and fx <= eps_obj:
-            break
-
-        x = x - eta * gx
-
-    return x, hist
-
-
-def main():
-    # Example: f(x) = 1/2 x^2, f'(x) = x
-    f = lambda x: 0.5 * x**2
-    grad_f = lambda x: x
-
-    x0 = 5.0
-    eta = 0.5
-
-    x_final, hist = gradient_descent_1d(f, grad_f, x0=x0, eta=eta, max_iters=80, eps_grad=1e-10)
-    print(f"Final x: {x_final:.6e}")
-    print(f"Final f(x): {hist['f'][-1]:.6e}")
-    print(f"Iterations: {len(hist['k'])}")
-
 
 if __name__ == "__main__":
     main()
 ```
 
-### Version 3: add a diagnostics plot
-
-Now we use the saved history to produce the standard “two curves” diagnostic plot.
+### Full version: logging + stopping + a diagnostics plot
 
 ```python
-# Save as: script/gd_1d_numpy.py  (Version 3)
+# Save as: script/gd_1d_python.py
 
 import os
-import numpy as np
 import matplotlib.pyplot as plt
 
 
-def gradient_descent_1d(f, grad_f, x0, eta, max_iters=200, eps_grad=1e-8, eps_obj=None):
+def gradient_descent_1d(f, df, x0, eta, max_iters=200, eps_grad=1e-8, eps_obj=None):
+    """
+    1D gradient descent with simple logging.
+
+    Stops when:
+      - k reaches max_iters, or
+      - |f'(x)| <= eps_grad, or
+      - f(x) <= eps_obj (if eps_obj is not None)
+
+    Returns:
+      x_final (float), hist (dict of lists)
+    """
     x = float(x0)
 
-    hist = {"k": [], "x": [], "f": [], "abs_grad": []}
+    hist = {"k": [], "x": [], "f": [], "abs_df": []}
 
     for k in range(max_iters):
         fx = float(f(x))
-        gx = float(grad_f(x))
+        gx = float(df(x))
 
         hist["k"].append(k)
         hist["x"].append(x)
         hist["f"].append(fx)
-        hist["abs_grad"].append(abs(gx))
+        hist["abs_df"].append(abs(gx))
 
         if eps_grad is not None and abs(gx) <= eps_grad:
             break
@@ -456,13 +397,13 @@ def gradient_descent_1d(f, grad_f, x0, eta, max_iters=200, eps_grad=1e-8, eps_ob
 
 
 def save_diagnostics_plot(hist, outpath, title):
-    k = np.array(hist["k"])
-    fvals = np.array(hist["f"])
-    gabs = np.array(hist["abs_grad"])
+    k = hist["k"]
+    fvals = hist["f"]
+    gabs = hist["abs_df"]
 
     plt.figure(figsize=(6.5, 3.5))
     plt.semilogy(k, fvals, label="objective f(x_k)")
-    plt.semilogy(k, gabs, label="||f'(x_k)||")
+    plt.semilogy(k, gabs, label="|f'(x_k)|")
     plt.xlabel("iteration k")
     plt.ylabel("value (semilog y)")
     plt.title(title)
@@ -475,19 +416,22 @@ def save_diagnostics_plot(hist, outpath, title):
 
 
 def main():
-    f = lambda x: 0.5 * x**2
-    grad_f = lambda x: x
+    # Example: f(x) = 1/2 x^2, f'(x) = x
+    def f(x): return 0.5 * x * x
+    def df(x): return x
 
     x0 = 5.0
     eta = 0.5
 
-    x_final, hist = gradient_descent_1d(f, grad_f, x0=x0, eta=eta, max_iters=80, eps_grad=1e-10)
-    print(f"Final x: {x_final:.6e}, final f(x): {hist['f'][-1]:.6e}, iterations: {len(hist['k'])}")
+    x_final, hist = gradient_descent_1d(f, df, x0=x0, eta=eta, max_iters=80, eps_grad=1e-10)
+    print(f"Final x: {x_final:.6e}")
+    print(f"Final f(x): {hist['f'][-1]:.6e}")
+    print(f"Iterations: {len(hist['k'])}")
 
     save_diagnostics_plot(
         hist,
-        outpath="figures/gd_numpy_quadratic_diagnostics.png",
-        title="GD on f(x)=1/2 x^2 (NumPy)",
+        outpath="figures/gd_python_quadratic_diagnostics.png",
+        title="GD on f(x)=1/2 x^2 (pure Python)",
     )
 
 
@@ -495,96 +439,239 @@ if __name__ == "__main__":
     main()
 ```
 
-Two remarks:
-
-1. For $f(x)=\tfrac{1}{2}x^2$, the derivative is $f'(x)=x$.
-2. In this quadratic case, objective and gradient are directly related:
+For $f(x)=\tfrac{1}{2}x^2$, the objective and the derivative are directly related:
 
 $$
-f(x)=\tfrac{1}{2}x^2=\tfrac{1}{2}|f'(x)|^2
+f(x)=\tfrac{1}{2}x^2=\tfrac{1}{2}\,|f'(x)|^2
 $$
 
-So stopping by objective or stopping by gradient are roughly equivalent (up to a square).
+So stopping by small objective and stopping by small derivative are closely aligned in this specific example.
 
-![Gradient descent diagnostics for the quadratic](figures/gd_numpy_quadratic_diagnostics.png)
-*Figure 1.3: On the quadratic, both the objective and the gradient magnitude decay geometrically when the step size is stable.*
+![Gradient descent diagnostics for the quadratic](figures/gd_python_quadratic_diagnostics.png)
+*Figure 1.3: On the quadratic, both the objective and the derivative magnitude decay geometrically when the step size is stable.*
 
-<!--
-CODEX PLOT TASK (Figure 1.3): Diagnostics for GD on the quadratic (NumPy)
+### Changing the loss means changing the derivative
 
-If you prefer a dedicated plotting script rather than using script/gd_1d_numpy.py directly, create:
+A hand-written loop hard-codes two ingredients:
 
-- script/plot_gd_numpy_quadratic_diagnostics.py
+1. how to compute the loss $f(x)$,
+2. how to compute the derivative $f'(x)$.
 
-Requirements:
-- run GD on f(x)=0.5*x^2 with grad=x
-- use x0=5, eta=0.5, max_iters=80, eps_grad=1e-10
-- log f(x_k) and ||grad||
-- semilogy plot both curves on the same axes
-- title: "GD on f(x)=1/2 x^2 (NumPy)"
-- save: figures/gd_numpy_quadratic_diagnostics.png (dpi=200, bbox_inches="tight")
--->
+If you change the loss, you must update both.
 
-### Changing the loss means recomputing the gradient
-
-Now suppose that $x^2$ is not the function we wish to optimize any more. To update the loop above we must change two things: the computation of the loss and the derivative.
+Two examples:
 
 1. Shifted quadratic:
 
 $$
-f(x)=\tfrac{1}{2}(x-1)^2
-\quad \Longrightarrow \quad
-f'(x)=x-1
+\begin{aligned}
+f(x) &= \tfrac{1}{2}(x-1)^2 \\
+f'(x) &= x-1
+\end{aligned}
 $$
 
 2. Double well:
 
 $$
-f(x)=\tfrac{1}{2}(x^2-1)^2
-\quad \Longrightarrow \quad
-f'(x)=2x(x^2-1)
+\begin{aligned}
+f(x) &= \tfrac{1}{2}(x^2-1)^2 \\
+f'(x) &= 2x(x^2-1)
+\end{aligned}
 $$
 
-In NumPy, you must write these derivatives correctly each time you change $f$. 
+For simple formulas this is manageable. As soon as the loss becomes a long composition of operations, it becomes easy to make a derivative mistake. That is where automatic differentiation becomes valuable.
 
-This might not seem like a big hurdle. But for extremely complicated loss functions, it's easy to get derivatives wrong! This is one of the many reasons we'll use PyTorch in this case.
+## 6. PyTorch basics: tensors, `requires_grad`, and `backward()`
 
-## 6. Implementation in PyTorch: gradients by `backward()`
+PyTorch can compute derivatives automatically. You write the loss as code, and PyTorch produces the derivative with respect to variables you mark as trackable.
 
-PyTorch implements *autodifferentiation.* Tis means that we can change the loss fucntion without recomputing the derivative by hand. The price is that you must follow the rules of the autodifferentiation (sometimes called 'autograd') api.
+In this lecture we will treat a **single scalar** $x$ as our parameter. In PyTorch, even a scalar is represented as a tensor.
 
-### Version 1: a single derivative via `backward()`
+### What is a tensor here?
 
-This is the smallest example that shows what PyTorch is doing.
+A tensor is a container for numbers. In this section:
+
+- `x` will be a scalar tensor (think: “a number with extra bookkeeping”),
+- we will ask PyTorch to store $\frac{d}{dx} f(x)$ in `x.grad`.
+
+### A single derivative via `backward()`
+
+```python
+import torch
+
+x = torch.tensor(2.0, requires_grad=True)  # track derivatives w.r.t. x
+loss = 0.5 * x**2                          # f(x) = 1/2 x^2
+
+loss.backward()                             # compute d(loss)/dx
+
+print("x =", x.item())
+print("loss =", loss.item())
+print("d(loss)/dx =", x.grad.item())        # should be 2.0
+```
+
+What to remember:
+
+- `requires_grad=True` tells PyTorch to compute derivatives with respect to `x`.
+- `loss.backward()` computes the derivative and stores it in `x.grad`.
+- `x.grad` is a tensor; `.item()` turns it into a Python float for printing.
+
+### Two sanity checks (recommended before writing any loop)
+
+**Check 1: compare to an analytic derivative at one point.**
+
+For the double well,
+
+$$
+\begin{aligned}
+f(x) &= \tfrac{1}{2}(x^2-1)^2 \\
+f'(x) &= 2x(x^2-1)
+\end{aligned}
+$$
+
+```python
+import torch
+
+def loss_fn(x):
+    return 0.5 * (x**2 - 1.0) ** 2
+
+x = torch.tensor(2.0, requires_grad=True)
+loss = loss_fn(x)
+loss.backward()
+
+autograd_val = x.grad.item()
+analytic_val = 2.0 * 2.0 * (2.0**2 - 1.0)   # 2x(x^2-1) at x=2
+
+print("autograd:", autograd_val)
+print("analytic:", analytic_val)
+```
+
+**Check 2: compare to a finite-difference approximation.**
+
+```python
+def f_float(x_float: float) -> float:
+    return 0.5 * (x_float**2 - 1.0) ** 2
+
+def finite_diff(f, x_float: float, h: float = 1e-6) -> float:
+    return (f(x_float + h) - f(x_float - h)) / (2.0 * h)
+
+x0 = 2.0
+fd_val = finite_diff(f_float, x0)
+print("finite difference:", fd_val)
+```
+
+Finite differences are not a replacement for math, but they are a good “does this smell right?” test.
+
+## 7. Autodiff under the hood, common pitfalls, and the training loop
+
+### Recorded operations + chain rule (what `backward()` is doing)
+
+When you compute a loss from `x`, PyTorch records the sequence of operations used to build that loss. During `backward()`, it applies the chain rule in reverse order.
+
+Example loss:
+
+$$
+f(x)=\tfrac{1}{2}(x^2-1)^2
+$$
+
+One way to view this as a composition:
+
+- $u(x)=x^2$
+- $v(u)=u-1$
+- $w(v)=\tfrac{1}{2}v^2$
+
+Then $f = w \circ v \circ u$, so
+
+$$
+f'(x)=w'(v(u(x)))\,v'(u(x))\,u'(x)
+$$
+
+PyTorch performs this same multiplication of local derivatives, but it does it automatically from the recorded operations.
+
+A sketch of the forward computation:
+
+```
+x  ->  u = x^2  ->  v = u - 1  ->  loss = 0.5 * v^2
+```
+
+### Pitfall A: gradients accumulate unless you clear them
+
+If you call `backward()` multiple times, PyTorch adds into `x.grad`. For “one gradient per step” loops, you must clear `x.grad` each iteration.
 
 ```python
 import torch
 
 x = torch.tensor(2.0, requires_grad=True)
+
+(0.5 * x**2).backward()
+print("after first backward, x.grad =", x.grad.item())   # 2.0
+
+(0.5 * (x - 1.0)**2).backward()
+print("after second backward, x.grad =", x.grad.item())  # accumulated
+
+x.grad = None
+(0.5 * (x - 1.0)**2).backward()
+print("after clearing, x.grad =", x.grad.item())         # correct for the last loss
+```
+
+### Pitfall B: tracking the update step breaks the loop
+
+A tempting update is:
+
+```python
+x = x - eta * x.grad
+```
+
+This creates a *new* tensor `x` built from tracked operations. In a beginner loop, the next iteration typically fails because the gradient you expect to read from `x.grad` is no longer populated.
+
+A tiny failing example:
+
+```python
+import torch
+
+eta = 0.1
+x = torch.tensor(2.0, requires_grad=True)
+
+# Step 1
+x.grad = None
+loss = 0.5 * x**2
+loss.backward()
+print("step 1 grad:", x.grad.item())
+
+# Wrong update: records the update in the graph and replaces x
+x = x - eta * x.grad
+
+# Step 2
+x.grad = None
 loss = 0.5 * x**2
 loss.backward()
 
-print("x =", x.item())
-print("dloss/dx =", x.grad.item())  # should be 2.0
+print("step 2 grad:", x.grad)  # typically None in this beginner pattern
 ```
 
-A few facts that become important once we put this in a loop:
-
-* A tensor with `requires_grad=True` is treated as a variable you want derivatives with respect to.
-* After `loss.backward()`, PyTorch stores the derivative in `x.grad`.
-* By default, PyTorch **accumulates** gradients into `x.grad`, so you must clear it each iteration.
-
-### Version 2: a complete 1D training loop in PyTorch
-
-Now we build the same loop structure as in NumPy:
-
-* forward pass: compute `loss`
-* backward pass: populate `x.grad`
-* log diagnostics
-* update under `no_grad()`
+Correct fix: update without tracking.
 
 ```python
-# Save as: script/gd_1d_torch.py  (Version 2)
+with torch.no_grad():
+    x -= eta * x.grad
+```
+
+### Pitfall C: calling `backward()` twice on the same recorded operations
+
+If you call `backward()` twice on the same loss object, PyTorch raises an error.
+
+In gradient descent loops, the solution is simple: **recompute the loss each iteration** (new forward pass), call `backward()` once, update, repeat.
+
+### A complete 1D gradient descent loop in PyTorch
+
+Now we can write a clean loop that:
+
+- clears `x.grad`,
+- computes the loss,
+- calls `backward()`,
+- updates under `torch.no_grad()`.
+
+```python
+# Save as: script/gd_1d_torch.py
 
 import os
 import torch
@@ -597,17 +684,16 @@ def gd_1d_torch(loss_fn, x0, eta, max_iters=200, eps_grad=1e-8, eps_obj=None):
     hist = {"k": [], "x": [], "loss": [], "abs_grad": []}
 
     for k in range(max_iters):
-        # Clear gradient buffer (PyTorch accumulates by default)
-        x.grad = None
+        x.grad = None                 # clear accumulation
 
-        loss = loss_fn(x)
-        loss.backward()
+        loss = loss_fn(x)             # forward pass
+        loss.backward()               # backward pass
 
-        g = float(x.grad.detach().cpu().item())
-        l = float(loss.detach().cpu().item())
+        g = x.grad.item()
+        l = loss.item()
 
         hist["k"].append(k)
-        hist["x"].append(float(x.detach().cpu().item()))
+        hist["x"].append(x.item())
         hist["loss"].append(l)
         hist["abs_grad"].append(abs(g))
 
@@ -616,11 +702,10 @@ def gd_1d_torch(loss_fn, x0, eta, max_iters=200, eps_grad=1e-8, eps_obj=None):
         if eps_obj is not None and l <= eps_obj:
             break
 
-        # Update without tracking the update in autograd
         with torch.no_grad():
             x -= eta * x.grad
 
-    return float(x.detach().cpu().item()), hist
+    return x.item(), hist
 
 
 def save_diagnostics_plot(hist, outpath, title):
@@ -630,7 +715,7 @@ def save_diagnostics_plot(hist, outpath, title):
 
     plt.figure(figsize=(6.5, 3.5))
     plt.semilogy(k, loss_vals, label="loss f(x_k)")
-    plt.semilogy(k, gabs, label="||df/dx|| at x_k")
+    plt.semilogy(k, gabs, label="|df/dx at x_k|")
     plt.xlabel("iteration k")
     plt.ylabel("value (semilog y)")
     plt.title(title)
@@ -647,19 +732,19 @@ def main():
     eta = 0.5
 
     # Loss 1: quadratic
-    loss_fn = lambda x: 0.5 * x**2
-    x_final, hist = gd_1d_torch(loss_fn, x0=x0, eta=eta, max_iters=80, eps_grad=1e-10)
-    print(f"[quadratic] final x={x_final:.6e}, final loss={hist['loss'][-1]:.6e}, iters={len(hist['k'])}")
+    def loss1(x): return 0.5 * x**2
+    x_final, hist = gd_1d_torch(loss1, x0=x0, eta=eta, max_iters=80, eps_grad=1e-10)
+    print(f"[quadratic]  final x={x_final:.6e}, final loss={hist['loss'][-1]:.6e}, iters={len(hist['k'])}")
     save_diagnostics_plot(hist, "figures/gd_torch_quadratic_diagnostics.png", "GD on f(x)=1/2 x^2 (PyTorch)")
 
-    # Loss 2: shifted quadratic (no gradient code changes)
-    loss_fn = lambda x: 0.5 * (x - 1.0) ** 2
-    x_final, hist = gd_1d_torch(loss_fn, x0=x0, eta=eta, max_iters=80, eps_grad=1e-10)
-    print(f"[shifted]   final x={x_final:.6e}, final loss={hist['loss'][-1]:.6e}, iters={len(hist['k'])}")
+    # Loss 2: shifted quadratic (no derivative code changes)
+    def loss2(x): return 0.5 * (x - 1.0) ** 2
+    x_final, hist = gd_1d_torch(loss2, x0=x0, eta=eta, max_iters=80, eps_grad=1e-10)
+    print(f"[shifted]    final x={x_final:.6e}, final loss={hist['loss'][-1]:.6e}, iters={len(hist['k'])}")
 
-    # Loss 3: double well (no gradient code changes)
-    loss_fn = lambda x: 0.5 * (x**2 - 1.0) ** 2
-    x_final, hist = gd_1d_torch(loss_fn, x0=x0, eta=eta, max_iters=200, eps_grad=1e-10)
+    # Loss 3: double well (no derivative code changes)
+    def loss3(x): return 0.5 * (x**2 - 1.0) ** 2
+    x_final, hist = gd_1d_torch(loss3, x0=x0, eta=eta, max_iters=200, eps_grad=1e-10)
     print(f"[doublewell] final x={x_final:.6e}, final loss={hist['loss'][-1]:.6e}, iters={len(hist['k'])}")
 
 
@@ -667,145 +752,27 @@ if __name__ == "__main__":
     main()
 ```
 
-The only thing that changed across the three problems is the line defining `loss_fn`. The update rule and the derivative computation stayed the same.
+Only the definition of `loss_fn` changes across these examples. The loop structure stays the same.
 
 ![PyTorch diagnostics for the quadratic](figures/gd_torch_quadratic_diagnostics.png)
-*Figure 1.4: Same diagnostics as Figure 1.3, but gradients are produced by autograd.*
-
-### Gradient accumulation (the most common first bug)
-
-PyTorch adds gradients into `x.grad`. That is useful when you intentionally accumulate gradients across mini-batches, but it is wrong for a vanilla "one gradient per step" loop.
-
-```python
-import torch
-
-x = torch.tensor(2.0, requires_grad=True)
-
-loss1 = 0.5 * x**2
-loss1.backward()
-print("after loss1.backward(), x.grad =", x.grad.item())  # 2.0
-
-loss2 = 0.5 * (x - 1.0) ** 2
-loss2.backward()
-print("after loss2.backward(), x.grad =", x.grad.item())  # 2.0 + 1.0 = 3.0 (accumulated)
-
-# Correct way:
-x.grad = None
-loss3 = 0.5 * (x - 1.0) ** 2
-loss3.backward()
-print("after clearing grad, x.grad =", x.grad.item())  # 1.0
-```
-
-In normal PyTorch training code, you usually clear gradients with either:
-
-* `x.grad = None` for individual tensors, or
-* `optimizer.zero_grad(set_to_none=True)` for models.
-
-## 7. Autograd under the hood: recorded operations + chain rule
-
-PyTorch autograd is the chain rule applied to a recorded sequence of operations.
-
-### A 1D chain rule example
-
-Consider:
-
-$$
-f(x)=\tfrac{1}{2}(x^2-1)^2
-$$
-
-Write it as a composition:
-
-* $u(x)=x^2$
-* $v(u)=u-1$
-* $w(v)=\tfrac{1}{2}v^2$
-
-Then $f = w \circ v \circ u$. The chain rule gives:
-
-$$
-f'(x)=w'(v(u(x)))v'(u(x))u'(x)
-$$
-
-Compute each derivative:
-
-* $u'(x)=2x$
-* $v'(u)=1$
-* $w'(v)=v$
-
-So
-
-$$
-f'(x)=(x^2-1)2x = 2x(x^2-1)
-$$
-
-Autograd does the same multiplication of local derivatives, but it does it by traversing the recorded computation graph.
-
-### A computational graph (ASCII)
-
-For the double well loss, the forward pass looks like:
-
-```
-x  --->  u = x^2  --->  v = u - 1  --->  loss = 0.5 * v^2
-```
-
-The backward pass walks this graph in reverse and applies the chain rule.
-
-### Three common failure modes (and what they mean)
-
-#### Failure mode 1: forgetting to clear gradients
-
-Symptom: gradients are too large and the method diverges or behaves strangely.
-
-Cause: `x.grad` stores the sum of gradients from all previous `backward()` calls unless you reset it.
-
-Fix: clear gradients once per iteration (`x.grad = None` or `optimizer.zero_grad(set_to_none=True)`).
-
-#### Failure mode 2: tracking the parameter update in the graph
-
-One might think the update line
-
-```python
-x = x - eta * x.grad
-```
-
-is harmless. However, this creates a new tensor `x` whose value depends on the old `x` through differentiable operations. Two things go wrong:
-
-1. The "iterate" becomes part of a growing graph (memory and compute blow up).
-2. The new `x` is typically not a leaf tensor, so `x.grad` may stop being populated.
-
-The standard fix is to update without tracking:
-
-```python
-with torch.no_grad():
-    x -= eta * x.grad
-```
-
-If you need to deliberately break a graph, `x = x.detach()` is the explicit tool. In this lecture, `no_grad()` is the right choice.
-
-#### Failure mode 3: calling `backward()` twice on the same graph
-
-Symptom: you see a runtime error like "Trying to backward through the graph a second time..."
-
-Cause: after `backward()` PyTorch frees the intermediate buffers it needed for the reverse pass. This is the default because it saves memory.
-
-Fix (rare in standard training loops): pass `retain_graph=True` to the first backward call.
-
-In typical optimization loops, you do not want `retain_graph=True`. You rebuild the loss each iteration, call backward once, update, repeat.
+*Figure 1.4: Same diagnostics as Figure 1.3, but derivatives are produced by autodiff.*
 
 ## 8. Tuning: choosing a step size
 
 The step size $\eta$ controls the tradeoff between:
 
-* moving aggressively (fewer iterations when stable)
-* not overshooting (avoiding divergence)
+- moving aggressively (fewer iterations when stable),
+- not overshooting (avoiding divergence).
 
 ### Quadratic example: exact recursion
 
-Take:
+Take
 
 $$
-f(x)=\tfrac{1}{2}x^2
-\quad \Longrightarrow \quad
-f'(x)=x
+\begin{aligned}
+f(x) &= \tfrac{1}{2}x^2 \\
+f'(x) &= x
+\end{aligned}
 $$
 
 Gradient descent gives:
@@ -816,8 +783,8 @@ $$
 
 So:
 
-* If $|1-\eta|<1$, then $x_k \to 0$ geometrically.
-* If $|1-\eta|>1$, then $|x_k|$ grows geometrically (divergence).
+- If $\|1-\eta\|<1$, then $x_k \to 0$ geometrically.
+- If $\|1-\eta\|>1$, then $\|x_k\|$ grows geometrically (divergence).
 
 For this specific quadratic, the stability condition is:
 
@@ -825,44 +792,18 @@ $$
 0 < \eta < 2
 $$
 
-A concrete divergence example: if $\eta=3$, then $x_{k+1}=-2x_k$, so $|x_k|$ doubles every step.
+A concrete divergence example: if $\eta=3$, then $x_{k+1}=-2x_k$, so $\|x_k\|$ doubles every step.
 
 ### Compare small, reasonable, and too-large step sizes
 
 We will compare:
 
-* $\eta=0.001$ (stable but slow)
-* $\eta=0.5$ (stable and fast)
-* $\eta=3$ (diverges)
+- $\eta=0.001$ (stable but slow),
+- $\eta=0.5$ (stable and fast),
+- $\eta=3$ (diverges).
 
 ![Effect of step size on GD for the quadratic](figures/gd_stepsize_comparison_quadratic.png)
 *Figure 1.5: Same objective, same initialization, different step sizes. Small $\eta$ makes slow progress. Large $\eta$ diverges.*
-
-<!--
-CODEX PLOT TASK (Figure 1.5): Step size comparison on the quadratic
-
-Goal: generate figures/gd_stepsize_comparison_quadratic.png.
-
-1) Create: script/plot_gd_stepsize_comparison_quadratic.py
-2) Use numpy + matplotlib.
-3) Setup:
-   - f(x)=0.5*x**2
-   - grad(x)=x
-   - x0=5.0
-   - max_iters=60
-   - etas = [0.001, 0.5, 3.0]
-4) For each eta:
-   - run GD and log objective values f(x_k)
-   - if objective exceeds a large threshold (e.g., 1e6) treat as diverged and stop early
-5) Plot:
-   - semilogy of objective vs iteration for each eta on the same axes
-   - xlabel: "iteration k"
-   - ylabel: "objective f(x_k) (semilog y)"
-   - title: "GD on f(x)=1/2 x^2: effect of step size"
-   - legend includes eta values
-   - light grid
-6) Save to figures/gd_stepsize_comparison_quadratic.png, dpi=200, bbox_inches="tight"
--->
 
 ### A simple tuning protocol: time-to-result
 
@@ -872,46 +813,14 @@ $$
 f(x_k) \le 10^{-5}
 $$
 
-Define "time-to-result" as the number of iterations needed to hit this threshold (with a max-iteration cap).
+Define “time-to-result” as the number of iterations needed to hit this threshold (with a max-iteration cap).
 
-For the quadratic, the best step size is easy to see from the recursion: $\eta=1$ gives $x_1=0$ in one step from any $x_0$.
+For the quadratic, the recursion shows $\eta=1$ is special: it sends $x_1=0$ from any $x_0$.
 
-We can still do the empirical version: sweep a range of step sizes and record the iteration count.
+You can still do the empirical version: sweep a range of step sizes and record the iteration count.
 
 ![Step size sweep on the quadratic](figures/stepsize_sweep_quadratic.png)
-*Figure 1.6: A brute-force sweep of step sizes. For this quadratic, the winner is near $\eta=1$ because the recursion makes the solution exact in one step.*
-
-<!--
-CODEX PLOT TASK (Figure 1.6): Step size sweep on the quadratic
-
-Goal: generate figures/stepsize_sweep_quadratic.png.
-
-1) Create: script/plot_stepsize_sweep_quadratic.py
-2) Use numpy + matplotlib.
-3) Setup:
-   - f(x)=0.5*x**2
-   - grad(x)=x
-   - x0=5.0
-   - eps_obj = 1e-5
-   - max_iters = 100
-   - etas = np.arange(0.001, 3.000 + 0.0001, 0.005)
-4) For each eta:
-   - run GD up to max_iters
-   - stop early if f(x)<=eps_obj
-   - if |x| grows beyond a large bound (e.g., 1e6), mark as diverged and stop
-   - record:
-       - iters_to_hit: the first k where f(x_k)<=eps_obj
-       - if never hits, set iters_to_hit = np.nan (or max_iters+1)
-5) Plot:
-   - x-axis: eta
-   - y-axis: iters_to_hit
-   - prefer a scatter plot or thin line
-   - y-limits should make the curve readable (ignore NaNs)
-   - title: "Iterations to reach f(x)<=1e-5 vs step size (quadratic)"
-   - axis labels: "step size eta", "iterations to threshold"
-   - light grid
-6) Save to figures/stepsize_sweep_quadratic.png, dpi=200, bbox_inches="tight"
--->
+*Figure 1.6: A brute-force sweep of step sizes. For this quadratic, the winner is near $\eta=1$.*
 
 ### Repeat on a nonconvex objective
 
@@ -920,51 +829,25 @@ For the double well,
 $$
 f(x)=\tfrac{1}{2}(x^2-1)^2
 $$
+there are two global minimizers ($x=-1$ and $x=1$), and the curvature depends on where you are. A fixed step size can behave differently depending on initialization.
 
-there are two global minimizers ($x=-1$ and $x=1$), and the local curvature depends on where you are. A single fixed step size can behave very differently depending on initialization.
-
-We can still run the same tuning sweep, but we must interpret it carefully: we are measuring "time-to-reach some minimizer" from a fixed starting point, not a global property of the algorithm.
+We can still run the same tuning sweep, but we must interpret it carefully: we are measuring “time-to-reach a minimizer” from a fixed starting point.
 
 ![Step size sweep on the double well](figures/stepsize_sweep_doublewell.png)
 *Figure 1.7: The best fixed step size depends on the objective and the initialization. For nonconvex problems, sweeping hyperparameters is often the pragmatic baseline.*
-
-<!--
-CODEX PLOT TASK (Figure 1.7): Step size sweep on the double well
-
-Goal: generate figures/stepsize_sweep_doublewell.png.
-
-1) Create: script/plot_stepsize_sweep_doublewell.py
-2) Use numpy + matplotlib.
-3) Setup:
-   - f(x)=0.5*(x**2 - 1)**2
-   - grad(x)=2*x*(x**2 - 1)
-   - choose a fixed initialization, e.g. x0=2.0 (positive so it should converge to +1 when stable)
-   - eps_obj = 1e-5
-   - max_iters = 200 (use 200 here; 100 is sometimes too small for small eta)
-   - etas = np.arange(0.001, 3.000 + 0.0001, 0.005)
-4) For each eta:
-   - run GD up to max_iters
-   - stop early if f(x)<=eps_obj
-   - divergence detection: if |x|>1e6 or f(x)>1e12, mark as diverged and stop
-   - record iters_to_hit as before (NaN if never hits)
-5) Plot:
-   - scatter or line: eta vs iters_to_hit
-   - title: "Iterations to reach f(x)<=1e-5 vs step size (double well)"
-   - labels: "step size eta", "iterations to threshold"
-   - light grid
-6) Save: figures/stepsize_sweep_doublewell.png, dpi=200, bbox_inches="tight"
--->
 
 ## 9. Conclusion
 
 What you should take from this lecture:
 
-* An optimization problem is: decision variable + objective + constraints.
-* Minimizers and stationary points are different targets. In nonconvex settings, stationarity is the default guarantee.
-* Iterative algorithms should be judged by diagnostics and by time-to-result, not by whether they run.
-* Gradient descent is a local method derived from the first-order Taylor model.
-* In NumPy, changing the loss means changing the derivative code.
-* In PyTorch, changing the loss does not require rewriting derivatives, but you must obey autograd rules (clear grads, update under `no_grad()`).
+- An optimization problem is: decision variable + objective + constraints.
+- Minimizers and stationary points are different targets. In nonconvex settings, stationarity is the default guarantee.
+- Iterative algorithms should be judged by diagnostics and by time-to-result, not by whether they run.
+- Gradient descent is a local method derived from the first-order Taylor model.
+- With hand-written derivatives, changing the loss forces you to update derivative code too.
+- With autodiff, you can change the loss without rewriting derivatives, as long as you follow a few PyTorch conventions:
+  - mark variables with `requires_grad=True`,
+  - clear `x.grad` each iteration,
+  - update parameters under `torch.no_grad()`.
 
-Next lecture: we move from full gradients to **stochastic gradient descent**, where gradients are estimated from samples or mini-batches.
-
+Next lecture: we move from full gradients to **stochastic gradient descent**, where gradients are estimated from samples.
