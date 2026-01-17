@@ -20,12 +20,12 @@ title: Optimization Terminology, Philosophy, and Basics in 1D
 5. [Implementation in NumPy: gradients by hand](#5-implementation-in-numpy-gradients-by-hand)
 6. [Implementation in PyTorch: gradients by `backward()`](#6-implementation-in-pytorch-gradients-by-backward)
 7. [Autograd under the hood: recorded operations + chain rule](#7-autograd-under-the-hood-recorded-operations--chain-rule)
-8. [Tuning: the step size matters](#8-tuning-the-step-size-matters)
+8. [Tuning: choosing a step size](#8-tuning-choosing-a-step-size)
 9. [Conclusion](#9-conclusion)
 
 ## 1. Setup: what is an optimization problem?
 
-This course is about one pipeline:
+This course is about one recurring template:
 
 1. **Decision variables:** what we are allowed to choose.
 2. **Objective (loss):** what we want to make small.
@@ -127,28 +127,28 @@ Plot specification:
 
 ### Minimizers and optimal value
 
-A point $x^\*$ is a **(global) minimizer** if $x^\* \in C$ and
+A point $x^\ast$ is a **(global) minimizer** if $x^\ast \in C$ and
 
 $$
-f(x^\*) \le f(x)
+f(x^\ast) \le f(x)
 \quad \text{for all } x \in C
 $$
 
 The **optimal value** is
 
 $$
-f^\* = \inf_{x \in C} f(x)
+f^\ast = \inf_{x \in C} f(x)
 $$
 
-If a minimizer $x^\*$ exists, then $f^\* = f(x^\*)$.
+If a minimizer $x^\ast$ exists, then $f^\ast = f(x^\ast)$.
 
-In many problems we care about **approximate minimizers**: points $x$ whose objective value is close to $f^\*$. A standard definition is:
+In many problems we care about **approximate minimizers**: points $x$ whose objective value is close to $f^\ast$. A standard definition is:
 
 $$
-f(x) - f^\* \le \varepsilon
+f(x) - f^\ast \le \varepsilon
 $$
 
-This quantity $f(x)-f^\*$ is the **objective gap** (also called suboptimality gap). In real ML problems we typically do not know $f^\*$, so the objective gap is not directly observable. In our toy 1D examples we often have $f^\*=0$, so the objective gap is just $f(x)$.
+This quantity $f(x)-f^\ast$ is the **objective gap** (also called suboptimality gap). In real ML problems we typically do not know $f^\ast$, so the objective gap is not directly observable. In our toy 1D examples we often have $f^\ast=0$, so the objective gap is just $f(x)$.
 
 ### Stationary points
 
@@ -161,7 +161,7 @@ $$
 An **$\varepsilon$-stationary point** is a point where
 
 $$
-|f'(x)| \le \varepsilon
+\|f'(x)\| \le \varepsilon
 $$
 
 One might think "minimizer means derivative is zero." However, that statement is only guaranteed for **interior** local minimizers in unconstrained problems (or more generally when the minimizer is not stuck on the boundary of the feasible set). With constraints, minimizers can sit at the boundary and have nonzero derivative. We will return to constraints later (projection methods and KKT conditions).
@@ -184,13 +184,12 @@ Each $x_k$ is an **approximate solution candidate**. The algorithm usually has a
 
 Two common diagnostics are:
 
-1. **Objective values:** $f(x_k)$ (or objective gap $f(x_k)-f^\*$ when $f^\*$ is known).
+1. **Objective values:** $f(x_k)$ (or objective gap $f(x_k)-f^\ast$ when $f^\ast$ is known).
 2. **Gradient norm:** in 1D this is $\|f'(x_k)\|$.
 
-Since we're trying to minimize $f$, we'd like it to decrease along the iterate sequence. If we also know $f^\*$ we can also tell how well we're solving the problem. However in general $f^\ast$ is not known, so we can never quite tell how well we're solving the problem.
+Since we're trying to minimize $f$, we'd like it to decrease along the iterate sequence. If we also know $f^\ast$ we can also tell how well we're solving the problem. However in general $f^\ast$ is not known, so we can never quite tell how well we're solving the problem.
 
-Gradient norms are a slightly weaker metric. For certain problems, we can show that whenever $\|f'(x_k)\|$ is small we also have that $f(x_k) - f^\*$ is small. However, characterizing the precise relationship between the two is difficult and, in general, small gradients do not mean the objective is small. On the other hand, gradients are at least always computable and always tend to zero as our iterates approach minimizers, so they're still a useful diagnostic.
-
+Gradient norms are a slightly weaker metric. For certain problems, we can show that whenever $\|f'(x_k)\|$ is small we also have that $f(x_k) - f^\ast$ is small. However, characterizing the precise relationship between the two is difficult and, in general, small gradients do not mean the objective is small. On the other hand, gradients are at least always computable and always tend to zero as our iterates approach minimizers, so they're still a useful diagnostic.
 
 ### Termination criteria
 
@@ -198,7 +197,7 @@ Common stopping rules:
 
 - Stop after a fixed number of iterations $T$.
 - Stop when $\|f'(x_k)\| \le \varepsilon_{\text{grad}}$.
-- Stop when $f(x_k)-f^\* \le \varepsilon_{\text{obj}}$ (only when $f^\*$ is known).
+- Stop when $f(x_k)-f^\ast \le \varepsilon_{\text{obj}}$ (only when $f^\ast$ is known).
 - Stop when progress stalls (plateauing diagnostics).
 
 In our toy problem we will combine a max-iteration cap with a threshold on either the objective or the gradient.
@@ -240,7 +239,7 @@ $$
 On a semilog-$y$ plot, geometric decay is a straight line. Sublinear decay bends.
 
 ![Sublinear vs linear convergence](figures/convergence_rates_semilogy.png)
-*Figure 1.2: Semilog-$y$ plot of two toy error sequences. Geometric decay (called "linear convergence" in optimization) appears as a straight line.*
+*Figure 1.2: Semilog-$y$ plot of two toy error sequences. Geometric decay (called "linear convergence" in optimization) appears as a straight line. Sublinear decay bends.*
 
 <!--
 CODEX PLOT TASK (Figure 1.2): Sublinear vs linear convergence on a semilogy plot
@@ -293,32 +292,78 @@ $$
 A basic check is to plug the update into the first-order model:
 
 $$
-f(x_k - \eta f'(x_k)) \approx f(x_k) - \eta |f'(x_k)|^2
+f(x_k - \eta f'(x_k)) \approx f(x_k) - \eta \|f'(x_k)\|^2
 $$
 
 So for small enough $\eta$, the objective decreases to first order.
 
-In higher dimensions, $f'(x)$ becomes $\nabla f(x)$, and $\|f'(x)\|^2$ becomes $\|\|\nabla f(x)\|\|^2$. The mechanism is the same.
+In higher dimensions, $f'(x)$ becomes $\nabla f(x)$, and $\|f'(x)\|^2$ becomes $\|\nabla f(x)\|^2$. The mechanism is the same.
 
 ## 5. Implementation in NumPy: gradients by hand
 
 We will implement gradient descent in NumPy first. The point is not that NumPy is better. The point is that in plain NumPy you must compute derivatives yourself, so you feel what autodiff is saving you from.
 
-### A minimal 1D "training loop"
+### The anatomy of a minimal training loop
 
-Below is a complete script you can save and run. It implements:
+A minimal 1D “training loop” has the same basic parts you will see in ML code:
 
-- a function `f(x)`
-- its derivative `grad_f(x)`
-- a loop that logs objective values and gradient magnitudes
-- a termination rule
+1. **Initialize** the parameter (here: a scalar $x_0$).
+2. Repeat for $k=0,1,2,\dots$:
+   - **Forward pass:** compute objective value $f(x_k)$.
+   - **Gradient:** compute derivative $f'(x_k)$.
+   - **Log diagnostics:** store or print $f(x_k)$ and $\|f'(x_k)\|$.
+   - **Stop** if a termination rule fires.
+   - **Update:** $x_{k+1} = x_k - \eta f'(x_k)$.
+
+We will build this in three runnable versions. In class, you can overwrite the same file and rerun.
+
+### Version 1: update rule + printing (no history, no stopping)
 
 ```python
-# Save as: script/gd_1d_numpy.py
+# Save as: script/gd_1d_numpy.py  (Version 1)
 
-import os
 import numpy as np
-import matplotlib.pyplot as plt
+
+
+def f(x):
+    return 0.5 * x**2
+
+
+def grad_f(x):
+    return x
+
+
+def main():
+    x = 5.0
+    eta = 0.5
+    max_iters = 10
+
+    for k in range(max_iters):
+        fx = f(x)
+        gx = grad_f(x)
+        print(f"k={k:2d}  x={x:+.6f}  f(x)={fx:.3e}  ||f'(x)||={abs(gx):.3e}")
+        x = x - eta * gx
+
+    print(f"final x={x:+.6f}  final f(x)={f(x):.3e}")
+
+
+if __name__ == "__main__":
+    main()
+````
+
+At this point we have the update rule and a way to see whether the iterates are moving in the right direction.
+
+### Version 2: add logging + stopping rules
+
+Now we add two things that show up in essentially every optimization loop:
+
+* **a history object** (so we can plot later)
+* **termination criteria**
+
+```python
+# Save as: script/gd_1d_numpy.py  (Version 2)
+
+import numpy as np
 
 
 def gradient_descent_1d(f, grad_f, x0, eta, max_iters=200, eps_grad=1e-8, eps_obj=None):
@@ -327,21 +372,15 @@ def gradient_descent_1d(f, grad_f, x0, eta, max_iters=200, eps_grad=1e-8, eps_ob
 
     Stops when:
       - k reaches max_iters, or
-      - |grad| <= eps_grad, or
+      - ||f'(x)|| <= eps_grad, or
       - f(x) <= eps_obj  (if eps_obj is not None)
 
     Returns:
-      x (final iterate), history dict
+      x (final iterate), hist dict
     """
     x = float(x0)
 
-    hist = {
-        "k": [],
-        "x": [],
-        "f": [],
-        "grad": [],
-        "abs_grad": [],
-    }
+    hist = {"k": [], "x": [], "f": [], "abs_grad": []}
 
     for k in range(max_iters):
         fx = float(f(x))
@@ -350,7 +389,60 @@ def gradient_descent_1d(f, grad_f, x0, eta, max_iters=200, eps_grad=1e-8, eps_ob
         hist["k"].append(k)
         hist["x"].append(x)
         hist["f"].append(fx)
-        hist["grad"].append(gx)
+        hist["abs_grad"].append(abs(gx))
+
+        if eps_grad is not None and abs(gx) <= eps_grad:
+            break
+        if eps_obj is not None and fx <= eps_obj:
+            break
+
+        x = x - eta * gx
+
+    return x, hist
+
+
+def main():
+    # Example: f(x) = 1/2 x^2, f'(x) = x
+    f = lambda x: 0.5 * x**2
+    grad_f = lambda x: x
+
+    x0 = 5.0
+    eta = 0.5
+
+    x_final, hist = gradient_descent_1d(f, grad_f, x0=x0, eta=eta, max_iters=80, eps_grad=1e-10)
+    print(f"Final x: {x_final:.6e}")
+    print(f"Final f(x): {hist['f'][-1]:.6e}")
+    print(f"Iterations: {len(hist['k'])}")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+### Version 3: add a diagnostics plot
+
+Now we use the saved history to produce the standard “two curves” diagnostic plot.
+
+```python
+# Save as: script/gd_1d_numpy.py  (Version 3)
+
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+def gradient_descent_1d(f, grad_f, x0, eta, max_iters=200, eps_grad=1e-8, eps_obj=None):
+    x = float(x0)
+
+    hist = {"k": [], "x": [], "f": [], "abs_grad": []}
+
+    for k in range(max_iters):
+        fx = float(f(x))
+        gx = float(grad_f(x))
+
+        hist["k"].append(k)
+        hist["x"].append(x)
+        hist["f"].append(fx)
         hist["abs_grad"].append(abs(gx))
 
         if eps_grad is not None and abs(gx) <= eps_grad:
@@ -370,7 +462,7 @@ def save_diagnostics_plot(hist, outpath, title):
 
     plt.figure(figsize=(6.5, 3.5))
     plt.semilogy(k, fvals, label="objective f(x_k)")
-    plt.semilogy(k, gabs, label="|f'(x_k)|")
+    plt.semilogy(k, gabs, label="||f'(x_k)||")
     plt.xlabel("iteration k")
     plt.ylabel("value (semilog y)")
     plt.title(title)
@@ -383,7 +475,6 @@ def save_diagnostics_plot(hist, outpath, title):
 
 
 def main():
-    # Example 1: f(x) = 1/2 x^2
     f = lambda x: 0.5 * x**2
     grad_f = lambda x: x
 
@@ -428,7 +519,7 @@ If you prefer a dedicated plotting script rather than using script/gd_1d_numpy.p
 Requirements:
 - run GD on f(x)=0.5*x^2 with grad=x
 - use x0=5, eta=0.5, max_iters=80, eps_grad=1e-10
-- log f(x_k) and |grad|
+- log f(x_k) and ||grad||
 - semilogy plot both curves on the same axes
 - title: "GD on f(x)=1/2 x^2 (NumPy)"
 - save: figures/gd_numpy_quadratic_diagnostics.png (dpi=200, bbox_inches="tight")
@@ -436,9 +527,9 @@ Requirements:
 
 ### Changing the loss means recomputing the gradient
 
-Now change the objective. The loop is the same, but the derivative is different.
+Now suppose that $x^2$ is not the function we wish to optimize any more. To update the loop above we must change two things: the computation of the loss and the derivative.
 
-1) Shifted quadratic:
+1. Shifted quadratic:
 
 $$
 f(x)=\tfrac{1}{2}(x-1)^2
@@ -446,7 +537,7 @@ f(x)=\tfrac{1}{2}(x-1)^2
 f'(x)=x-1
 $$
 
-2) Double well:
+2. Double well:
 
 $$
 f(x)=\tfrac{1}{2}(x^2-1)^2
@@ -454,24 +545,46 @@ f(x)=\tfrac{1}{2}(x^2-1)^2
 f'(x)=2x(x^2-1)
 $$
 
-In NumPy, you must write these derivatives correctly each time you change $f$.
+In NumPy, you must write these derivatives correctly each time you change $f$. 
+
+This might not seem like a big hurdle. But for extremely complicated loss functions, it's easy to get derivatives wrong! This is one of the many reasons we'll use PyTorch in this case.
 
 ## 6. Implementation in PyTorch: gradients by `backward()`
 
-PyTorch lets us change the loss without rewriting the derivative by hand. The price is that you must follow the autograd rules.
+PyTorch implements *autodifferentiation.* Tis means that we can change the loss fucntion without recomputing the derivative by hand. The price is that you must follow the rules of the autodifferentiation (sometimes called 'autograd') api.
 
-### The minimal autograd loop (scalar parameter)
+### Version 1: a single derivative via `backward()`
 
-Key PyTorch facts:
-
-- A tensor with `requires_grad=True` is treated as a variable you want derivatives with respect to.
-- After `loss.backward()`, PyTorch stores the derivative in `x.grad`.
-- By default, PyTorch **accumulates** gradients into `x.grad`, so you must clear it each iteration.
-
-Here is a complete 1D gradient descent loop in PyTorch. Save and run it.
+This is the smallest example that shows what PyTorch is doing.
 
 ```python
-# Save as: script/gd_1d_torch.py
+import torch
+
+x = torch.tensor(2.0, requires_grad=True)
+loss = 0.5 * x**2
+loss.backward()
+
+print("x =", x.item())
+print("dloss/dx =", x.grad.item())  # should be 2.0
+```
+
+A few facts that become important once we put this in a loop:
+
+* A tensor with `requires_grad=True` is treated as a variable you want derivatives with respect to.
+* After `loss.backward()`, PyTorch stores the derivative in `x.grad`.
+* By default, PyTorch **accumulates** gradients into `x.grad`, so you must clear it each iteration.
+
+### Version 2: a complete 1D training loop in PyTorch
+
+Now we build the same loop structure as in NumPy:
+
+* forward pass: compute `loss`
+* backward pass: populate `x.grad`
+* log diagnostics
+* update under `no_grad()`
+
+```python
+# Save as: script/gd_1d_torch.py  (Version 2)
 
 import os
 import torch
@@ -479,23 +592,12 @@ import matplotlib.pyplot as plt
 
 
 def gd_1d_torch(loss_fn, x0, eta, max_iters=200, eps_grad=1e-8, eps_obj=None):
-    """
-    1D gradient descent in PyTorch on a scalar tensor.
-
-    loss_fn: function mapping a tensor x to a scalar tensor loss(x).
-    """
     x = torch.tensor(float(x0), requires_grad=True)
 
-    hist = {
-        "k": [],
-        "x": [],
-        "loss": [],
-        "grad": [],
-        "abs_grad": [],
-    }
+    hist = {"k": [], "x": [], "loss": [], "abs_grad": []}
 
     for k in range(max_iters):
-        # IMPORTANT: clear gradient buffer (PyTorch accumulates by default)
+        # Clear gradient buffer (PyTorch accumulates by default)
         x.grad = None
 
         loss = loss_fn(x)
@@ -507,7 +609,6 @@ def gd_1d_torch(loss_fn, x0, eta, max_iters=200, eps_grad=1e-8, eps_obj=None):
         hist["k"].append(k)
         hist["x"].append(float(x.detach().cpu().item()))
         hist["loss"].append(l)
-        hist["grad"].append(g)
         hist["abs_grad"].append(abs(g))
 
         if eps_grad is not None and abs(g) <= eps_grad:
@@ -515,7 +616,7 @@ def gd_1d_torch(loss_fn, x0, eta, max_iters=200, eps_grad=1e-8, eps_obj=None):
         if eps_obj is not None and l <= eps_obj:
             break
 
-        # IMPORTANT: update parameters without tracking the update in autograd
+        # Update without tracking the update in autograd
         with torch.no_grad():
             x -= eta * x.grad
 
@@ -529,7 +630,7 @@ def save_diagnostics_plot(hist, outpath, title):
 
     plt.figure(figsize=(6.5, 3.5))
     plt.semilogy(k, loss_vals, label="loss f(x_k)")
-    plt.semilogy(k, gabs, label="|df/dx| at x_k")
+    plt.semilogy(k, gabs, label="||df/dx|| at x_k")
     plt.xlabel("iteration k")
     plt.ylabel("value (semilog y)")
     plt.title(title)
@@ -575,8 +676,6 @@ The only thing that changed across the three problems is the line defining `loss
 
 PyTorch adds gradients into `x.grad`. That is useful when you intentionally accumulate gradients across mini-batches, but it is wrong for a vanilla "one gradient per step" loop.
 
-Here is a short demonstration.
-
 ```python
 import torch
 
@@ -599,12 +698,12 @@ print("after clearing grad, x.grad =", x.grad.item())  # 1.0
 
 In normal PyTorch training code, you usually clear gradients with either:
 
-- `x.grad = None` for individual tensors, or
-- `optimizer.zero_grad(set_to_none=True)` for models.
+* `x.grad = None` for individual tensors, or
+* `optimizer.zero_grad(set_to_none=True)` for models.
 
 ## 7. Autograd under the hood: recorded operations + chain rule
 
-PyTorch autograd is not magic. It is the chain rule applied to a recorded sequence of operations.
+PyTorch autograd is the chain rule applied to a recorded sequence of operations.
 
 ### A 1D chain rule example
 
@@ -616,9 +715,9 @@ $$
 
 Write it as a composition:
 
-- $u(x)=x^2$
-- $v(u)=u-1$
-- $w(v)=\tfrac{1}{2}v^2$
+* $u(x)=x^2$
+* $v(u)=u-1$
+* $w(v)=\tfrac{1}{2}v^2$
 
 Then $f = w \circ v \circ u$. The chain rule gives:
 
@@ -628,9 +727,9 @@ $$
 
 Compute each derivative:
 
-- $u'(x)=2x$
-- $v'(u)=1$
-- $w'(v)=v$
+* $u'(x)=2x$
+* $v'(u)=1$
+* $w'(v)=v$
 
 So
 
@@ -692,12 +791,12 @@ Fix (rare in standard training loops): pass `retain_graph=True` to the first bac
 
 In typical optimization loops, you do not want `retain_graph=True`. You rebuild the loss each iteration, call backward once, update, repeat.
 
-## 8. Tuning: the step size matters
+## 8. Tuning: choosing a step size
 
 The step size $\eta$ controls the tradeoff between:
 
-- moving aggressively (fewer iterations when stable)
-- not overshooting (avoiding divergence)
+* moving aggressively (fewer iterations when stable)
+* not overshooting (avoiding divergence)
 
 ### Quadratic example: exact recursion
 
@@ -717,8 +816,8 @@ $$
 
 So:
 
-- If $|1-\eta|<1$, then $x_k \to 0$ geometrically.
-- If $|1-\eta|>1$, then $|x_k|$ grows geometrically (divergence).
+* If $|1-\eta|<1$, then $x_k \to 0$ geometrically.
+* If $|1-\eta|>1$, then $|x_k|$ grows geometrically (divergence).
 
 For this specific quadratic, the stability condition is:
 
@@ -732,9 +831,9 @@ A concrete divergence example: if $\eta=3$, then $x_{k+1}=-2x_k$, so $|x_k|$ dou
 
 We will compare:
 
-- $\eta=0.001$ (stable but slow)
-- $\eta=0.5$ (stable and fast)
-- $\eta=3$ (diverges)
+* $\eta=0.001$ (stable but slow)
+* $\eta=0.5$ (stable and fast)
+* $\eta=3$ (diverges)
 
 ![Effect of step size on GD for the quadratic](figures/gd_stepsize_comparison_quadratic.png)
 *Figure 1.5: Same objective, same initialization, different step sizes. Small $\eta$ makes slow progress. Large $\eta$ diverges.*
@@ -759,7 +858,7 @@ Goal: generate figures/gd_stepsize_comparison_quadratic.png.
    - semilogy of objective vs iteration for each eta on the same axes
    - xlabel: "iteration k"
    - ylabel: "objective f(x_k) (semilog y)"
-   - title: "GD on f(x)=1/2 x^2: step size matters"
+   - title: "GD on f(x)=1/2 x^2: effect of step size"
    - legend includes eta values
    - light grid
 6) Save to figures/gd_stepsize_comparison_quadratic.png, dpi=200, bbox_inches="tight"
@@ -860,11 +959,12 @@ Goal: generate figures/stepsize_sweep_doublewell.png.
 
 What you should take from this lecture:
 
-- An optimization problem is: decision variable + objective + constraints.
-- Minimizers and stationary points are different targets. In nonconvex settings, stationarity is the default guarantee.
-- Iterative algorithms should be judged by diagnostics and by time-to-result, not by whether they run.
-- Gradient descent is a local method derived from the first-order Taylor model.
-- In NumPy, changing the loss means changing the derivative code.
-- In PyTorch, changing the loss does not require rewriting derivatives, but you must obey autograd rules (clear grads, update under `no_grad()`).
+* An optimization problem is: decision variable + objective + constraints.
+* Minimizers and stationary points are different targets. In nonconvex settings, stationarity is the default guarantee.
+* Iterative algorithms should be judged by diagnostics and by time-to-result, not by whether they run.
+* Gradient descent is a local method derived from the first-order Taylor model.
+* In NumPy, changing the loss means changing the derivative code.
+* In PyTorch, changing the loss does not require rewriting derivatives, but you must obey autograd rules (clear grads, update under `no_grad()`).
 
 Next lecture: we move from full gradients to **stochastic gradient descent**, where gradients are estimated from samples or mini-batches.
+
