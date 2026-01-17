@@ -286,6 +286,8 @@ if __name__ == "__main__":
 ## Slide 21: Full Python GD (Functions)
 **Purpose:** Logging + stopping + diagnostics plot.
 
+Logs $f(x_k)$ and $|f'(x_k)|$ each step; stops by `eps_grad`, `eps_obj`, or `max_iters`.
+
 ```python
 # Save as: script/gd_1d_python.py
 

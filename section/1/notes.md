@@ -305,6 +305,8 @@ if __name__ == "__main__":
 
 ### Full version: logging + stopping + a diagnostics plot
 
+This version logs $f(x_k)$ and $|f'(x_k)|$ each step and stops by `eps_grad`, `eps_obj`, or `max_iters`.
+
 ```python
 # Save as: script/gd_1d_python.py
 
