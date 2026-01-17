@@ -515,9 +515,9 @@ What to remember:
 - `loss.backward()` computes the derivative and stores it in `x.grad`.
 - `x.grad` is a tensor; `.item()` turns it into a Python float for printing.
 
-### Two sanity checks (recommended before writing any loop)
+### Sanity check (recommended before writing any loop)
 
-**Check 1: compare to an analytic derivative at one point.**
+Compare to an analytic derivative at one point.
 
 For the double well,
 
@@ -545,21 +545,7 @@ print("autograd:", autograd_val)
 print("analytic:", analytic_val)
 ```
 
-**Check 2: compare to a finite-difference approximation.**
-
-```python
-def f_float(x_float: float) -> float:
-    return 0.5 * (x_float**2 - 1.0) ** 2
-
-def finite_diff(f, x_float: float, h: float = 1e-6) -> float:
-    return (f(x_float + h) - f(x_float - h)) / (2.0 * h)
-
-x0 = 2.0
-fd_val = finite_diff(f_float, x0)
-print("finite difference:", fd_val)
-```
-
-Finite differences are not a replacement for math, but they are a good “does this smell right?” test.
+This is a quick consistency check before you write a full loop.
 
 ## 7. Autodiff under the hood, common pitfalls, and the training loop
 
@@ -730,6 +716,7 @@ def save_diagnostics_plot(hist, outpath, title):
 def main():
     x0 = 5.0
     eta = 0.5
+    eta_dw = 0.02
 
     # Loss 1: quadratic
     def loss1(x): return 0.5 * x**2
@@ -744,7 +731,7 @@ def main():
 
     # Loss 3: double well (no derivative code changes)
     def loss3(x): return 0.5 * (x**2 - 1.0) ** 2
-    x_final, hist = gd_1d_torch(loss3, x0=x0, eta=eta, max_iters=200, eps_grad=1e-10)
+    x_final, hist = gd_1d_torch(loss3, x0=x0, eta=eta_dw, max_iters=200, eps_grad=1e-10)
     print(f"[doublewell] final x={x_final:.6e}, final loss={hist['loss'][-1]:.6e}, iters={len(hist['k'])}")
 
 
@@ -752,7 +739,7 @@ if __name__ == "__main__":
     main()
 ```
 
-Only the definition of `loss_fn` changes across these examples. The loop structure stays the same.
+Only the definition of `loss_fn` changes across these examples. For the double well, we reduce the step size for stability. The loop structure stays the same.
 
 ![PyTorch diagnostics for the quadratic](figures/gd_torch_quadratic_diagnostics.png)
 *Figure 1.4: Same diagnostics as Figure 1.3, but derivatives are produced by autodiff.*
