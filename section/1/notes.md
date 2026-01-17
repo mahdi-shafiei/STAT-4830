@@ -350,6 +350,19 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Output:
+# k= 0  x=+5.000000  f(x)=1.250e+01  |f'(x)|=5.000e+00
+# k= 1  x=+2.500000  f(x)=3.125e+00  |f'(x)|=2.500e+00
+# k= 2  x=+1.250000  f(x)=7.812e-01  |f'(x)|=1.250e+00
+# k= 3  x=+0.625000  f(x)=1.953e-01  |f'(x)|=6.250e-01
+# k= 4  x=+0.312500  f(x)=4.883e-02  |f'(x)|=3.125e-01
+# k= 5  x=+0.156250  f(x)=1.221e-02  |f'(x)|=1.562e-01
+# k= 6  x=+0.078125  f(x)=3.052e-03  |f'(x)|=7.812e-02
+# k= 7  x=+0.039062  f(x)=7.629e-04  |f'(x)|=3.906e-02
+# k= 8  x=+0.019531  f(x)=1.907e-04  |f'(x)|=1.953e-02
+# k= 9  x=+0.009766  f(x)=4.768e-05  |f'(x)|=9.766e-03
+# final x=+0.004883  final f(x)=1.192e-05
 ```
 
 ### Full version: logging + stopping + a diagnostics plot
@@ -437,7 +450,14 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Output:
+# Final x: 7.275958e-11
+# Final f(x): 2.646978e-21
+# Iterations: 37
 ```
+
+Here we stop when $\|f'(x)\| \le 10^{-10}$ (set by `eps_grad=1e-10`), with a max-iteration cap of 80.
 
 For $f(x)=\tfrac{1}{2}x^2$, the objective and the derivative are directly related:
 
@@ -485,6 +505,8 @@ For simple formulas this is manageable. As soon as the loss becomes a long compo
 
 PyTorch can compute derivatives automatically. You write the loss as code, and PyTorch produces the derivative with respect to variables you mark as trackable.
 
+In such (reverse mode) *autodifferentiation* software, we call the evaluation of the loss function on a given input a **forward pass**. We call the computation of the derivative, on the other hand, the **backward pass**. 
+
 In this lecture we will treat a **single scalar** $x$ as our parameter. In PyTorch, even a scalar is represented as a tensor.
 
 ### What is a tensor here?
@@ -507,6 +529,11 @@ loss.backward()                             # compute d(loss)/dx
 print("x =", x.item())
 print("loss =", loss.item())
 print("d(loss)/dx =", x.grad.item())        # should be 2.0
+
+# Output:
+# x = 2.0
+# loss = 2.0
+# d(loss)/dx = 2.0
 ```
 
 What to remember:
@@ -543,6 +570,10 @@ analytic_val = 2.0 * 2.0 * (2.0**2 - 1.0)   # 2x(x^2-1) at x=2
 
 print("autograd:", autograd_val)
 print("analytic:", analytic_val)
+
+# Output:
+# autograd: 12.0
+# analytic: 12.0
 ```
 
 This is a quick consistency check before you write a full loop.
@@ -552,6 +583,8 @@ This is a quick consistency check before you write a full loop.
 ### Recorded operations + chain rule (what `backward()` is doing)
 
 When you compute a loss from `x`, PyTorch records the sequence of operations used to build that loss. During `backward()`, it applies the chain rule in reverse order.
+
+That is why it is called “backward”: the chain rule starts at the end (the loss) and works back through the computation.
 
 Example loss:
 
@@ -579,6 +612,23 @@ A sketch of the forward computation:
 x  ->  u = x^2  ->  v = u - 1  ->  loss = 0.5 * v^2
 ```
 
+A sketch of the backward computation (same example, with local derivatives):
+
+```
+loss = 0.5 * v^2
+  |  d(loss)/d(v) = v
+  v
+v = u - 1
+  |  d(v)/d(u) = 1
+  v
+u = x^2
+  |  d(u)/d(x) = 2x
+  v
+  x
+```
+
+To read it: multiply the local derivatives along the path to get $df/dx$.
+
 ### Pitfall A: gradients accumulate unless you clear them
 
 If you call `backward()` multiple times, PyTorch adds into `x.grad`. For “one gradient per step” loops, you must clear `x.grad` each iteration.
@@ -597,6 +647,11 @@ print("after second backward, x.grad =", x.grad.item())  # accumulated
 x.grad = None
 (0.5 * (x - 1.0)**2).backward()
 print("after clearing, x.grad =", x.grad.item())         # correct for the last loss
+
+# Output:
+# after first backward, x.grad = 2.0
+# after second backward, x.grad = 3.0
+# after clearing, x.grad = 1.0
 ```
 
 ### Pitfall B: tracking the update step breaks the loop
@@ -607,7 +662,7 @@ A tempting update is:
 x = x - eta * x.grad
 ```
 
-This creates a *new* tensor `x` built from tracked operations. In a beginner loop, the next iteration typically fails because the gradient you expect to read from `x.grad` is no longer populated.
+This creates a *new* `x` and replaces the original tracked variable. PyTorch only fills `.grad` for the original variable you told it to track, so after the replacement, `x.grad` is empty in the next step.
 
 A tiny failing example:
 
@@ -623,7 +678,7 @@ loss = 0.5 * x**2
 loss.backward()
 print("step 1 grad:", x.grad.item())
 
-# Wrong update: records the update in the graph and replaces x
+# Wrong update: replaces the tracked variable
 x = x - eta * x.grad
 
 # Step 2
@@ -631,7 +686,11 @@ x.grad = None
 loss = 0.5 * x**2
 loss.backward()
 
-print("step 2 grad:", x.grad)  # typically None in this beginner pattern
+print("step 2 grad:", x.grad)  # None because x is no longer the original tracked variable
+
+# Output:
+# step 1 grad: 2.0
+# step 2 grad: None
 ```
 
 Correct fix: update without tracking.
@@ -643,9 +702,9 @@ with torch.no_grad():
 
 ### Pitfall C: calling `backward()` twice on the same recorded operations
 
-If you call `backward()` twice on the same loss object, PyTorch raises an error.
+PyTorch uses the saved computation record once and then clears it to save memory. Calling `backward()` again on the same loss tries to reuse a cleared record, so it raises an error.
 
-In gradient descent loops, the solution is simple: **recompute the loss each iteration** (new forward pass), call `backward()` once, update, repeat.
+You can tell PyTorch to keep the record (`retain_graph=True`), but we do not need that for simple gradient descent loops. The standard pattern is: **recompute the loss each iteration** (new forward pass), call `backward()` once, update, repeat.
 
 ### A complete 1D gradient descent loop in PyTorch
 
@@ -737,6 +796,11 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Output:
+# [quadratic]  final x=7.275958e-11, final loss=2.646978e-21, iters=37
+# [shifted]    final x=1.000000e+00, final loss=0.000000e+00, iters=27
+# [doublewell] final x=9.999991e-01, final loss=1.818989e-12, iters=200
 ```
 
 Only the definition of `loss_fn` changes across these examples. For the double well, we reduce the step size for stability. The loop structure stays the same.
@@ -818,7 +882,9 @@ f(x)=\tfrac{1}{2}(x^2-1)^2
 $$
 there are two global minimizers ($x=-1$ and $x=1$), and the curvature depends on where you are. A fixed step size can behave differently depending on initialization.
 
-We can still run the same tuning sweep, but we must interpret it carefully: we are measuring “time-to-reach a minimizer” from a fixed starting point.
+We can still run the same tuning sweep, but we must interpret it carefully: we are measuring “time-to-reach a minimizer” from a fixed starting point. To make the sweep informative, we start at $x_0=2$; for larger initializations the successful step-size range can shrink.
+
+Here we sweep a wider range of step sizes; runs that do not reach the target within the cap show up at the max-iteration ceiling.
 
 ![Step size sweep on the double well](figures/stepsize_sweep_doublewell.png)
 *Figure 1.7: The best fixed step size depends on the objective and the initialization. For nonconvex problems, sweeping hyperparameters is often the pragmatic baseline.*
