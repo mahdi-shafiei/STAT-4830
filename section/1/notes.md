@@ -3,7 +3,7 @@ layout: course_page
 title: Optimization and PyTorch Basics in 1D
 ---
 
-# 1. Optimization and PyTorch Basics in 1D:
+# 1. Optimization and PyTorch Basics in 1D
 
 [cheatsheet](cheatsheet.html)
 
