@@ -16,7 +16,7 @@ title: Table of Contents
   > Optimization setup, minimizers and stationarity, 1D gradient descent, diagnostics, step-size tuning, and PyTorch autodiff basics.
 
 [2. Stochastic Optimization Basics in 1D](section/2/notes.md) 
-   > 
+   > Empirical risk, SGD updates, step-size schedules, noise floors, unbiasedness and variance, minibatches, and validation diagnostics.
 
 [3. Linear Regression: Gradient Descent](section/3/notes.md) | [Slides](section/3/slides.pdf) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/3/notebook.ipynb)
    > Linear regression via gradient descent. 
