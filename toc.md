@@ -15,8 +15,8 @@ title: Table of Contents
 [1. Optimization and PyTorch Basics in 1D](section/1/notes.md)
   > Optimization setup, minimizers and stationarity, 1D gradient descent, diagnostics, step-size tuning, and PyTorch autodiff basics.
 
-[2. Linear Regression: Direct Methods](section/2/notes.md) | [Slides](section/2/slides.pdf) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/2/notebook.ipynb)
-   > Direct methods for solving least squares problems, comparing LU and QR factorization.
+[2. Stochastic Optimization Basics in 1D](section/2/notes.md) 
+   > 
 
 [3. Linear Regression: Gradient Descent](section/3/notes.md) | [Slides](section/3/slides.pdf) | [Notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/3/notebook.ipynb)
    > Linear regression via gradient descent. 

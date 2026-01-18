@@ -213,19 +213,23 @@ The trade-off is visible below.
 ![SGD constant step size: objective gap](figures/sgd_1d_constant_stepsize_gap.png)
 *Figure 2.2: Objective gap $L(w_k)-L(w^\star)$ for several constant step sizes on the same dataset. Larger step sizes move quickly at first but stabilize at higher error. Smaller step sizes move more slowly but reach a lower noise floor. The curves fluctuate because the iterates $w_k$ fluctuate.*
 
+The term “noise floor” refers to the rough level where the curve bottoms out on average. You still see occasional sharp downward jumps, but there is no sustained downward trend past that level.
+
 ### Diagnostics (and why they are “cheating” at scale)
 
 In this toy problem, it is easy to log:
 
 * the full training loss $L(w_k)$,
-* the full training gradient magnitude $|L'(w_k)|$.
+* the full training gradient magnitude $\|L'(w_k)\|$.
 
 This is useful for debugging, but it defeats the point of SGD when $n$ is large, because evaluating $L(w)$ and $L'(w)$ requires looping over the entire dataset.
 
 When you do compute these diagnostics, do it under `torch.no_grad()` so PyTorch does not build graphs you will never backprop through.
 
 ![SGD diagnostics: objective gap and full gradient magnitude](figures/sgd_1d_diagnostics.png)
-*Figure 2.3: Two full-dataset diagnostics: $L(w_k)-L(w^\star)$ and $|L'(w_k)|$. These are informative in a toy problem. For large $n$, computing them every step is too expensive.*
+*Figure 2.3: Two full-dataset diagnostics: $L(w_k)-L(w^\star)$ and $\|L'(w_k)\|$. Both flatten to a noise floor. These are informative in a toy problem. For large $n$, computing them every step is too expensive.*
+
+In large-scale training, you typically cannot compute the full objective gap or gradient every iteration, so you cannot detect and keep only the rare low-loss iterates when a downward spike happens.
 
 ## 6. Step size schedules that converge
 
@@ -293,7 +297,7 @@ Which regime is more common depends on model expressivity. In classical machine 
 
 SGD works because the stochastic gradient is an unbiased estimate of the full gradient.
 
-Let $i$ be uniform on ${1,\ldots,n}$. Define the random variable
+Let $i$ be uniform on $\{1,\ldots,n\}$. Define the random variable
 
 $$
 X = \ell_i'(w).
@@ -343,7 +347,7 @@ A minibatch gradient is exactly this kind of average.
 
 At iteration $k$:
 
-1. Sample a minibatch $B_k \subset \\{1,\ldots,n\\}$ of size $B$.
+1. Sample a minibatch $B_k \subset \{1,\ldots,n\}$ of size $B$.
 2. Form the minibatch gradient estimate
 
 $$
@@ -681,7 +685,7 @@ def main():
             y_tr,
             eta_schedule=const_schedule(eta),
             batch_size=1,
-            max_iters=20_000,
+            max_iters=5_000,
             w0=0.0,
             seed=0,
             eval_every=1,
@@ -732,10 +736,10 @@ def main():
             y_tr,
             eta_schedule=sched,
             batch_size=1,
-            max_iters=120_000,
+            max_iters=1_200_000,
             w0=0.0,
             seed=0,
-            eval_every=20,
+            eval_every=200,
         )
         curves.append((hist["k"], hist["gap"], label))
 
@@ -778,7 +782,7 @@ def main():
     # ---------------------------------------
     # Figure 2.6: effect of sigma (variance)
     # ---------------------------------------
-    sigmas = [0.0, 0.1, 0.3, 0.6]
+    sigmas = [0.1, 1.0, 10.0]
     curves = []
     for s in sigmas:
         y = x_shared + s * g_shared
@@ -815,22 +819,42 @@ def main():
     curves_iter = []
     curves_grad = []
 
+    max_iters_iter = 5_000
+    total_grads = 5_000
+
     for B, eta in configs:
         _, _, hist = run_sgd(
             x_tr,
             y_tr,
             eta_schedule=const_schedule(eta),
             batch_size=B,
-            max_iters=50_000,
+            max_iters=max_iters_iter,
             w0=0.0,
             seed=0,
-            eval_every=10,
+            eval_every=1,
         )
         k = hist["k"]
         gap = hist["gap"]
         label = f"B={B}, eta={eta:g} (eta/B={eta/B:g})"
 
         curves_iter.append((k, gap, label))
+
+    for B, eta in configs:
+        max_iters_grad = max(1, total_grads // B)
+        _, _, hist = run_sgd(
+            x_tr,
+            y_tr,
+            eta_schedule=const_schedule(eta),
+            batch_size=B,
+            max_iters=max_iters_grad,
+            w0=0.0,
+            seed=0,
+            eval_every=1,
+        )
+        k = hist["k"]
+        gap = hist["gap"]
+        label = f"B={B}, eta={eta:g} (eta/B={eta/B:g})"
+
         curves_grad.append(([kk * B for kk in k], gap, label))
 
     plot_gap_curves(
