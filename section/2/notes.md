@@ -1,938 +1,844 @@
 ---
 layout: course_page
-title: Linear Regression - Direct Methods
+title: Stochastic Optimization Basics in 1D
 ---
-# Linear Regression: Direct Methods
 
-## Notebooks and Slides
-- [Lecture slides](slides.pdf)
-- [Colab notebook](https://colab.research.google.com/github/damek/STAT-4830/blob/main/section/2/notebook.ipynb)
+# 2. Stochastic Optimization Basics in 1D
+
+[cheatsheet](cheatsheet.html)
 
 ## Table of contents
-1. [Introduction](#introduction)
-2. [Prediction with Multiple Features](#prediction-with-multiple-features)
-3. [Computing Predictions Efficiently](#computing-predictions-efficiently)
-4. [Finding Optimal Weights](#finding-optimal-weights)
-5. [Direct Solution Methods](#direct-solution-methods)
-6. [The effect of and remedy for numerical instability](#the-effect-of-and-remedy-for-numerical-instability)
-7. [QR Factorization: A More Stable Approach](#qr-factorization-a-more-stable-approach)
-8. [The Limits of Direct Methods: Scaling Up](#the-limits-of-direct-methods-scaling-up)
-9. [Puzzle: Solving with SVD](#puzzle-solving-with-svd)
+1. [Motivation: training a model means minimizing a loss](#1-motivation-training-a-model-means-minimizing-a-loss)
+2. [Empirical risk: the training objective](#2-empirical-risk-the-training-objective)
+3. [SGD: replace a full gradient with a sample gradient](#3-sgd-replace-a-full-gradient-with-a-sample-gradient)
+4. [Experiment: 1D linear regression with noisy labels](#4-experiment-1d-linear-regression-with-noisy-labels)
+5. [Step sizes: constant steps hit a noise floor](#5-step-sizes-constant-steps-hit-a-noise-floor)
+6. [Step size schedules that converge](#6-step-size-schedules-that-converge)
+7. [When constant steps are enough](#7-when-constant-steps-are-enough)
+8. [Why SGD works at all: unbiasedness and variance](#8-why-sgd-works-at-all-unbiasedness-and-variance)
+9. [Minibatches: variance reduction and parallelism](#9-minibatches-variance-reduction-and-parallelism)
+10. [Diagnostics: monitor validation loss, not just training loss](#10-diagnostics-monitor-validation-loss-not-just-training-loss)
+11. [Conclusion](#11-conclusion)
+12. [Appendix: code to generate all figures](#appendix-code-to-generate-all-figures)
 
-## Introduction
+## 1. Motivation: training a model means minimizing a loss
 
-Last lecture, we explored PyTorch's efficient handling of vectors and matrices. Now we'll apply these tools to a fundamental challenge in data science: prediction. Our goal is to use historical data to make accurate predictions about new situations, a problem that lies at the heart of many applications.
+We have labeled data:
 
-We'll develop this idea through four key steps:
-1. Converting predictions into matrix operations
-2. Formulating the optimization problem of finding the optimal predictions
-3. Converting the optimization problem into a system of linear equations
-4. Solving the system of linear equations efficiently via direct methods
+$$
+(x_1,y_1),\ldots,(x_n,y_n).
+$$
 
-## Prediction with Multiple Features
+Example: $x_i$ is an email and $y_i \in \{0,1\}$ is a spam label.
 
-Consider predicting house price. A house's price typically depends on multiple characteristics: its size, age, number of bedrooms, and location. The simplest model assumes each feature contributes linearly to the price, plus some noise that captures factors our model doesn't account for:
+We expect to see more inputs $x$ in the future without labels. The point of training is to pick a rule that predicts $y$ from $x$ as well as possible.
 
-$$ \text{price} = w_1 \cdot \text{size} + w_2 \cdot \text{age} + w_3 \cdot \text{bedrooms} + w_4 \cdot \text{location} + \text{noise} $$
+### What is a “model”?
 
-In this linear relationsihp, each weight has a clear interpretation. $w_1$ represents dollars per square foot, $w_2$ tells us how price changes with age, and so on. The noise term acknowledges that real estate prices are influenced by many factors beyond our simple features.
+A model is a parametric mapping from inputs to predictions:
 
-We can write this more compactly using vector notation:
-$$ y = w^T x + \epsilon $$
+$$
+m(x;w).
+$$
 
-where $y$ is the price, $w$ contains our weights, $x$ holds the features, and $\epsilon$ represents the noise:
+- $w$ is the parameter vector (often called weights).
+- In this lecture we work with a single parameter $w \in \mathbb{R}$.
+- The same pipeline applies in higher dimensions.
+
+### Which models are we allowed to choose?
+
+In practice we pick a *class of models* $\mathcal{M}$, then we search inside that class.
+
+Two extremes:
+
+1. A “constant model” that always predicts the majority label.
+2. A large parametric family, like neural networks, where you also need to decide architecture (layers, width, etc.).
+
+In this lecture we treat the model class $\mathcal{M}$ as fixed. We focus on the optimization subproblem: how to train a chosen model by minimizing a loss.
+
+### Training vs choosing a model vs testing
+
+There are three distinct questions.
+
+1. **Optimization (training):** for a fixed model, how do we choose $w$?
+2. **Learning (model selection):** among a class $\mathcal{M}$, which trained model do we pick?
+3. **Generalization:** how well will the chosen model do on new data?
+
+The standard workflow is a train-validation-test split.
+
+- **Training set:** used to fit parameters $w$ for each candidate model.
+- **Validation set:** used to choose among models and hyperparameters (step size, batch size, architecture).
+- **Test set:** held out to estimate out-of-sample performance of the final choice.
+
+One might think the “test set” is a sacred object. However, if you repeatedly look at test performance and adapt, you have effectively turned the test set into a validation set.
+
+## 2. Empirical risk: the training objective
+
+Fix a training set $(x_i,y_i)$.
+
+A standard setup is:
+
+1. Define a per-sample loss $\ell_i(w)$.
+2. Average over the training set to get the **training loss** (empirical risk)
+
+$$
+L(w) = \frac{1}{n}\sum_{i=1}^n \ell_i(w).
+$$
+
+Training is the optimization problem
+
+$$
+\min_{w \in \mathbb{R}} L(w).
+$$
+
+If we run full-batch gradient descent, we need the derivative of the average loss,
+
+$$
+L'(w) = \frac{1}{n}\sum_{i=1}^n \ell_i'(w).
+$$
+
+The cost of computing $L'(w)$ scales linearly with $n$, because you must touch all $n$ samples.
+
+For modern ML, $n$ can be enormous. Even a single full gradient can be too expensive. This is where stochastic gradient methods enter.
+
+## 3. SGD: replace a full gradient with a sample gradient
+
+Stochastic gradient descent (SGD) is a modification of gradient descent.
+
+- Choose a step size (learning rate) $\eta>0$.
+- At iteration $k$, sample an index $i_k \in \{1,\ldots,n\}$ uniformly at random.
+- Update using a **single** sample derivative:
+
+$$
+w_{k+1} = w_k - \eta\,\ell_{i_k}'(w_k).
+$$
+
+### Sampling a random index in PyTorch
+
+If your dataset has length `n` and you want a random index in `{0,1,...,n-1}`:
 
 ```python
-house = {
-    'size': 1500,     # x₁: sq ft
-    'age': 10,        # x₂: years
-    'bedrooms': 3,    # x₃: count
-    'location': 0.8   # x₄: some score
-}
-price = 500000  # y: dollars
+i_k = torch.randint(low=0, high=n, size=(1,)).item()
+````
 
-def predict_price(house, weights):
-    """Predict house price using linear combination of features"""
-    return (
-        weights[0] * house['size'] +      # dollars per sq ft
-        weights[1] * house['age'] +       # price change per year
-        weights[2] * house['bedrooms'] +  # value per bedroom
-        weights[3] * house['location']    # location premium
+A minibatch of size `B` (sampling with replacement) is:
+
+```python
+idx = torch.randint(low=0, high=n, size=(B,))
+```
+
+The computational point is immediate.
+
+* Full-batch GD: one step costs $n$ sample-gradients.
+* SGD (batch size 1): one step costs 1 sample-gradient.
+
+The question is whether this cheaper update still makes progress.
+
+## 4. Experiment: 1D linear regression with noisy labels
+
+We will fit a scalar linear model on synthetic data.
+
+### Data
+
+Generate $n$ training points:
+
+* $x_i \sim \mathrm{Unif}[-1,1]$,
+* $y_i = x_i + \sigma g_i$,
+* $g_i \sim \mathcal{N}(0,1)$ independent.
+
+Here $\sigma$ controls label noise.
+
+### Model and loss
+
+Model:
+
+$$
+\hat y = m(x;w) = wx.
+$$
+
+Per-sample squared loss:
+
+$$
+\ell_i(w) = \tfrac{1}{2},(y_i - wx_i)^2.
+$$
+
+Derivative:
+
+$$
+\ell_i'(w) = (wx_i - y_i)x_i.
+$$
+
+So SGD becomes
+
+$$
+w_{k+1} = w_k - \eta,(w_kx_{i_k} - y_{i_k})x_{i_k}.
+$$
+
+### A closed-form minimizer exists (but we will use it only for diagnostics)
+
+The training loss is a quadratic in $w$, so the minimizer is
+
+$$
+w^\star = \frac{\sum_{i=1}^n x_i y_i}{\sum_{i=1}^n x_i^2}.
+$$
+
+In real ML, we usually do not have a closed form minimizer. Here we do, so we will use it to compute an “objective gap” diagnostic $L(w_k)-L(w^\star)$.
+
+### What “success” looks like in this toy problem
+
+The fitted model is a line. After training, we want the line $y=wx$ to match the trend in the data.
+
+![SGD fit on synthetic regression data](figures/sgd_1d_data_fit.png)
+*Figure 2.1: Synthetic 1D regression data (scatter), the true relationship $y=x$ (dashed), and the fitted line $y=\hat w x$ produced by SGD (solid).*
+
+## 5. Step sizes: constant steps hit a noise floor
+
+Fix a constant step size $\eta$.
+
+On noisy data ($\sigma>0$), the objective typically decreases quickly at first, then it stops improving past a threshold. This is the **noise floor** behavior.
+
+Two consistent empirical facts:
+
+1. Larger $\eta$ often reduces the loss faster at the beginning.
+2. Smaller $\eta$ reaches a lower noise floor.
+
+The trade-off is visible below.
+
+![SGD constant step size: objective gap](figures/sgd_1d_constant_stepsize_gap.png)
+*Figure 2.2: Objective gap $L(w_k)-L(w^\star)$ for several constant step sizes on the same dataset. Larger step sizes move quickly at first but stabilize at higher error. Smaller step sizes move more slowly but reach a lower noise floor. The curves fluctuate because the iterates $w_k$ fluctuate.*
+
+### Diagnostics (and why they are “cheating” at scale)
+
+In this toy problem, it is easy to log:
+
+* the full training loss $L(w_k)$,
+* the full training gradient magnitude $|L'(w_k)|$.
+
+This is useful for debugging, but it defeats the point of SGD when $n$ is large, because evaluating $L(w)$ and $L'(w)$ requires looping over the entire dataset.
+
+When you do compute these diagnostics, do it under `torch.no_grad()` so PyTorch does not build graphs you will never backprop through.
+
+![SGD diagnostics: objective gap and full gradient magnitude](figures/sgd_1d_diagnostics.png)
+*Figure 2.3: Two full-dataset diagnostics: $L(w_k)-L(w^\star)$ and $|L'(w_k)|$. These are informative in a toy problem. For large $n$, computing them every step is too expensive.*
+
+## 6. Step size schedules that converge
+
+A constant step size keeps injecting noise forever. If you want convergence to high precision, you usually need $\eta_k \to 0$.
+
+A classical sufficient condition for stochastic approximation is:
+
+$$
+\sum_{k=0}^\infty \eta_k = \infty
+\quad\text{and}\quad
+\sum_{k=0}^\infty \eta_k^2 < \infty.
+$$
+
+A common choice that satisfies this is a power law:
+
+$$
+\eta_k = \frac{\eta_0}{(k+1)^p}
+\quad\text{with}\quad
+p \in (\tfrac{1}{2},1].
+$$
+
+A geometric schedule
+
+$$
+\eta_k = \eta_0 \gamma^k
+\quad\text{with}\quad
+\gamma \in (0,1)
+$$
+
+also goes to zero, but often too quickly: after some point the steps become negligible and progress effectively stops.
+
+The next figure compares a constant step size, a geometric schedule, and power schedules over a long horizon.
+
+![Step size schedules](figures/sgd_1d_stepsize_schedules.png)
+*Figure 2.4: Constant step size hits a noise floor. A geometric schedule can decay so quickly that it “freezes” early. Power schedules $\eta_k=\eta_0/(k+1)^p$ with $p \in (\tfrac{1}{2},1]$ keep making progress and can drive the objective gap down further, at the cost of slower long-run movement.*
+
+## 7. When constant steps are enough
+
+Constant step size does not always imply a noise floor.
+
+A clean sufficient condition is: at the optimum, the per-sample gradients vanish, not just the average gradient.
+
+In our regression setup, if the data are noiseless,
+
+$$
+y_i = x_i,
+$$
+
+then $w^\star=1$ and for every sample
+
+$$
+\ell_i'(w) = (wx_i - y_i)x_i = (w-1)x_i^2.
+$$
+
+At $w=1$, each $\ell_i'(1)=0$. There is no gradient noise at the optimum. SGD behaves like a stable deterministic method and can converge all the way.
+
+With label noise ($\sigma>0$), the residuals never vanish, so the sample gradients do not vanish at the optimum. The gradient estimator has nonzero variance even at $w^\star$, and constant-step SGD keeps bouncing.
+
+![Noiseless vs noisy: constant step size](figures/sgd_1d_noiseless_vs_noisy.png)
+*Figure 2.5: With noiseless labels, constant-step SGD can converge to high precision because every sample gradient vanishes at the optimum. With noisy labels, constant-step SGD stabilizes at a nonzero noise floor.*
+
+## 8. Why SGD works at all: unbiasedness and variance
+
+SGD works because the stochastic gradient is an unbiased estimate of the full gradient.
+
+Let $i$ be uniform on ${1,\ldots,n}$. Define the random variable
+
+$$
+X = \ell_i'(w).
+$$
+
+Then
+
+$$
+\mathbb{E}[X]
+= \frac{1}{n}\sum_{i=1}^n \ell_i'(w)
+= L'(w).
+$$
+
+So the expected update matches a gradient descent update:
+
+$$
+\mathbb{E}[w_{k+1}\mid w_k]
+= w_k - \eta,L'(w_k).
+$$
+
+Unbiasedness is not the full story. The **variance** of the gradient estimator controls how noisy the iterates are and how quickly you can settle down.
+
+In the regression model above, increasing $\sigma$ increases the noise in the labels, which increases the variance of sample gradients. With the same step size, larger $\sigma$ produces:
+
+* more jitter in the iterates,
+* a higher noise floor,
+* slower progress toward low error.
+
+![Effect of label noise on SGD](figures/sgd_1d_noise_variance.png)
+*Figure 2.6: Larger label noise $\sigma$ increases the variance of sample gradients, which raises the noise floor and makes the trajectory noisier for the same step size.*
+
+## 9. Minibatches: variance reduction and parallelism
+
+Variance reduction is the simplest lever you can pull.
+
+A basic probability fact:
+
+If $X_1,\ldots,X_B$ are iid with variance $\mathrm{Var}(X_1)$, then
+
+$$
+\mathrm{Var}\Big(\frac{1}{B}\sum_{j=1}^B X_j\Big) = \frac{1}{B},\mathrm{Var}(X_1).
+$$
+
+A minibatch gradient is exactly this kind of average.
+
+### Minibatch SGD
+
+At iteration $k$:
+
+1. Sample a minibatch $B_k \subset {1,\ldots,n}$ of size $B$.
+2. Form the minibatch gradient estimate
+
+$$
+G_k = \frac{1}{B}\sum_{i \in B_k} \ell_i'(w_k).
+$$
+
+3. Update
+
+$$
+w_{k+1} = w_k - \eta,G_k.
+$$
+
+The rule of thumb from this lecture is:
+
+* the “noise level” scales like $\eta/B$.
+
+So if you want minibatch SGD (batch size $B$) to have a similar noise floor to batch size 1, you scale step sizes so that $\eta/B$ is approximately constant.
+
+### Iterations versus total gradient computations
+
+One might think larger minibatches are always better because they converge in fewer iterations. However, each iteration costs $B$ gradients.
+
+A more honest x-axis is **total gradients computed so far**, which is $kB$ after $k$ iterations.
+
+Below we show the same experiment two ways:
+
+* x-axis = iterations $k$,
+* x-axis = total gradients $kB$.
+
+![Minibatch: objective gap vs iterations](figures/sgd_1d_minibatch_vs_iterations.png)
+*Figure 2.7: With step sizes scaled so that $\eta/B$ is constant, larger batches reach the same error in fewer iterations. This is iteration efficiency, not necessarily sample efficiency.*
+
+![Minibatch: objective gap vs total gradients](figures/sgd_1d_minibatch_vs_gradients.png)
+*Figure 2.8: Replotting against total gradient computations $kB$ shows that minibatching does not magically reduce total gradient work. It mainly trades fewer iterations for more work per iteration.*
+
+### Why use large batches at all?
+
+Parallelism.
+
+If you can compute the $B$ sample gradients in parallel (e.g., on a GPU), then a minibatch step can take close to the wall-clock time of a batch-1 step.
+
+In that case, Figure 2.7 is the relevant one: fewer iterations can mean faster time-to-result.
+
+## 10. Diagnostics: monitor validation loss, not just training loss
+
+Training loss is not the end goal. We care about performance on new data.
+
+A standard diagnostic is the **validation loss**:
+
+* form $L_{\mathrm{val}}(w)$ by averaging the same per-sample loss over a validation set,
+* evaluate it periodically during training.
+
+Two mechanics matter in PyTorch:
+
+1. Validation evaluation should run under `torch.no_grad()` so you do not build computation graphs.
+2. You usually do not evaluate every iteration. You pick an `eval_every` interval.
+
+A schematic loop:
+
+```python
+# Assume we have training data (x_tr, y_tr) and validation data (x_va, y_va).
+# Assume "step(w)" performs one SGD or minibatch-SGD update on training data.
+
+eval_every = 200
+
+for k in range(max_iters):
+    w = step(w)
+
+    if k % eval_every == 0:
+        with torch.no_grad():
+            train_loss = 0.5 * torch.mean((y_tr - w * x_tr)**2)
+            val_loss = 0.5 * torch.mean((y_va - w * x_va)**2)
+
+        print(f"k={k:6d}  train_loss={train_loss:.3e}  val_loss={val_loss:.3e}")
+```
+
+Why monitor validation loss?
+
+* detect divergence early (step size too large),
+* choose among hyperparameters (step size, schedule, batch size),
+* stop training when the validation loss plateaus.
+
+## 11. Conclusion
+
+What you should take from this lecture:
+
+* Training a model is usually empirical risk minimization: minimize an average loss.
+* Full gradients cost $n$ sample-gradients. SGD reduces this to 1 sample-gradient per step.
+* Constant-step SGD on noisy data typically stabilizes at a noise floor.
+* Step size schedules $\eta_k \to 0$ can drive the error lower, but they can be slow.
+* Unbiasedness explains why SGD points in the right direction on average. Variance explains why progress is noisy.
+* Minibatches reduce variance by averaging gradients. They often improve iteration efficiency.
+* Fair comparisons should account for total gradient computations and for parallelism.
+* Diagnostics should include validation loss, not just training loss.
+
+## Appendix: code to generate all figures
+
+This script generates Figures 2.1–2.8.
+
+* Put the code in `script/`.
+* The script saves plots into the `figures/` subdirectory (it creates it if needed).
+
+```python
+# Save as: script/sgd_1d_all_figures.py
+
+import os
+import math
+import torch
+import matplotlib.pyplot as plt
+
+torch.set_default_dtype(torch.float64)
+
+
+def ensure_dir(path: str) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
+
+def clamp_for_log(values, eps=1e-20):
+    return [max(float(v), eps) for v in values]
+
+
+def make_x_and_noise(n: int, seed: int):
+    """Generate x ~ Unif[-1,1] and g ~ N(0,1) with a fixed seed."""
+    gen = torch.Generator().manual_seed(seed)
+    x = 2.0 * torch.rand(n, generator=gen) - 1.0
+    g = torch.randn(n, generator=gen)
+    return x, g
+
+
+def make_dataset(n_train: int, n_val: int, sigma: float, seed_x: int, seed_val: int):
+    """
+    Return:
+      x_tr, y_tr, x_va, y_va
+    with independent train/val draws.
+    """
+    x_tr, g_tr = make_x_and_noise(n_train, seed=seed_x)
+    x_va, g_va = make_x_and_noise(n_val, seed=seed_val)
+    y_tr = x_tr + sigma * g_tr
+    y_va = x_va + sigma * g_va
+    return x_tr, y_tr, x_va, y_va
+
+
+def loss_mse(w: torch.Tensor, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    """L(w) = (1/2) mean (y - w x)^2."""
+    return 0.5 * torch.mean((y - w * x) ** 2)
+
+
+def grad_mse(w: torch.Tensor, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    """L'(w) = mean (w x - y) x."""
+    return torch.mean((w * x - y) * x)
+
+
+def w_star_closed_form(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    """Closed form minimizer for 1D least squares."""
+    denom = torch.dot(x, x)
+    return torch.dot(x, y) / denom
+
+
+def const_schedule(eta: float):
+    return lambda k: float(eta)
+
+
+def geom_schedule(eta0: float, gamma: float):
+    return lambda k: float(eta0) * (float(gamma) ** int(k))
+
+
+def power_schedule(eta0: float, p: float):
+    return lambda k: float(eta0) / ((int(k) + 1) ** float(p))
+
+
+def run_sgd(
+    x_tr: torch.Tensor,
+    y_tr: torch.Tensor,
+    eta_schedule,
+    batch_size: int,
+    max_iters: int,
+    w0: float,
+    seed: int,
+    eval_every: int = 1,
+    x_va: torch.Tensor | None = None,
+    y_va: torch.Tensor | None = None,
+):
+    """
+    SGD / minibatch-SGD on the 1D regression objective.
+
+    - Sampling is with replacement via torch.randint.
+    - We log full-dataset diagnostics every eval_every steps:
+        gap_k = L(w_k) - L(w*)
+        abs_grad_k = |L'(w_k)|
+
+    If (x_va, y_va) are provided, we also log train/val loss each eval step.
+    """
+    gen = torch.Generator().manual_seed(seed)
+    n = x_tr.numel()
+
+    w = torch.tensor(float(w0))
+    w_star = w_star_closed_form(x_tr, y_tr)
+    L_star = loss_mse(w_star, x_tr, y_tr)
+
+    hist = {"k": [], "w": [], "gap": [], "abs_grad": []}
+    if x_va is not None and y_va is not None:
+        hist["train_loss"] = []
+        hist["val_loss"] = []
+
+    for k in range(max_iters):
+        eta_k = float(eta_schedule(k))
+
+        idx = torch.randint(low=0, high=n, size=(batch_size,), generator=gen)
+        x_b = x_tr[idx]
+        y_b = y_tr[idx]
+
+        # Gradient of the average minibatch loss.
+        g_est = torch.mean((w * x_b - y_b) * x_b)
+        w = w - eta_k * g_est
+
+        if k % eval_every == 0:
+            with torch.no_grad():
+                L_tr = loss_mse(w, x_tr, y_tr)
+                gap = (L_tr - L_star).clamp(min=0.0)
+                abs_g = grad_mse(w, x_tr, y_tr).abs()
+
+                hist["k"].append(int(k))
+                hist["w"].append(float(w.item()))
+                hist["gap"].append(float(gap.item()))
+                hist["abs_grad"].append(float(abs_g.item()))
+
+                if x_va is not None and y_va is not None:
+                    hist["train_loss"].append(float(L_tr.item()))
+                    hist["val_loss"].append(float(loss_mse(w, x_va, y_va).item()))
+
+    return w, w_star, hist
+
+
+def plot_data_fit(x_tr, y_tr, w_hat, outpath):
+    xs = torch.linspace(-1.0, 1.0, 200)
+    ys_true = xs
+    ys_fit = w_hat * xs
+
+    plt.figure(figsize=(6.5, 3.8))
+    plt.scatter(x_tr.numpy(), y_tr.numpy(), s=18, alpha=0.8, label="train samples")
+    plt.plot(xs.numpy(), ys_true.numpy(), linestyle="--", label="true: y=x")
+    plt.plot(xs.numpy(), ys_fit.numpy(), label=f"fit: y={w_hat.item():.3f} x")
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.title("1D regression fit with SGD")
+    plt.grid(True, alpha=0.3)
+    plt.legend()
+
+    ensure_dir(outpath)
+    plt.savefig(outpath, dpi=200, bbox_inches="tight")
+    plt.close()
+
+
+def plot_gap_curves(curves, xlabel, title, outpath):
+    """
+    curves: list of (x_values, gap_values, label)
+    """
+    plt.figure(figsize=(6.8, 3.8))
+    for xs, gaps, label in curves:
+        plt.semilogy(xs, clamp_for_log(gaps), label=label)
+
+    plt.xlabel(xlabel)
+    plt.ylabel("objective gap (semilog y)")
+    plt.title(title)
+    plt.grid(True, which="both", alpha=0.3)
+    plt.legend()
+
+    ensure_dir(outpath)
+    plt.savefig(outpath, dpi=200, bbox_inches="tight")
+    plt.close()
+
+
+def plot_two_diagnostics(k, gap, abs_grad, outpath):
+    plt.figure(figsize=(6.8, 3.8))
+    plt.semilogy(k, clamp_for_log(gap), label="gap: L(w_k)-L(w*)")
+    plt.semilogy(k, clamp_for_log(abs_grad), label="|full grad|: |L'(w_k)|")
+    plt.xlabel("iteration k")
+    plt.ylabel("value (semilog y)")
+    plt.title("SGD diagnostics on the full training set")
+    plt.grid(True, which="both", alpha=0.3)
+    plt.legend()
+
+    ensure_dir(outpath)
+    plt.savefig(outpath, dpi=200, bbox_inches="tight")
+    plt.close()
+
+
+def main():
+    # Shared base dataset for most figures.
+    n_train = 200
+    n_val = 200
+    sigma = 0.2
+
+    x_tr, y_tr, x_va, y_va = make_dataset(
+        n_train=n_train,
+        n_val=n_val,
+        sigma=sigma,
+        seed_x=0,
+        seed_val=1,
     )
+
+    # -------------------------
+    # Figure 2.1: data + fit
+    # -------------------------
+    # Use a power schedule that eventually decreases the gap further than a constant step.
+    w_hat, w_star, _ = run_sgd(
+        x_tr,
+        y_tr,
+        eta_schedule=power_schedule(eta0=0.3, p=0.7),
+        batch_size=1,
+        max_iters=60_000,
+        w0=0.0,
+        seed=123,
+        eval_every=50,
+    )
+
+    plot_data_fit(
+        x_tr,
+        y_tr,
+        w_hat=w_hat,
+        outpath="figures/sgd_1d_data_fit.png",
+    )
+
+    # ---------------------------------------
+    # Figure 2.2: constant stepsize noise floor
+    # ---------------------------------------
+    etas = [0.5, 0.1, 0.05, 0.01]
+    curves = []
+    for eta in etas:
+        _, _, hist = run_sgd(
+            x_tr,
+            y_tr,
+            eta_schedule=const_schedule(eta),
+            batch_size=1,
+            max_iters=20_000,
+            w0=0.0,
+            seed=0,
+            eval_every=1,
+        )
+        curves.append((hist["k"], hist["gap"], f"eta={eta:g}"))
+
+    plot_gap_curves(
+        curves=curves,
+        xlabel="iteration k",
+        title="SGD with constant step size: objective gap",
+        outpath="figures/sgd_1d_constant_stepsize_gap.png",
+    )
+
+    # ---------------------------------------
+    # Figure 2.3: two diagnostics for one eta
+    # ---------------------------------------
+    _, _, hist = run_sgd(
+        x_tr,
+        y_tr,
+        eta_schedule=const_schedule(0.1),
+        batch_size=1,
+        max_iters=20_000,
+        w0=0.0,
+        seed=0,
+        eval_every=1,
+    )
+
+    plot_two_diagnostics(
+        k=hist["k"],
+        gap=hist["gap"],
+        abs_grad=hist["abs_grad"],
+        outpath="figures/sgd_1d_diagnostics.png",
+    )
+
+    # ---------------------------------------
+    # Figure 2.4: step size schedules
+    # ---------------------------------------
+    scheds = [
+        ("constant eta=0.2", const_schedule(0.2)),
+        ("geometric eta0=0.2 gamma=0.999", geom_schedule(eta0=0.2, gamma=0.999)),
+        ("power eta0=0.2 p=0.6", power_schedule(eta0=0.2, p=0.6)),
+        ("power eta0=0.2 p=1.0", power_schedule(eta0=0.2, p=1.0)),
+    ]
+    curves = []
+    for label, sched in scheds:
+        _, _, hist = run_sgd(
+            x_tr,
+            y_tr,
+            eta_schedule=sched,
+            batch_size=1,
+            max_iters=120_000,
+            w0=0.0,
+            seed=0,
+            eval_every=20,
+        )
+        curves.append((hist["k"], hist["gap"], label))
+
+    plot_gap_curves(
+        curves=curves,
+        xlabel="iteration k",
+        title="SGD: constant vs geometric vs power step sizes",
+        outpath="figures/sgd_1d_stepsize_schedules.png",
+    )
+
+    # ---------------------------------------
+    # Figure 2.5: noiseless vs noisy
+    # ---------------------------------------
+    # Use the same x for fairness.
+    x_shared, g_shared = make_x_and_noise(n_train, seed=222)
+    y_noiseless = x_shared
+    y_noisy = x_shared + sigma * g_shared
+
+    curves = []
+    for lbl, y in [("sigma=0 (noiseless)", y_noiseless), ("sigma=0.2 (noisy)", y_noisy)]:
+        _, _, hist = run_sgd(
+            x_shared,
+            y,
+            eta_schedule=const_schedule(0.1),
+            batch_size=1,
+            max_iters=20_000,
+            w0=0.0,
+            seed=0,
+            eval_every=1,
+        )
+        curves.append((hist["k"], hist["gap"], lbl))
+
+    plot_gap_curves(
+        curves=curves,
+        xlabel="iteration k",
+        title="Constant-step SGD: noiseless vs noisy labels",
+        outpath="figures/sgd_1d_noiseless_vs_noisy.png",
+    )
+
+    # ---------------------------------------
+    # Figure 2.6: effect of sigma (variance)
+    # ---------------------------------------
+    sigmas = [0.0, 0.1, 0.3, 0.6]
+    curves = []
+    for s in sigmas:
+        y = x_shared + s * g_shared
+        _, _, hist = run_sgd(
+            x_shared,
+            y,
+            eta_schedule=const_schedule(0.1),
+            batch_size=1,
+            max_iters=20_000,
+            w0=0.0,
+            seed=0,
+            eval_every=1,
+        )
+        curves.append((hist["k"], hist["gap"], f"sigma={s:g}"))
+
+    plot_gap_curves(
+        curves=curves,
+        xlabel="iteration k",
+        title="Constant-step SGD: larger label noise increases the noise floor",
+        outpath="figures/sgd_1d_noise_variance.png",
+    )
+
+    # ---------------------------------------
+    # Figures 2.7 and 2.8: minibatch trade-offs
+    # ---------------------------------------
+    # Choose (B, eta) so that eta/B is constant.
+    # We set eta=0.05 at B=10, so eta/B = 0.005.
+    configs = [
+        (1, 0.005),
+        (10, 0.05),
+        (100, 0.5),
+    ]
+
+    curves_iter = []
+    curves_grad = []
+
+    for B, eta in configs:
+        _, _, hist = run_sgd(
+            x_tr,
+            y_tr,
+            eta_schedule=const_schedule(eta),
+            batch_size=B,
+            max_iters=50_000,
+            w0=0.0,
+            seed=0,
+            eval_every=10,
+        )
+        k = hist["k"]
+        gap = hist["gap"]
+        label = f"B={B}, eta={eta:g} (eta/B={eta/B:g})"
+
+        curves_iter.append((k, gap, label))
+        curves_grad.append(([kk * B for kk in k], gap, label))
+
+    plot_gap_curves(
+        curves=curves_iter,
+        xlabel="iterations k",
+        title="Minibatch SGD: objective gap vs iterations (eta/B held fixed)",
+        outpath="figures/sgd_1d_minibatch_vs_iterations.png",
+    )
+
+    plot_gap_curves(
+        curves=curves_grad,
+        xlabel="total gradients computed (kB)",
+        title="Minibatch SGD: objective gap vs total gradients (eta/B held fixed)",
+        outpath="figures/sgd_1d_minibatch_vs_gradients.png",
+    )
+
+    print("Saved figures to figures/.")
+
+
+if __name__ == "__main__":
+    main()
 ```
-
-Real estate data reveals why this linear approach often works well. When we plot prices against individual features, we often see roughly linear relationships with some scatter, especially within typical ranges. The scatter around these trends represents the noise in our model - those unique factors that make each house sale slightly different from what we'd predict based on features alone:
-
-![Feature Mapping](figures/feature_mapping.png)
-
-The challenge lies in finding the right weights while accounting for this noise. Even reasonable guesses can lead to significant errors, as we'll see by testing our model on actual house sales:
-
-```python
-# Data in PyTorch tensors
-X = torch.tensor([
-    [1500, 10, 3, 0.8],  # house 1
-    [2100, 2,  4, 0.9],  # house 2
-    [800,  50, 2, 0.3]   # house 3
-], dtype=torch.float32)
-y = torch.tensor([500000, 800000, 250000], dtype=torch.float32)
-weights = torch.tensor([200, -1000, 50000, 100000], dtype=torch.float32)
-
-# Make predictions
-predictions = X @ weights
-
-# Show individual errors
-for i, (pred, actual) in enumerate(zip(predictions, y)):
-    error = pred - actual
-    print(f"House {i+1}:")
-    print(f"  Predicted: ${pred:,.0f}")
-    print(f"  Actual:    ${actual:,.0f}")
-    print(f"  Error:     ${error:,.0f} ({error/actual:+.1%})\n")
-
-# Compute total error
-total_error = torch.sum((predictions - y)**2)
-avg_error = torch.sqrt(total_error/len(y))  # Root mean square error
-print(f"Total squared error: ${total_error:,.0f}")
-print(f"Root mean square error: ${avg_error:,.0f}")
-
-# Output:
-# House 1:
-#   Predicted: $520,000
-#   Actual:    $500,000
-#   Error:     $20,000 (+4.0%)
-#
-# House 2:
-#   Predicted: $708,000
-#   Actual:    $800,000
-#   Error:     $-92,000 (-11.5%)
-#
-# House 3:
-#   Predicted: $240,000
-#   Actual:    $250,000
-#   Error:     $-10,000 (-4.0%)
-#
-# Total squared error: $8,963,999,744
-# Root mean square error: $54,663
-```
-
-Let's see how our predictions compare to the actual prices:
-
-```python
-plt.figure(figsize=(10, 4))
-houses = range(len(y))
-plt.bar(houses, y.numpy()/1000, alpha=0.5, label='Actual Price (k$)')
-plt.bar(houses, predictions.numpy()/1000, alpha=0.5, label='Predicted Price (k$)')
-plt.legend()
-plt.title('House Prices: Predicted vs Actual')
-plt.show()
-```
-
-![Predictions vs Actual](figures/predictions_vs_actual.png)
-
-Looking at the individual errors:
-```python
-# Show individual errors
-errors = predictions - y
-for i, (pred, actual, error) in enumerate(zip(predictions, y, errors)):
-    print(f"House {i+1}:")
-    print(f"  Predicted: ${pred:,.0f}")
-    print(f"  Actual:    ${actual:,.0f}")
-    print(f"  Error:     ${error:,.0f} ({error/actual:+.1%})\n")
-
-# Visualize percent errors
-plt.figure(figsize=(10, 4))
-plt.bar(houses, errors.numpy()/y.numpy() * 100)
-plt.axhline(y=0, color='k', linestyle='-', alpha=0.3)
-plt.ylabel('Percent Error')
-plt.title('Prediction Errors')
-plt.show()
-```
-
-![Prediction Errors](figures/prediction_errors.png)
-
-Our predictions aren't terrible - errors range from 4% to 12% - but can we do better? We need a systematic way to find weights that minimize our prediction error:
-
-$$ \text{error} = \sum_{i=1}^n (y_i - w^T x_i)^2 $$
-
-Notice what squaring does:
-1. Makes all errors positive (can't have negative errors cancel out)
-2. Penalizes large errors more heavily (doubling an error quadruples its contribution)
-3. Creates a smooth optimization landscape we can analyze with calculus
-
-Note: this is often called the **Root Mean Square Error (RMSE)** when we take the square root of the average.
-
-The question is: what weights $w$ make this error as small as possible? With 4 weights and millions of houses, trying different combinations manually would be impractical. Instead, we'll:
-1. Use matrix operations to compute predictions efficiently
-2. Apply calculus to find the optimal weights directly
-3. Solve the resulting equations using linear algebra
-
-## Computing Predictions Efficiently
-
-Remember from last lecture how matrix multiplication can express many computations simultaneously? This is exactly what we need here. Instead of computing each prediction in a loop, we can organize our data to use the efficient matrix operations we studied:
-
-> **Why This Matters**
-> - Matrix multiplication computes all predictions in one operation
-> - Modern hardware (CPU/GPU) is optimized for matrix operations
-> - The same pattern appears throughout machine learning
-> - Even a small speedup (say 100ms → 10ms) becomes crucial when repeated billions of times
-> - With 10,000 weight combinations × 1M houses: 10 billion computations
-
-### From Loops to Matrices
-
-Let's see how to convert our loop-based approach into matrix operations. Currently, we compute predictions one by one:
-```python
-# One-by-one approach
-for house in houses:
-    prediction = (w₁ * house['size'] + 
-                 w₂ * house['age'] +
-                 w₃ * house['bedrooms'] +
-                 w₄ * house['location'])
-    # Do this for EVERY house
-    # Then do it ALL AGAIN for next weight combination
-```
-
-Look familiar? Each prediction is a dot product - exactly what we studied last time! We can organize all our predictions into a single matrix multiplication:
-
-$$ \text{house}_1: [1500, 10, 3, 0.8] \cdot [w_1, w_2, w_3, w_4] = \text{prediction}_1 $$
-$$ \text{house}_2: [2100, 2, 4, 0.9] \cdot [w_1, w_2, w_3, w_4] = \text{prediction}_2 $$
-$$ \text{house}_3: [800, 50, 2, 0.3] \cdot [w_1, w_2, w_3, w_4] = \text{prediction}_3 $$
-
-Stack these feature vectors into a matrix, lining up the same features in columns:
-
-$$ X = \begin{bmatrix} 
-\text{size}_1 & \text{age}_1 & \text{beds}_1 & \text{loc}_1 \\
-\text{size}_2 & \text{age}_2 & \text{beds}_2 & \text{loc}_2 \\
-\text{size}_3 & \text{age}_3 & \text{beds}_3 & \text{loc}_3
-\end{bmatrix} = \begin{bmatrix}
-1500 & 10 & 3 & 0.8 \\
-2100 & 2 & 4 & 0.9 \\
-800 & 50 & 2 & 0.3
-\end{bmatrix} $$
-
-> **Quick Exercise**
-> Before running the code below:
-> 1. What will be the prediction for house 1? (Hint: multiply first row by weights)
-> 2. Which house do you think will have the highest predicted price? Why?
-
-Now one matrix multiplication computes ALL predictions:
-```python
-# Matrix approach
-X = torch.tensor([
-    [1500, 10, 3, 0.8],  # All house 1 features
-    [2100, 2,  4, 0.9],  # All house 2 features
-    [800,  50, 2, 0.3]   # All house 3 features
-])
-w = torch.tensor([200, -1000, 50000, 100000])
-predictions = X @ w  # All predictions in one operation
-```
-
-> **From Last Lecture**
-> Remember how PyTorch optimizes matrix operations:
-> - Uses CPU's SIMD instructions (compute multiple values at once)
-> - Accesses memory in cache-friendly patterns
-> - Leverages optimized BLAS libraries
-
-Let's measure the impact:
-```
-Dataset Size | Loop Time  | Matrix Time | Speedup
-------------------------------------------------
-     1,000   |   0.21ms  |    0.01ms   |   21x
-    10,000   |   1.79ms  |    0.05ms   |   34x
-   100,000   |  19.39ms  |    0.58ms   |   33x
- 1,000,000   | 196.33ms  |    5.43ms   |   36x
-```
-
-This speedup is crucial because in later lectures, we'll need to compute predictions repeatedly when using iterative optimization methods. But for now, we'll discover something remarkable:
-
-Our optimization problem (finding weights that minimize error) can be transformed into a problem we already know how to solve - a system of linear equations! Instead of trying different weights or using calculus, we can:
-1. Convert "minimize the error" into a special set of equations
-2. Solve these equations using techniques from linear algebra
-3. Find the optimal weights directly
-
-In the next section, we'll see how this transformation works and why the resulting equations give us the best possible weights. The efficiency of matrix operations will make solving these equations practical even for large datasets.
-
-## Finding Optimal Weights
-
-Remember our 10% error on house prices? Let's discover why calculus and linear algebra together give us a direct path to the best weights. Let's start simple: imagine we only have sizes and prices for two houses:
-- House 1: 1000 sq ft → 300k dollars
-- House 2: 2000 sq ft → 600k dollars
-
-Notice that when size doubles (1000 → 2000), price doubles too (300k → 600k). This suggests a perfect linear relationship!
-
-Our error for a given weight $w$ (price per sq ft, in $k$) is:
-
-$$ \text{error}(w) = (300 - 1000w)^2 + (600 - 2000w)^2 $$
-
-To minimize this error, we use calculus: set the derivative to zero and solve. Taking the derivative (chain rule gives us -2 times each feature) and setting to zero:
-
-$$ -2(1000)(300 - 1000w) - 2(2000)(600 - 2000w) = 0 $$
-
-Collecting terms, we get:
-
-$$ (1000^2 + 2000^2)w = 1000(300) + 2000(600) $$
-
-This solves our simple case, but with more features, the calculus gets messy. Here's where matrix notation helps. If we write our data as matrices:
-
-$$ X = \begin{bmatrix} 1000 \\ 2000 \end{bmatrix}, \quad y = \begin{bmatrix} 300 \\ 600 \end{bmatrix} $$
-
-Then our equation becomes:
-
-$$ (X^TX)w = X^Ty $$
-
-With our numbers, that's:
-
-$$ 5,000,000w = 1,500,000 $$
-
-Solving gives $w = 0.3$ - or 300 dollars per square foot. This confirms what we saw in the data: since price per square foot is constant at 300 dollars, doubling square footage (1000 → 2000) exactly doubles the price (300k → 600k).
-
-This pattern extends to multiple features in a natural way. Just as we took the derivative with respect to one weight, with multiple weights we take partial derivatives with respect to each weight - something you've likely seen before in multivariable calculus or machine learning courses. Setting these partial derivatives to zero (the gradient $\nabla_w\text{error} = 0$) gives us:
-1. One equation per weight
-2. Each equation is linear in the weights
-3. All equations involve the same features and prices
-
-When we organize these equations using matrix notation:
-
-$$ (X^TX)w = X^Ty $$
-
-This system, known as the **normal equations**, is one we can solve directly! The system is called the normal equations because the error vector $(Xw - y)$ becomes orthogonal (normal) to the column space of $X$ at the solution. They give us a direct path to the optimal weights through linear algebra, as discuss in the next section.
-
-## Direct Solution Methods
-
-Now we'll discuss three methods for solving the normal equations: Gaussian elimination, LU factorization, and QR factorization. We'll see how these methods scale with the size of our dataset and how they compare in terms of computational efficiency and numerical stability.
-
-Let's first look at our house price example with three features:
-```python
-X = torch.tensor([
-    [1500, 10, 3],    # house 1: size, age, bedrooms
-    [2100, 2,  4],    # house 2
-    [800,  50, 2],    # house 3
-    [1800, 15, 3]     # house 4
-], dtype=torch.float32)
-y = torch.tensor([500000, 800000, 250000, 550000], dtype=torch.float32)
-```
-
-The normal equations $(X^TX)w = X^Ty$ give us a system $Aw = b$ where:
-- $A = X^TX$ is a square matrix with size (number of features × number of features)
-- $b = X^Ty$ combines features and prices through dot products
-
-Note that even with four houses (or four thousand!), our system is just $3 \times 3$ because we have 3 features! The matrix $X$ is $4 \times 3$, but $X^TX$ is always $p \times p$, matching the number of weights we need to find.
-
-When we multiply $X^TX$, each entry combines feature vectors across all houses:
-
-$$ A = X^TX = \begin{bmatrix} 
-\mathbf{size} \cdot \mathbf{size} & \mathbf{size} \cdot \mathbf{age} & \mathbf{size} \cdot \mathbf{beds} \\
-\mathbf{age} \cdot \mathbf{size} & \mathbf{age} \cdot \mathbf{age} & \mathbf{age} \cdot \mathbf{beds} \\
-\mathbf{beds} \cdot \mathbf{size} & \mathbf{beds} \cdot \mathbf{age} & \mathbf{beds} \cdot \mathbf{beds}
-\end{bmatrix} $$
-
-where each $\mathbf{size}$, $\mathbf{age}$, and $\mathbf{beds}$ is a vector containing that feature for all houses.
-
-For example:
-- $(X^TX)_{11} = \mathbf{size} \cdot \mathbf{size} = 1500^2 + 2100^2 + 800^2 + 1800^2$
-- $(X^TX)_{12} = \mathbf{size} \cdot \mathbf{age} = 1500(10) + 2100(2) + 800(50) + 1800(15)$
-
-This structure explains why:
-- Diagonal entries sum squares of each feature (always positive, often large)
-- Off-diagonal entries show how pairs of features vary together
-
-The vector $b = X^Ty$ similarly combines features with prices through dot products.
-
-The resulting system $Aw = b$ looks like:
-
-$$ \begin{bmatrix} 
-a_{11} & a_{12} & a_{13} \\
-a_{21} & a_{22} & a_{23} \\
-a_{31} & a_{32} & a_{33}
-\end{bmatrix}
-\begin{bmatrix} w_1 \\ w_2 \\ w_3 \end{bmatrix} =
-\begin{bmatrix} b_1 \\ b_2 \\ b_3 \end{bmatrix} $$
-
-### Solving the System: Back to Linear Algebra
-
-We've seen systems like this before in linear algebra. There are several ways to solve such systems. We'll consider three so-called *direct methods* in this lecture: Gaussian elimination, LU factorization, and QR factorization. But how do we choose between them?
-
-Two critical factors determine which method to use:
-1. Computational Efficiency
-   - Measured by number of arithmetic operations
-   - Becomes critical with large systems
-   - Affects running time directly
-2. Numerical Stability
-   - Determines how measurement errors get amplified
-   - Critical when features are correlated
-   - Can make fast methods unreliable
-
-The tension between these factors - and why practice often favors stability over raw speed - will become clear as we explore each method.
-
-To understand these methods and their trade-offs, let's:
-1. Work through each method on our 3×3 system
-2. See how both cost and stability scale with larger matrices
-3. Discover why forming $X^TX$ (while tempting) can be lead to poor numerical stability
-
-Let's start with Gaussian elimination:
-
-#### Gaussian Elimination
-
-Gaussian elimination solves equations by systematically removing variables. The idea is simple: use one equation to eliminate a variable from the others, then repeat. We'll create zeros below the diagonal one column at a time, turning our system into an equivalent triangular form that's easy to solve by back-substitution.
-
-*Goal*: Create zeros below the diagonal systematically
-
-#### Step 1: First Elimination
-*Goal*: Create zeros in first column below $a_{11}$
-
-*Compute multipliers*:
-
-$$ m_{21} = \displaystyle\frac{a_{21}}{a_{11}} \quad \text{and} \quad m_{31} = \displaystyle\frac{a_{31}}{a_{11}} $$
-
-*After row operations*:
-
-$$ \begin{array}{c|c}
-\begin{matrix} 
-a_{11} & a_{12} & a_{13} \\[0.7em]
-0 & a_{22}' & a_{23}' \\[0.7em]
-0 & a_{32}' & a_{33}'
-\end{matrix} &
-\begin{matrix}
-b_1 \\[0.7em]
-b_2' \\[0.7em]
-b_3'
-\end{matrix}
-\end{array} \qquad \text{(24 operations: 12 multiplications, 12 subtractions)} $$
-
-where $a_{22}' = a_{22} - m_{21}a_{12}$ and similarly for other entries.
-
-#### Step 2: Second Elimination
-*Goal*: Create zero in second column below $a_{22}'$
-
-*Compute multiplier*:
-
-$$ m_{32} = \displaystyle\frac{a_{32}'}{a_{22}'} $$
-
-*After row operations*:
-
-$$ \begin{array}{c|c}
-\begin{matrix} 
-a_{11} & a_{12} & a_{13} \\[0.7em]
-0 & a_{22}' & a_{23}' \\[0.7em]
-0 & 0 & a_{33}''
-\end{matrix} &
-\begin{matrix}
-b_1 \\[0.7em]
-b_2' \\[0.7em]
-b_3''
-\end{matrix}
-\end{array} \qquad \text{(8 operations: 4 multiplications, 4 subtractions)} $$
-
-#### Step 3: Back-substitution
-*Solve from bottom to top*:
-
-$$ \begin{aligned}
-w_3 &= \displaystyle\frac{b_3''}{a_{33}''} && \text{(1 division)} \\[0.7em]
-w_2 &= \displaystyle\frac{b_2' - a_{23}'w_3}{a_{22}'} && \text{(2 ops + 1 division)} \\[0.7em]
-w_1 &= \displaystyle\frac{b_1 - a_{12}w_2 - a_{13}w_3}{a_{11}} && \text{(4 ops + 1 division)}
-\end{aligned} $$
-
-For our 3×3 system, we needed 6 divisions, 19 multiplications, and 19 additions or subtractions. Looking at how these counts arise reveals the pattern: each elimination step processes one column, requiring operations proportional to the size of the remaining matrix. For an $p\times p$ system, this pattern leads to approximately $\frac{2p^3}{3}$ operations for elimination and another $\frac{p^2}{2}$ for back-substitution.
-
-To find optimal weights, we need two steps:
-1. Form the normal equations by computing $X^TX$ and $X^Ty$
-2. Solve the resulting system using Gaussian elimination
-
-Both steps can be expensive! With $n$ houses and $p$ features:
-- Computing $X^TX$ requires $np^2$ operations (each entry needs $n$ multiplications)
-- Computing $X^Ty$ requires $np$ operations
-- Solving the $p \times p$ system needs $\frac{2p^3}{3}$ operations
-
-Which step dominates depends on our problem:
-- More houses ($n$ large): Formation cost $np^2$ grows
-- More features ($p$ large): Solution cost $\frac{2p^3}{3}$ grows faster
-
-For example:
-- $1000$ houses, $10$ features:
-  * Formation: $1000 \times 10^2 = 100,000$ operations
-  * Solution: $\frac{2(10)^3}{3} \approx 667$ operations
-  * Formation dominates!
-
-- $1000$ houses, $100$ features:
-  * Formation: $1000 \times 100^2 = 10$ million operations
-  * Solution: $\frac{2(100)^3}{3} \approx 667,000$ operations
-  * Both costs matter
-
-In modern statistics, we often have both:
-- Many houses ($n$ large): more data helps prediction
-- Many features ($p$ large): interaction terms, location indicators, seasonal effects
-
-This makes both formation and solution costs important to consider!
-
-Next, we'll explore $LU$ factorization - a clever way to reorganize Gaussian elimination that becomes especially valuable when we need to update our predictions with new house prices. Instead of solving the entire system again, we'll see how to reuse much of our previous work.
-
-### LU Factorization
-
-
-Imagine this scenario:
-- You've just computed optimal weights for 1000 houses
-- Then 100 new houses sell, with different prices
-- Market conditions shift existing home values
-- Seasonal patterns affect current listings
- 
-Each change means new optimal weights. Can we avoid redoing all our work?
-
-#### From Elimination to Factorization: A Key Insight
-
-Remember our elimination steps? Let's look closer at what we're doing:
-
-*Step 1: Create zeros in first column*
-
-Start with:
-$$ \begin{bmatrix}
-a_{11} & a_{12} & a_{13} \\[0.7em]
-\times & a_{22} & a_{23} \\[0.7em]
-\times & a_{32} & a_{33}
-\end{bmatrix} $$
-
-Compute multipliers to eliminate marked entries:
-$$ m_{21} = \displaystyle\frac{a_{21}}{a_{11}} \quad \text{and} \quad m_{31} = \displaystyle\frac{a_{31}}{a_{11}} $$
-
-After first column elimination:
-- $a_{22}' = a_{22} - m_{21}a_{12}$ 
-- $a_{23}' = a_{23} - m_{21}a_{13}$
-- $a_{32}' = a_{32} - m_{31}a_{12}$
-- $a_{33}' = a_{33} - m_{31}a_{13}$
-
-This gives us the intermediate factorization:
-$$ A = \begin{bmatrix}
-a_{11} & a_{12} & a_{13} \\[0.7em]
-a_{21} & a_{22} & a_{23} \\[0.7em]
-a_{31} & a_{32} & a_{33}
-\end{bmatrix} = 
-\begin{bmatrix}
-1 & 0 & 0 \\[0.7em]
-m_{21} & 1 & 0 \\[0.7em]
-m_{31} & 0 & 1
-\end{bmatrix} \times
-\begin{bmatrix}
-a_{11} & a_{12} & a_{13} \\[0.7em]
-0 & a_{22}' & a_{23}' \\[0.7em]
-0 & a_{32}' & a_{33}'
-\end{bmatrix} $$
-
-*Step 2: Create zero in second column*
-
-Next, we compute:
-$$ m_{32} = \displaystyle\frac{a_{32}'}{a_{22}'} $$
-
-And use it to eliminate $a_{32}'$, giving our final factorization:
-$$ A = \underbrace{\begin{bmatrix}
-1 & 0 & 0 \\[0.7em]
-m_{21} & 1 & 0 \\[0.7em]
-m_{31} & m_{32} & 1
-\end{bmatrix}}_{\text{L (elimination history)}} \times
-\underbrace{\begin{bmatrix}
-a_{11} & a_{12} & a_{13} \\[0.7em]
-0 & a_{22}' & a_{23}' \\[0.7em]
-0 & 0 & a_{33}''
-\end{bmatrix}}_{\text{U (eliminated system)}} $$
-
-where $a_{33}'' = a_{33}' - m_{32}a_{23}'$
-
-Why does this work?
-Each elimination step:
-1. Computes a multiplier $m$
-2. Creates a zero in $U$
-3. Records $m$ in $L$
- 
-$L$ captures HOW we eliminated (our steps). $U$ shows WHAT we achieved (zeros below diagonal)
-
-Why is this pattern useful? Because it splits our solution process into two parts:
-1. The elimination recipe ($L$): records exactly how we created each zero
-2. The eliminated system ($U$): shows the result of following that recipe
-
-Once we have this split, solving $Aw = b$ becomes a two-step process:
-1. Use $L$ to solve $Ly = b$ (forward substitution)
-2. Use $U$ to solve $Uw = y$ (back substitution)
-
-Best of all, when house prices change and we get a new $b$, we can reuse our factorization! The elimination recipe ($L$) and eliminated system ($U$) stay the same - we just need to follow the recipe with new prices.
-
-#### Solving with $L$ and $U$
-
-Instead of solving $Aw = b$ directly, we solve two simpler triangular systems:
-
-*Step 1: Forward substitution ($Ly = b$)*
-$$ \begin{aligned}
-y_1 &= b_1 && \text{(1's on diagonal)} \\[0.7em]
-y_2 &= b_2 - m_{21}y_1 && \text{(2 operations)} \\[0.7em]
-y_3 &= b_3 - m_{31}y_1 - m_{32}y_2 && \text{(4 operations)}
-\end{aligned} $$
-
-*Step 2: Back substitution ($Uw = y$)*
-$$ \begin{aligned}
-w_3 &= \displaystyle\frac{y_3}{u_{33}} && \text{(1 division)} \\[0.7em]
-w_2 &= \displaystyle\frac{y_2 - u_{23}w_3}{u_{22}} && \text{(2 ops + 1 division)} \\[0.7em]
-w_1 &= \displaystyle\frac{y_1 - u_{12}w_2 - u_{13}w_3}{u_{11}} && \text{(4 ops + 1 division)}
-\end{aligned} $$
-
-#### Why This Helps: A Practical Example
-
-When house prices change:
-- Matrix $A = X^TX$ stays the same (features haven't changed)
-- Only vector $b = X^Ty$ changes (new prices affect $y$)
-
-Let's see the dramatic impact on computation:
-
-| Operation | First Time | Each Update |
-|-----------|------------|-------------|
-| Factor A = LU | 667,000 | (already done!) |
-| Solve Ly = b | 5,000 | 5,000 |
-| Solve Uw = y | 5,000 | 5,000 |
-| **Total** | 677,000 | 10,000 |
-
-With daily updates over a year:
-- Without $LU$: $247$ million operations
-- With $LU$: $4.3$ million operations
-- **$98\%$ reduction in computation!**
-
-This dramatic speedup shows why factorization is useful: by separating HOW we eliminate ($L$) from WHAT we achieve ($U$), we can reuse our work when only prices change. Let's see this in action with PyTorch:
-
-```python
-# Form A = X^TX for our house price example
-X = torch.tensor([
-    [1500., 10., 3.],    # house 1: size, age, bedrooms
-    [2100., 2., 4.],     # house 2
-    [800., 50., 2.],     # house 3
-    [1800., 15., 3.]     # house 4
-])
-A = X.T @ X
-
-# Compute LU factorization
-L, U = torch.linalg.lu_factor(A)
-print("L =\n", L)
-print("\nU =\n", U)
-
-# Output:
-# L = tensor([[1.0000, 0.0000, 0.0000],
-#            [0.0082, 1.0000, 0.0000],
-#            [0.0019, 0.0095, 1.0000]])
-#
-# U = tensor([[1.0540e+07, 8.6200e+04, 1.9900e+04],
-#            [0.0000e+00, 2.1240e+03, 2.0250e+01],
-#            [0.0000e+00, 0.0000e+00, 2.3482e-01]])
-```
-
-Before moving on, it's worth noting that when A has the special form X^TX, there's another factorization called Cholesky that's twice as fast as LU. While we won't explore it here, keep it in mind for future reference.
-
-## The effect of and remedy for numerical instability
-
-### Understanding ill-conditioning
-
-While LU factorization provides an efficient way to solve linear equations, especially when updating solutions with new data, it inherits a critical weakness: numerical instability when features are highly correlated. This instability, known as **ill-conditioning**, can lead to numerically inaccurate solutions even when using standard floating-point arithmetic.
-
-To understand ill-conditioning, we need to view matrix multiplication through a geometric lens: as an operation that stretches space in different directions. This stretching behavior reveals why some matrices are more sensitive to numerical errors than others.
-
-#### The diagonal case: A simple example
-
-For diagonal matrices, the stretching behavior is immediately visible. Consider:
-
-$$ D = \begin{bmatrix} 100 & 0 \\ 0 & 0.1 \end{bmatrix} $$
-
-When this matrix multiplies a vector, it:
-- Stretches the horizontal direction by a factor of 100
-- Shrinks the vertical direction to 0.1 times its original size
-- Creates a ratio of stretching = 100/0.1 = 1000
-
-This ratio is called the **condition number** $κ(D)$. A large condition number (like 1000) indicates ill-conditioning, while a small ratio indicates well-conditioning.
-
-The practical impact becomes clear when solving equations. Consider:
-
-```python
-D = torch.tensor([[1.0, 0.0], [0.0, 0.0001]])
-y1 = torch.tensor([1.0, 0.0])
-y2 = torch.tensor([1.0, 0.01])  # tiny change in second component
-
-x1 = torch.solve(y1, D)[0]
-x2 = torch.solve(y2, D)[0]
-
-print(f"x1: {x1}")  # [1.0, 0.0]
-print(f"x2: {x2}")  # [1.0, 100.0]  # huge change!
-```
-
-A small change in the input (y) leads to a huge change in the solution (x) in the direction corresponding to small stretching.
-
-#### General matrices and hidden stretching
-
-For non-diagonal matrices, the stretching behavior is less obvious but equally important. Consider:
-
-$$ A = \begin{bmatrix} 1 & 1 \\ 1 & 1.001 \end{bmatrix} $$
-
-This matrix represents nearly perfectly correlated features, where:
-- The first feature is almost identical to the second feature
-- Their difference barely affects the output
-- Their sum has a large effect
-
-We discussed SVD (Singular Value Decomposition) in detail in Section 1 as a tool for finding patterns in data. Here, we'll use it to understand how matrices stretch space and why this matters for numerical stability. Recall that SVD factorizes a matrix as:
-
-$$ A = U\Sigma V^T $$
-
-Each component has a specific role:
-1. $V^T$: rotates/reflects to directions of maximum/minimum stretching
-2. $\Sigma$: stretches by singular values in those directions
-3. $U$: rotates/reflects to final orientation (independent of $V$)
-
-<div style="text-align: center"><img src="figures/svd_stretching.png" width="90%" alt="SVD stretching visualization showing how a unit square is transformed through SVD steps"></div>
-
-The singular values (diagonal elements of $\Sigma$) directly measure the stretching in each direction:
-
-```python
-A = torch.tensor([[1.0, 1.0], [1.0, 1.001]])
-U, S, Vt = torch.linalg.svd(A)
-print(f"Stretching amounts: {S}")  # [2.001, 0.001]
-```
-
-The tiny singular value (0.001) reveals the near dependency between features. The condition number is defined as the ratio of largest to smallest singular values:
-
-$$ κ(A) = \sigma_{\text{max}}/\sigma_{\text{min}} $$
-
-#### Seeing instability in practice
-
-The following example demonstrates how correlated features lead to instability:
-
-```python
-# Features with condition number ≈ 4000
-X = torch.tensor([[1.0, 1.0], [1.0, 1.001]])
-U, s, Vt = torch.linalg.svd(X)
-print(f"Singular values: {s}")  
-# s ≈ [2.001, 0.0005]  # Ratio ≈ 4000!
-
-# Original problem
-w_true = torch.tensor([1.0, 0.0])
-y1 = X @ w_true                    # y1 ≈ [1.000, 1.000]
-w1 = torch.solve(X.T @ X @ w_true) # w1 ≈ [1.000, 0.000]
-
-# Perturb along direction of small singular value
-u2 = U[:, 1]                       # u2 ≈ [-0.707, 0.707]
-perturbation = 0.001 * torch.norm(y1) * u2
-y2 = y1 + perturbation            # y2 ≈ [0.999, 1.001]
-                                  # (0.1% change in y)
-
-# Solve perturbed system
-w2 = torch.solve(X.T @ X @ y2)    # w2 ≈ [-1.001, 2.000]
-                                  # ( 235.2% change in w!)
-```
-
-Key insights from this example:
-1. A tiny perturbation (0.1%) along the direction of the small singular value
-2. Results in dramatic weight changes ( 235.2%)
-3. Yet predictions barely change (0.1%)
-
-#### The problem with normal equations
-
-The normal equations $(X^TX)w = X^Ty$ actually make this instability worse:
-- $X^TX = V\Sigma^2 V^T$ squares the singular values
-- This squares the condition number
-- Example: Stretching ratios go from 1:10000 → 1:100000000
-
-This raises a crucial question: Can we solve the linear regression problem without forming $X^TX$? The answer is yes, through QR factorization, which we'll explore in the next section.
-
-## QR Factorization: A More Stable Approach
-
-The key to avoiding this numerical instability is to never form X^TX in the first place. QR factorization offers exactly this solution by working directly with X. Instead of squaring the condition number through X^TX, it transforms our features into an orthogonal basis that preserves their numerical properties.
-
-The QR approach splits X into two matrices:
-- Q: Has orthonormal columns (perpendicular and unit length)
-- R: Upper triangular, captures feature relationships
-
-For a data matrix X with n rows and p columns (an n×p matrix):
-- Q is n×n 
-- R is n×p (same shape as X)
-- Only the top p×p part of R is needed for solving 
-
-For example, with p=3 features, R has this structure:
-
-$$ R = \begin{bmatrix}
-r_{11} & r_{12} & r_{13} \\
-0 & r_{22} & r_{23} \\
-0 & 0 & r_{33} \\
-\hline
-0 & 0 & 0 \\
-\vdots & \vdots & \vdots \\
-0 & 0 & 0
-\end{bmatrix} \begin{array}{l}
-\leftarrow \text{upper triangular } p \times p \text{ part} \\
-\\
-\leftarrow \text{zeros in remaining rows}
-\end{array} $$
-
-Instead of eliminating variables like LU, QR factorization transforms our features to make them independent of each other.
-
-You've likely seen this idea before in linear algebra - it's the same principle behind the Gram-Schmidt process, which turns any set of vectors into orthogonal ones. QR factorization is essentially an efficient, numerically stable way to do Gram-Schmidt. While we won't dive into the details of how it's computed (that's a topic for numerical linear algebra courses), here's what it does:
-
-1. Q is like a rotation matrix - it turns our correlated features into perpendicular ones
-2. R records how to combine these new perpendicular features to get back our original ones
-3. Together they give us X = QR, but with Q's columns being perfectly perpendicular
-
-Think of it like untangling a bunch of twisted ropes (our correlated features) into neat parallel lines (orthogonal features). The original ropes might be all tangled together, making it hard to see their individual effects. But after "untangling" them with Q, we can see exactly how each one contributes.
-
-Let's see this in action with our house price example:
-```python
-X = torch.tensor([
-    [1500., 10., 3.],    # house 1: size, age, bedrooms
-    [2100., 2., 4.],     # house 2
-    [800., 50., 2.],     # house 3
-    [1800., 15., 3.]     # house 4
-])
-
-# Compute QR factorization
-Q, R = torch.qr(X)
-
-# Check orthogonality: Q^T @ Q should be identity
-print("Q^T @ Q =\n", Q.T @ Q)
-
-# Check that Q preserves lengths
-original_lengths = torch.norm(X, dim=0)
-q_lengths = torch.norm(Q, dim=0)
-print("\nOriginal feature lengths:", original_lengths)
-print("Q column lengths:", q_lengths)
-
-# Output:
-# Q^T @ Q = 
-# tensor([[1.0000, 0.0000, 0.0000],
-#         [0.0000, 1.0000, 0.0000],
-#         [0.0000, 0.0000, 1.0000]])
-```
-
-Notice:
-- Q's columns are orthogonal (perpendicular) and normalized (length 1)
-- R captures how to combine these new directions to get our original ones
-- Together they give us X = QR, but with Q's columns being perfectly perpendicular
-
-### Solving with QR
-
-To find optimal weights, we start with our original problem:
-
-$$ Xw = y $$
-
-Since $X = QR$, this becomes:
-
-$$ QRw = y $$
-
-Now comes the key insight: since Q's columns are perpendicular (orthogonal), multiplying both sides by Q^T is like "untangling" our equations. Why? Because Q^TQ = I, meaning all the cross-terms cancel out perfectly:
-
-$$ \begin{aligned}
-Q^T(QRw) &= Q^Ty \\
-(Q^TQ)Rw &= Q^Ty \\
-IRw &= Q^Ty \\
-Rw &= Q^Ty
-\end{aligned} $$
-
-This is beautiful! We've turned our problem into a triangular system ($Rw = Q^Ty$) without ever forming X^TX. More precisely, 
-- If our data matrix $X$ is 4×3 (4 houses × 3 features)
-- $Q$ is 4×4 (as many rows as we have houses)
-- $R$ is 4×3 (same shape as X)
-- Only the top 3×3 part of $R$ (matching our number of features) is needed for solving
-
-Since we're solving for 3 weights (one per feature), we only need 3 equations. The top 3×3 part of R gives us exactly these equations in upper triangular form. This is why we can focus on:
-
-$$ R = \begin{bmatrix}
-r_{11} & r_{12} & r_{13} \\
-0 & r_{22} & r_{23} \\
-0 & 0 & r_{33}
-\end{bmatrix}, \quad
-Rw = c \quad \text{where } c = Q^Ty $$
-
-Just as with LU factorization, we can solve this triangular system efficiently using back substitution. Starting from the bottom row (which has only one unknown) and working up:
-
-$$ \begin{aligned}
-w_3 &= c_3/r_{33} \\
-w_2 &= (c_2 - r_{23}w_3)/r_{22} \\
-w_1 &= (c_1 - r_{12}w_2 - r_{13}w_3)/r_{11}
-\end{aligned} $$
-
-### Comparing LU and QR
-
-The key difference between QR and LU is that we get an triangular system directly from QR, without ever forming X^TX. This process is both numerically stable (avoiding condition number squaring) and computationally efficient (requiring just one triangular solve). Let's compare both approaches:
-
-$$ \begin{aligned}
-&\text{LU approach: } np^2 \text{ to form } X^TX \text{, then } \frac{2p^3}{3} \text{ to factor it} \\
-&\text{QR approach: } 2np^2 \text{ to factor X directly}
-\end{aligned} $$
-
-When we have many more houses than features ($n \gg p$), the $np^2$ terms dominate. In this case, LU should be about twice as fast as QR since it needs $np^2$ operations compared to QR's $2np^2$. However, as we'll see, this theoretical speed advantage often isn't worth the potential loss in numerical accuracy.
-
-Let's verify QR's numerical stability with a comprehensive test:
-
-Let's design an experiment that mirrors real-world challenges in house price prediction. We'll start by generating synthetic data that captures natural relationships - like how larger houses tend to have more bedrooms - and then introduce a deliberately challenging feature to test how our methods handle numerical stress.
-
-```python
-# Generate synthetic house data
-torch.manual_seed(42)
-n_samples = 10000
-
-# Create base features with realistic scales
-sqft = torch.rand(n_samples) * 2000 + 1000  # Uniform between 1000-3000
-age = torch.rand(n_samples) * 30            # Uniform between 0-30
-# Make bedrooms correlate naturally with size
-bedrooms = torch.clamp(sqft/1000 + torch.randn(n_samples) * 0.5, 1, 5)
-
-# Stack features and add known weights
-X = torch.stack([sqft, age, bedrooms], dim=1)
-true_weights = torch.tensor([200.0, -1000.0, 50000.0])  # $/sqft, $/year, $/bedroom
-y = X @ true_weights + torch.randn(n_samples) * 100     # Add small noise
-
-# Add highly correlated feature to test stability
-X = torch.cat([X, X[:, 0:1] + torch.randn(n_samples, 1) * 10], dim=1)
-
-# Compare condition numbers
-print(f"Condition number of X: {torch.linalg.cond(X):.1f}")
-print(f"Condition number of X^TX: {torch.linalg.cond(X.T @ X):.1f}")
-
-# Solve using both methods
-XtX = X.T @ X
-Xty = X.T @ y
-LU, pivots = torch.linalg.lu_factor(XtX)
-w_lu = torch.linalg.lu_solve(LU, pivots, Xty.unsqueeze(1)).squeeze(1)
-
-Q, R = torch.linalg.qr(X)
-w_qr = torch.linalg.solve_triangular(R, Q.T @ y.unsqueeze(1), upper=True).squeeze(1)
-
-# Compare results
-print("\nWeight estimates (first 3 features):")
-print(f"True weights: {true_weights}")
-print(f"LU weights:   {w_lu[:3]}")
-print(f"QR weights:   {w_qr[:3]}")
-
-# Compare prediction errors
-rmse_lu = torch.sqrt(torch.mean((X @ w_lu - y)**2))
-rmse_qr = torch.sqrt(torch.mean((X @ w_qr - y)**2))
-print(f"\nRMSE:")
-print(f"LU: {rmse_lu:.2f} dollars")
-print(f"QR: {rmse_qr:.2f} dollars")
-```
-
-The output shows:
-```
-Condition number of X: 6261.7
-Condition number of X^TX: 39208800.0
-
-Weight estimates (first 3 features):
-True weights: tensor([  200., -1000., 50000.])
-LU weights:   tensor([  209.2539, -1000.0673, 50001.0234])
-QR weights:   tensor([  199.9693, -1000.0654, 50000.3867])
-
-RMSE:
-LU: 138.04 dollars
-QR: 101.08 dollars
-```
-
-This experiment demonstrates key numerical effects in least squares problems. Forming X^TX squares the condition number from 6,262 to 39.2 million - a worst-case scenario with highly correlated features. This affects the accuracy of weights computed through normal equations with LU factorization, visible in the price per square foot coefficient (209.25 versus true 200). QR factorization, by avoiding explicit formation of X^TX, maintains better accuracy (199.97) and achieves lower prediction error (RMSE 101.08 dollars versus 138.04).
-
-The choice between methods depends on the problem structure. Both approaches are backward stable in their respective formulations - QR for the original least squares problem, and LU-based normal equations for the X^TX formulation. For well-conditioned problems (κ(X) close to 1), normal equations with LU factorization can be faster and perfectly adequate. QR factorization, while requiring roughly twice the operations (2np² versus np²), provides better numerical stability by inheriting X's condition number directly rather than squaring it. In practice, implementations use "thin QR" where Q is n×p instead of n×n (since we only need p orthogonal vectors), making it more efficient. Neither method completely solves ill-conditioning, but QR handles it more gracefully by avoiding the explicit formation of X^TX.
-
-## The Limits of Direct Methods: Scaling Up
-
-Direct methods face a hard constraint: they must complete their entire computation before producing any solution. For problems with millions of observations, this means waiting minutes for an answer. In massive-scale applications like recommender systems, this delay becomes impractical.
-
-This constraint motivates iterative methods. Instead of computing an exact solution upfront, they produce increasingly accurate predictions over time. This trade-off - accepting approximate answers for faster results - often matters more than theoretical perfection.
-
-Direct methods remain competitive for moderate-sized problems, especially those with special structure like sparsity. But when datasets grow large or quick answers matter more than perfect ones, iterative methods become essential. We'll explore these methods next.
-
-## Puzzle: Solving with SVD
-
-Suppose you have already computed the SVD of a matrix $A = U\Sigma V^T$. How many operations does it take to solve the system $Ax = b$?
-

@@ -18,11 +18,11 @@ title: Optimization and PyTorch Basics in 1D
 **Formula:**
 
 $$
-\min_{x \in C} f(x)
+\min_{w \in C} L(w)
 $$
 
-- Decision variable: $x \in \mathbb{R}$.
-- Objective: $f:\mathbb{R}\to\mathbb{R}$.
+- Decision variable: $w \in \mathbb{R}$.
+- Objective: $L:\mathbb{R}\to\mathbb{R}$.
 - Feasible set: $C \subseteq \mathbb{R}$.
 - Unconstrained case: $C=\mathbb{R}$.
 
@@ -34,7 +34,7 @@ $$
 **Formula:**
 
 $$
-\min_{x \ge 0} (x-1)^2
+\min_{w \ge 0} (w-1)^2
 $$
 
 - Feasible set is $[0,\infty)$.
@@ -43,8 +43,8 @@ $$
 
 ## Slide 4: Convex vs Nonconvex Losses (1D)
 **Purpose:** Fix the two toy losses used throughout.
-- Convex quadratic: $f_{\text{quad}}(x)=\tfrac{1}{2}(x-1)^2$.
-- Double well: $f_{\text{dw}}(x)=\tfrac{1}{2}(x^2-1)^2$.
+- Convex quadratic: $L_{\text{quad}}(w)=\tfrac{1}{2}(w-1)^2$.
+- Double well: $L_{\text{dw}}(w)=\tfrac{1}{2}(w^2-1)^2$.
 - The scaling $\tfrac{1}{2}$ is cosmetic.
 - Nonconvexity is the default in modern ML.
 
@@ -59,11 +59,11 @@ $$
 **Formula:**
 
 $$
-f(x^\ast) \le f(x)
-\quad \text{for all } x \in C
+L(w^\ast) \le L(w)
+\quad \text{for all } w \in C
 $$
 
-- $x^\ast$ must lie in $C$.
+- $w^\ast$ must lie in $C$.
 
 ---
 
@@ -74,13 +74,13 @@ $$
 
 $$
 \begin{aligned}
-f^\ast &= \inf_{x \in C} f(x) \\
-f(x) - f^\ast &\le \varepsilon
+L^\ast &= \inf_{w \in C} L(w) \\
+L(w) - L^\ast &\le \varepsilon
 \end{aligned}
 $$
 
-- $f(x)-f^\ast$ is the objective gap (suboptimality gap).
-- In toy examples, often $f^\ast=0$.
+- $L(w)-L^\ast$ is the objective gap (suboptimality gap).
+- In toy examples, often $L^\ast=0$.
 
 ---
 
@@ -91,8 +91,8 @@ $$
 
 $$
 \begin{aligned}
-f'(x) &= 0 \\
-\|f'(x)\| &\le \varepsilon
+L'(w) &= 0 \\
+\|L'(w)\| &\le \varepsilon
 \end{aligned}
 $$
 
@@ -114,18 +114,18 @@ $$
 **Formula:**
 
 $$
-x_0, x_1, x_2, \dots
+w_0, w_1, w_2, \dots
 $$
 
-- Each $x_k$ is an approximate solution candidate.
+- Each $w_k$ is an approximate solution candidate.
 - Main hyperparameter here: step size (learning rate) $\eta$.
 
 ---
 
 ## Slide 10: Diagnostics
 **Purpose:** Know what we monitor.
-- Objective values: $f(x_k)$ (or $f(x_k)-f^\ast$ if $f^\ast$ is known).
-- Gradient norm: $\|f'(x_k)\|$.
+- Objective values: $L(w_k)$ (or $L(w_k)-L^\ast$ if $L^\ast$ is known).
+- Gradient norm: $\|L'(w_k)\|$.
 - Small gradients do not guarantee small objective.
 
 ---
@@ -133,8 +133,8 @@ $$
 ## Slide 11: Termination Criteria
 **Purpose:** See standard stopping rules.
 - Stop after a fixed number of iterations $T$.
-- Stop when $\|f'(x_k)\| \le \varepsilon_{\text{grad}}$.
-- Stop when $f(x_k)-f^\ast \le \varepsilon_{\text{obj}}$ (if $f^\ast$ is known).
+- Stop when $\|L'(w_k)\| \le \varepsilon_{\text{grad}}$.
+- Stop when $L(w_k)-L^\ast \le \varepsilon_{\text{obj}}$ (if $L^\ast$ is known).
 - Stop when progress stalls (plateauing diagnostics).
 
 ---
@@ -181,10 +181,10 @@ $$
 **Formula:**
 
 $$
-f(x+\Delta) \approx f(x) + f'(x)\Delta
+L(w+\Delta) \approx L(w) + L'(w)\Delta
 $$
 
-- The sign of $f'(x)$ tells which direction decreases the local model.
+- The sign of $L'(w)$ tells which direction decreases the local model.
 
 ---
 
@@ -194,7 +194,7 @@ $$
 **Formula:**
 
 $$
-x_{k+1} = x_k - \eta f'(x_k)
+w_{k+1} = w_k - \eta L'(w_k)
 $$
 
 - Move against the derivative to decrease the local model.
@@ -207,11 +207,11 @@ $$
 **Formula:**
 
 $$
-f(x_k - \eta f'(x_k)) \approx f(x_k) - \eta \|f'(x_k)\|^2
+L(w_k - \eta L'(w_k)) \approx L(w_k) - \eta \|L'(w_k)\|^2
 $$
 
 - For small enough $\eta$, the objective decreases to first order.
-- In higher dimensions, $f'(x)$ becomes $\nabla f(x)$.
+- In higher dimensions, $L'(w)$ becomes $\nabla L(w)$.
 
 ---
 
@@ -222,8 +222,8 @@ $$
 
 $$
 \begin{aligned}
-f(x) &= \tfrac{1}{2}x^2 \\
-f'(x) &= x
+L(w) &= \tfrac{1}{2}w^2 \\
+L'(w) &= w
 \end{aligned}
 $$
 
@@ -231,9 +231,9 @@ $$
 
 ## Slide 19: Minimal Loop Ingredients
 **Purpose:** See the core steps of GD.
-1. Initialize $x_0$.
-2. Compute $f(x)$ and $f'(x)$.
-3. Update $x \leftarrow x - \eta f'(x)$.
+1. Initialize $w_0$.
+2. Compute $L(w)$ and $L'(w)$.
+3. Update $w \leftarrow w - \eta L'(w)$.
 4. Log diagnostics.
 5. Stop when a rule triggers.
 
@@ -245,40 +245,40 @@ $$
 ```python
 # Save as: script/gd_1d_python_minimal.py
 
-def f(x: float) -> float:
-    return 0.5 * x * x
+def L(w: float) -> float:
+    return 0.5 * w * w
 
-def df(x: float) -> float:
-    return x
+def dL(w: float) -> float:
+    return w
 
 def main():
-    x = 5.0
+    w = 5.0
     eta = 0.5
     max_iters = 10
 
     for k in range(max_iters):
-        fx = f(x)
-        gx = df(x)
-        print(f"k={k:2d}  x={x:+.6f}  f(x)={fx:.3e}  |f'(x)|={abs(gx):.3e}")
-        x = x - eta * gx
+        Lw = L(w)
+        gw = dL(w)
+        print(f"k={k:2d}  w={w:+.6f}  L(w)={Lw:.3e}  |L'(w)|={abs(gw):.3e}")
+        w = w - eta * gw
 
-    print(f"final x={x:+.6f}  final f(x)={f(x):.3e}")
+    print(f"final w={w:+.6f}  final L(w)={L(w):.3e}")
 
 if __name__ == "__main__":
     main()
 
 # Output:
-# k= 0  x=+5.000000  f(x)=1.250e+01  |f'(x)|=5.000e+00
-# k= 1  x=+2.500000  f(x)=3.125e+00  |f'(x)|=2.500e+00
-# k= 2  x=+1.250000  f(x)=7.812e-01  |f'(x)|=1.250e+00
-# k= 3  x=+0.625000  f(x)=1.953e-01  |f'(x)|=6.250e-01
-# k= 4  x=+0.312500  f(x)=4.883e-02  |f'(x)|=3.125e-01
-# k= 5  x=+0.156250  f(x)=1.221e-02  |f'(x)|=1.562e-01
-# k= 6  x=+0.078125  f(x)=3.052e-03  |f'(x)|=7.812e-02
-# k= 7  x=+0.039062  f(x)=7.629e-04  |f'(x)|=3.906e-02
-# k= 8  x=+0.019531  f(x)=1.907e-04  |f'(x)|=1.953e-02
-# k= 9  x=+0.009766  f(x)=4.768e-05  |f'(x)|=9.766e-03
-# final x=+0.004883  final f(x)=1.192e-05
+# k= 0  w=+5.000000  L(w)=1.250e+01  |L'(w)|=5.000e+00
+# k= 1  w=+2.500000  L(w)=3.125e+00  |L'(w)|=2.500e+00
+# k= 2  w=+1.250000  L(w)=7.812e-01  |L'(w)|=1.250e+00
+# k= 3  w=+0.625000  L(w)=1.953e-01  |L'(w)|=6.250e-01
+# k= 4  w=+0.312500  L(w)=4.883e-02  |L'(w)|=3.125e-01
+# k= 5  w=+0.156250  L(w)=1.221e-02  |L'(w)|=1.562e-01
+# k= 6  w=+0.078125  L(w)=3.052e-03  |L'(w)|=7.812e-02
+# k= 7  w=+0.039062  L(w)=7.629e-04  |L'(w)|=3.906e-02
+# k= 8  w=+0.019531  L(w)=1.907e-04  |L'(w)|=1.953e-02
+# k= 9  w=+0.009766  L(w)=4.768e-05  |L'(w)|=9.766e-03
+# final w=+0.004883  final L(w)=1.192e-05
 ```
 
 ---
@@ -286,7 +286,7 @@ if __name__ == "__main__":
 ## Slide 21: Full Python GD (Functions)
 **Purpose:** Logging + stopping + diagnostics plot.
 
-Logs $f(x_k)$ and $|f'(x_k)|$ each step; stops by `eps_grad`, `eps_obj`, or `max_iters`.
+Logs $L(w_k)$ and $\|L'(w_k)\|$ each step; stops by `eps_grad`, `eps_obj`, or `max_iters`.
 
 ```python
 # Save as: script/gd_1d_python.py
@@ -295,49 +295,49 @@ import os
 import matplotlib.pyplot as plt
 
 
-def gradient_descent_1d(f, df, x0, eta, max_iters=200, eps_grad=1e-8, eps_obj=None):
+def gradient_descent_1d(L, dL, w0, eta, max_iters=200, eps_grad=1e-8, eps_obj=None):
     """
     1D gradient descent with simple logging.
 
     Stops when:
       - k reaches max_iters, or
-      - |f'(x)| <= eps_grad, or
-      - f(x) <= eps_obj (if eps_obj is not None)
+      - |L'(w)| <= eps_grad, or
+      - L(w) <= eps_obj (if eps_obj is not None)
 
     Returns:
-      x_final (float), hist (dict of lists)
+      w_final (float), hist (dict of lists)
     """
-    x = float(x0)
+    w = float(w0)
 
-    hist = {"k": [], "x": [], "f": [], "abs_df": []}
+    hist = {"k": [], "w": [], "L": [], "abs_dL": []}
 
     for k in range(max_iters):
-        fx = float(f(x))
-        gx = float(df(x))
+        Lw = float(L(w))
+        gw = float(dL(w))
 
         hist["k"].append(k)
-        hist["x"].append(x)
-        hist["f"].append(fx)
-        hist["abs_df"].append(abs(gx))
+        hist["w"].append(w)
+        hist["L"].append(Lw)
+        hist["abs_dL"].append(abs(gw))
 
-        if eps_grad is not None and abs(gx) <= eps_grad:
+        if eps_grad is not None and abs(gw) <= eps_grad:
             break
-        if eps_obj is not None and fx <= eps_obj:
+        if eps_obj is not None and Lw <= eps_obj:
             break
 
-        x = x - eta * gx
+        w = w - eta * gw
 
-    return x, hist
+    return w, hist
 
 
 def save_diagnostics_plot(hist, outpath, title):
     k = hist["k"]
-    fvals = hist["f"]
-    gabs = hist["abs_df"]
+    Lvals = hist["L"]
+    gabs = hist["abs_dL"]
 
     plt.figure(figsize=(6.5, 3.5))
-    plt.semilogy(k, fvals, label="objective f(x_k)")
-    plt.semilogy(k, gabs, label="|f'(x_k)|")
+    plt.semilogy(k, Lvals, label="objective L(w_k)")
+    plt.semilogy(k, gabs, label="|L'(w_k)|")
     plt.xlabel("iteration k")
     plt.ylabel("value (semilog y)")
     plt.title(title)
@@ -356,22 +356,22 @@ def save_diagnostics_plot(hist, outpath, title):
 
 ```python
 def main():
-    # Example: f(x) = 1/2 x^2, f'(x) = x
-    def f(x): return 0.5 * x * x
-    def df(x): return x
+    # Example: L(w) = 1/2 w^2, L'(w) = w
+    def L(w): return 0.5 * w * w
+    def dL(w): return w
 
-    x0 = 5.0
+    w0 = 5.0
     eta = 0.5
 
-    x_final, hist = gradient_descent_1d(f, df, x0=x0, eta=eta, max_iters=80, eps_grad=1e-10)
-    print(f"Final x: {x_final:.6e}")
-    print(f"Final f(x): {hist['f'][-1]:.6e}")
+    w_final, hist = gradient_descent_1d(L, dL, w0=w0, eta=eta, max_iters=80, eps_grad=1e-10)
+    print(f"Final w: {w_final:.6e}")
+    print(f"Final L(w): {hist['L'][-1]:.6e}")
     print(f"Iterations: {len(hist['k'])}")
 
     save_diagnostics_plot(
         hist,
         outpath="figures/gd_python_quadratic_diagnostics.png",
-        title="GD on f(x)=1/2 x^2 (pure Python)",
+        title="GD on L(w)=1/2 w^2 (pure Python)",
     )
 
 
@@ -379,8 +379,8 @@ if __name__ == "__main__":
     main()
 
 # Output:
-# Final x: 7.275958e-11
-# Final f(x): 2.646978e-21
+# Final w: 7.275958e-11
+# Final L(w): 2.646978e-21
 # Iterations: 37
 ```
 
@@ -388,7 +388,7 @@ if __name__ == "__main__":
 
 ## Slide 23: Stopping Rule in the Example
 **Purpose:** Make the output interpretable.
-- Stop when $\|f'(x)\| \le 10^{-10}$ (`eps_grad=1e-10`).
+- Stop when $\|L'(w)\| \le 10^{-10}$ (`eps_grad=1e-10`).
 - Max-iteration cap: 80.
 
 ---
@@ -399,7 +399,7 @@ if __name__ == "__main__":
 **Formula:**
 
 $$
-f(x)=\tfrac{1}{2}x^2=\tfrac{1}{2}\,|f'(x)|^2
+L(w)=\tfrac{1}{2}w^2=\tfrac{1}{2}\,|L'(w)|^2
 $$
 
 ![Gradient descent diagnostics for the quadratic](figures/gd_python_quadratic_diagnostics.png)
@@ -409,16 +409,16 @@ $$
 
 ## Slide 25: Changing the Loss Changes the Derivative
 **Purpose:** See why hand derivatives do not scale.
-- Shifted quadratic: $f(x)=\tfrac{1}{2}(x-1)^2$, $f'(x)=x-1$.
-- Double well: $f(x)=\tfrac{1}{2}(x^2-1)^2$, $f'(x)=2x(x^2-1)$.
+- Shifted quadratic: $L(w)=\tfrac{1}{2}(w-1)^2$, $L'(w)=w-1$.
+- Double well: $L(w)=\tfrac{1}{2}(w^2-1)^2$, $L'(w)=2w(w^2-1)$.
 - Long compositions make mistakes more likely.
 
 ---
 
 ## Slide 26: PyTorch Basics + Terminology
 **Purpose:** Set the autodiff vocabulary.
-- A tensor stores numbers; here $x$ is a scalar tensor.
-- `requires_grad=True` tells PyTorch to compute $\frac{d}{dx} f(x)$ in `x.grad`.
+- A tensor stores numbers; here $w$ is a scalar tensor.
+- `requires_grad=True` tells PyTorch to compute $\frac{d}{dw} L(w)$ in `w.grad`.
 - Forward pass: evaluate the loss.
 - Backward pass: compute derivatives.
 
@@ -430,19 +430,19 @@ $$
 ```python
 import torch
 
-x = torch.tensor(2.0, requires_grad=True)  # track derivatives w.r.t. x
-loss = 0.5 * x**2                          # f(x) = 1/2 x^2
+w = torch.tensor(2.0, requires_grad=True)  # track derivatives w.r.t. w
+L = 0.5 * w**2                             # L(w) = 1/2 w^2
 
-loss.backward()                             # compute d(loss)/dx
+L.backward()                                # compute dL/dw
 
-print("x =", x.item())
-print("loss =", loss.item())
-print("d(loss)/dx =", x.grad.item())        # should be 2.0
+print("w =", w.item())
+print("L =", L.item())
+print("dL/dw =", w.grad.item())            # should be 2.0
 
 # Output:
-# x = 2.0
-# loss = 2.0
-# d(loss)/dx = 2.0
+# w = 2.0
+# L = 2.0
+# dL/dw = 2.0
 ```
 
 ---
@@ -453,15 +453,15 @@ print("d(loss)/dx =", x.grad.item())        # should be 2.0
 ```python
 import torch
 
-def loss_fn(x):
-    return 0.5 * (x**2 - 1.0) ** 2
+def L_fn(w):
+    return 0.5 * (w**2 - 1.0) ** 2
 
-x = torch.tensor(2.0, requires_grad=True)
-loss = loss_fn(x)
-loss.backward()
+w = torch.tensor(2.0, requires_grad=True)
+L = L_fn(w)
+L.backward()
 
-autograd_val = x.grad.item()
-analytic_val = 2.0 * 2.0 * (2.0**2 - 1.0)   # 2x(x^2-1) at x=2
+autograd_val = w.grad.item()
+analytic_val = 2.0 * 2.0 * (2.0**2 - 1.0)   # 2w(w^2-1) at w=2
 
 print("autograd:", autograd_val)
 print("analytic:", analytic_val)
@@ -479,10 +479,10 @@ print("analytic:", analytic_val)
 **Formula:**
 
 $$
-f'(x)=w'(v(u(x)))\,v'(u(x))\,u'(x)
+L'(w)=r'(v(u(w)))\,v'(u(w))\,u'(w)
 $$
 
-- Example composition: $u(x)=x^2$, $v(u)=u-1$, $w(v)=\tfrac{1}{2}v^2$.
+- Example composition: $u(w)=w^2$, $v(u)=u-1$, $r(v)=\tfrac{1}{2}v^2$.
 - Autodiff multiplies local derivatives automatically.
 
 ---
@@ -491,7 +491,7 @@ $$
 **Purpose:** See the forward path for the example.
 
 ```
-x  ->  u = x^2  ->  v = u - 1  ->  loss = 0.5 * v^2
+w  ->  u = w^2  ->  v = u - 1  ->  L = 0.5 * v^2
 ```
 
 ---
@@ -500,73 +500,73 @@ x  ->  u = x^2  ->  v = u - 1  ->  loss = 0.5 * v^2
 **Purpose:** See local derivatives along the path.
 
 ```
-loss = 0.5 * v^2
-  |  d(loss)/d(v) = v
+L = 0.5 * v^2
+  |  dL/dv = v
   v
 v = u - 1
   |  d(v)/d(u) = 1
   v
-u = x^2
-  |  d(u)/d(x) = 2x
+u = w^2
+  |  d(u)/d(w) = 2w
   v
-  x
+  w
 ```
 
-- Multiply local derivatives along the path to get $df/dx$.
+- Multiply local derivatives along the path to get $dL/dw$.
 
 ---
 
 ## Slide 32: Pitfall A — Gradients Accumulate
-**Purpose:** See why we must clear `x.grad`.
+**Purpose:** See why we must clear `w.grad`.
 
 ```python
 import torch
 
-x = torch.tensor(2.0, requires_grad=True)
+w = torch.tensor(2.0, requires_grad=True)
 
-(0.5 * x**2).backward()
-print("after first backward, x.grad =", x.grad.item())   # 2.0
+(0.5 * w**2).backward()
+print("after first backward, w.grad =", w.grad.item())   # 2.0
 
-(0.5 * (x - 1.0)**2).backward()
-print("after second backward, x.grad =", x.grad.item())  # accumulated
+(0.5 * (w - 1.0)**2).backward()
+print("after second backward, w.grad =", w.grad.item())  # accumulated
 
-x.grad = None
-(0.5 * (x - 1.0)**2).backward()
-print("after clearing, x.grad =", x.grad.item())         # correct for the last loss
+w.grad = None
+(0.5 * (w - 1.0)**2).backward()
+print("after clearing, w.grad =", w.grad.item())         # correct for the last loss
 
 # Output:
-# after first backward, x.grad = 2.0
-# after second backward, x.grad = 3.0
-# after clearing, x.grad = 1.0
+# after first backward, w.grad = 2.0
+# after second backward, w.grad = 3.0
+# after clearing, w.grad = 1.0
 ```
 
 ---
 
 ## Slide 33: Pitfall B — Replacing the Tracked Variable
 **Purpose:** See why the gradient disappears.
-- Tempting update: `x = x - eta * x.grad`.
+- Tempting update: `w = w - eta * w.grad`.
 
 ```python
 import torch
 
 eta = 0.1
-x = torch.tensor(2.0, requires_grad=True)
+w = torch.tensor(2.0, requires_grad=True)
 
 # Step 1
-x.grad = None
-loss = 0.5 * x**2
-loss.backward()
-print("step 1 grad:", x.grad.item())
+w.grad = None
+L = 0.5 * w**2
+L.backward()
+print("step 1 grad:", w.grad.item())
 
 # Wrong update: replaces the tracked variable
-x = x - eta * x.grad
+w = w - eta * w.grad
 
 # Step 2
-x.grad = None
-loss = 0.5 * x**2
-loss.backward()
+w.grad = None
+L = 0.5 * w**2
+L.backward()
 
-print("step 2 grad:", x.grad)  # None because x is no longer the original tracked variable
+print("step 2 grad:", w.grad)  # None because w is no longer the original tracked variable
 
 # Output:
 # step 1 grad: 2.0
@@ -580,7 +580,7 @@ print("step 2 grad:", x.grad)  # None because x is no longer the original tracke
 
 ```python
 with torch.no_grad():
-    x -= eta * x.grad
+    w -= eta * w.grad
 ```
 
 ---
@@ -604,24 +604,24 @@ import torch
 import matplotlib.pyplot as plt
 
 
-def gd_1d_torch(loss_fn, x0, eta, max_iters=200, eps_grad=1e-8, eps_obj=None):
-    x = torch.tensor(float(x0), requires_grad=True)
+def gd_1d_torch(L_fn, w0, eta, max_iters=200, eps_grad=1e-8, eps_obj=None):
+    w = torch.tensor(float(w0), requires_grad=True)
 
-    hist = {"k": [], "x": [], "loss": [], "abs_grad": []}
+    hist = {"k": [], "w": [], "L": [], "abs_dL": []}
 
     for k in range(max_iters):
-        x.grad = None                 # clear accumulation
+        w.grad = None                 # clear accumulation
 
-        loss = loss_fn(x)             # forward pass
-        loss.backward()               # backward pass
+        L = L_fn(w)                   # forward pass
+        L.backward()                  # backward pass
 
-        g = x.grad.item()
-        l = loss.item()
+        g = w.grad.item()
+        l = L.item()
 
         hist["k"].append(k)
-        hist["x"].append(x.item())
-        hist["loss"].append(l)
-        hist["abs_grad"].append(abs(g))
+        hist["w"].append(w.item())
+        hist["L"].append(l)
+        hist["abs_dL"].append(abs(g))
 
         if eps_grad is not None and abs(g) <= eps_grad:
             break
@@ -629,9 +629,9 @@ def gd_1d_torch(loss_fn, x0, eta, max_iters=200, eps_grad=1e-8, eps_obj=None):
             break
 
         with torch.no_grad():
-            x -= eta * x.grad
+            w -= eta * w.grad
 
-    return x.item(), hist
+    return w.item(), hist
 ```
 
 ---
@@ -642,12 +642,12 @@ def gd_1d_torch(loss_fn, x0, eta, max_iters=200, eps_grad=1e-8, eps_obj=None):
 ```python
 def save_diagnostics_plot(hist, outpath, title):
     k = hist["k"]
-    loss_vals = hist["loss"]
-    gabs = hist["abs_grad"]
+    L_vals = hist["L"]
+    gabs = hist["abs_dL"]
 
     plt.figure(figsize=(6.5, 3.5))
-    plt.semilogy(k, loss_vals, label="loss f(x_k)")
-    plt.semilogy(k, gabs, label="|df/dx at x_k|")
+    plt.semilogy(k, L_vals, label="loss L(w_k)")
+    plt.semilogy(k, gabs, label="|dL/dw at w_k|")
     plt.xlabel("iteration k")
     plt.ylabel("value (semilog y)")
     plt.title(title)
@@ -666,41 +666,41 @@ def save_diagnostics_plot(hist, outpath, title):
 
 ```python
 def main():
-    x0 = 5.0
+    w0 = 5.0
     eta = 0.5
     eta_dw = 0.02
 
     # Loss 1: quadratic
-    def loss1(x): return 0.5 * x**2
-    x_final, hist = gd_1d_torch(loss1, x0=x0, eta=eta, max_iters=80, eps_grad=1e-10)
-    print(f"[quadratic]  final x={x_final:.6e}, final loss={hist['loss'][-1]:.6e}, iters={len(hist['k'])}")
-    save_diagnostics_plot(hist, "figures/gd_torch_quadratic_diagnostics.png", "GD on f(x)=1/2 x^2 (PyTorch)")
+    def L1(w): return 0.5 * w**2
+    w_final, hist = gd_1d_torch(L1, w0=w0, eta=eta, max_iters=80, eps_grad=1e-10)
+    print(f"[quadratic]  final w={w_final:.6e}, final L={hist['L'][-1]:.6e}, iters={len(hist['k'])}")
+    save_diagnostics_plot(hist, "figures/gd_torch_quadratic_diagnostics.png", "GD on L(w)=1/2 w^2 (PyTorch)")
 
     # Loss 2: shifted quadratic (no derivative code changes)
-    def loss2(x): return 0.5 * (x - 1.0) ** 2
-    x_final, hist = gd_1d_torch(loss2, x0=x0, eta=eta, max_iters=80, eps_grad=1e-10)
-    print(f"[shifted]    final x={x_final:.6e}, final loss={hist['loss'][-1]:.6e}, iters={len(hist['k'])}")
+    def L2(w): return 0.5 * (w - 1.0) ** 2
+    w_final, hist = gd_1d_torch(L2, w0=w0, eta=eta, max_iters=80, eps_grad=1e-10)
+    print(f"[shifted]    final w={w_final:.6e}, final L={hist['L'][-1]:.6e}, iters={len(hist['k'])}")
 
     # Loss 3: double well (no derivative code changes)
-    def loss3(x): return 0.5 * (x**2 - 1.0) ** 2
-    x_final, hist = gd_1d_torch(loss3, x0=x0, eta=eta_dw, max_iters=200, eps_grad=1e-10)
-    print(f"[doublewell] final x={x_final:.6e}, final loss={hist['loss'][-1]:.6e}, iters={len(hist['k'])}")
+    def L3(w): return 0.5 * (w**2 - 1.0) ** 2
+    w_final, hist = gd_1d_torch(L3, w0=w0, eta=eta_dw, max_iters=200, eps_grad=1e-10)
+    print(f"[doublewell] final w={w_final:.6e}, final L={hist['L'][-1]:.6e}, iters={len(hist['k'])}")
 
 
 if __name__ == "__main__":
     main()
 
 # Output:
-# [quadratic]  final x=7.275958e-11, final loss=2.646978e-21, iters=37
-# [shifted]    final x=1.000000e+00, final loss=0.000000e+00, iters=27
-# [doublewell] final x=9.999991e-01, final loss=1.818989e-12, iters=200
+# [quadratic]  final w=7.275958e-11, final L=2.646978e-21, iters=37
+# [shifted]    final w=1.000000e+00, final L=0.000000e+00, iters=27
+# [doublewell] final w=9.999991e-01, final L=1.818989e-12, iters=200
 ```
 
 ---
 
 ## Slide 39: Autodiff Diagnostics
 **Purpose:** See the same diagnostics with autodiff.
-- Only the definition of `loss_fn` changes.
+- Only the definition of `L_fn` changes.
 - For the double well, we reduce the step size for stability.
 
 ![PyTorch diagnostics for the quadratic](figures/gd_torch_quadratic_diagnostics.png)
@@ -722,13 +722,13 @@ if __name__ == "__main__":
 
 $$
 \begin{aligned}
-x_{k+1} &= (1-\eta)x_k \\
+w_{k+1} &= (1-\eta)w_k \\
 0 &< \eta < 2
 \end{aligned}
 $$
 
-- If $\eta=1$, then $x_1=0$ for any $x_0$.
-- If $\eta=3$, then $x_{k+1}=-2x_k$ and $\|x_k\|$ doubles each step.
+- If $\eta=1$, then $w_1=0$ for any $w_0$.
+- If $\eta=3$, then $w_{k+1}=-2w_k$ and $\|w_k\|$ doubles each step.
 
 ---
 
@@ -749,7 +749,7 @@ $$
 **Formula:**
 
 $$
-f(x_k) \le 10^{-5}
+L(w_k) \le 10^{-5}
 $$
 
 - Time-to-result: iterations to hit the target (with a max-iteration cap).
@@ -771,12 +771,12 @@ $$
 **Formula:**
 
 $$
-f(x)=\tfrac{1}{2}(x^2-1)^2
+L(w)=\tfrac{1}{2}(w^2-1)^2
 $$
 
-- Two global minimizers ($x=-1$ and $x=1$).
+- Two global minimizers ($w=-1$ and $w=1$).
 - Curvature depends on where you are.
-- We use $x_0=2$ with a 2000-iteration cap (log $y$).
+- We use $w_0=2$ with a 2000-iteration cap (log $y$).
 - Runs that miss the target hit the cap.
 
 ![Step size sweep on the double well](figures/stepsize_sweep_doublewell.png)
@@ -791,4 +791,4 @@ $$
 - Judge algorithms by diagnostics and time-to-result.
 - Gradient descent comes from the local (Taylor) model.
 - Autodiff avoids hand-derivative mistakes on long compositions.
-- PyTorch loop rules: mark variables, clear `x.grad`, update under `torch.no_grad()`.
+- PyTorch loop rules: mark variables, clear `w.grad`, update under `torch.no_grad()`.
