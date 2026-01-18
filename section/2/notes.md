@@ -72,6 +72,10 @@ The standard workflow is a train-validation-test split.
 
 One might think the “test set” is a sacred object. However, if you repeatedly look at test performance and adapt, you have effectively turned the test set into a validation set.
 
+Sometimes test data is held by a neutral third party (e.g., Kaggle) that only reports a score. Even then you can still adapt to that feedback; see my note on the [ladder mechanism for ML competitions](https://damek.github.io/random/the-ladder-mechanism-for-ml-competitions/).
+
+In practice I often merge validation and test into a single holdout set and keep it small so more data goes into training, then use that holdout to choose hyperparameters like network depth.
+
 ## 2. Empirical risk: the training objective
 
 Fix a training set $(x_i,y_i)$.
@@ -91,6 +95,8 @@ $$
 \min_{w \in \mathbb{R}} L(w).
 $$
 
+This is the same empirical-risk objective as in the previous lecture; the new issue is scale.
+
 If we run full-batch gradient descent, we need the derivative of the average loss,
 
 $$
@@ -99,7 +105,7 @@ $$
 
 The cost of computing $L'(w)$ scales linearly with $n$, because you must touch all $n$ samples.
 
-For modern ML, $n$ can be enormous. Even a single full gradient can be too expensive. This is where stochastic gradient methods enter.
+For modern language models, $n$ can be on the order of trillions. Even a single full gradient can be too expensive. This is where stochastic gradient methods enter.
 
 ## 3. SGD: replace a full gradient with a sample gradient
 
@@ -159,7 +165,7 @@ $$
 Per-sample squared loss:
 
 $$
-\ell_i(w) = \tfrac{1}{2},(y_i - wx_i)^2.
+\ell_i(w) = \tfrac{1}{2}(y_i - wx_i)^2.
 $$
 
 Derivative:
@@ -171,7 +177,7 @@ $$
 So SGD becomes
 
 $$
-w_{k+1} = w_k - \eta,(w_kx_{i_k} - y_{i_k})x_{i_k}.
+w_{k+1} = w_k - \eta (w_k x_{i_k} - y_{i_k}) x_{i_k}.
 $$
 
 ### A closed-form minimizer exists (but we will use it only for diagnostics)
@@ -274,12 +280,14 @@ $$
 \ell_i'(w) = (wx_i - y_i)x_i = (w-1)x_i^2.
 $$
 
-At $w=1$, each $\ell_i'(1)=0$. There is no gradient noise at the optimum. SGD behaves like a stable deterministic method and can converge all the way.
+At $w=1$, each $\ell_i'(1)=0$. There is no gradient noise at the optimum. SGD behaves like a stable deterministic method and can converge all the way. In this toy problem, even a constant step size like $\eta=0.5$ converges quickly when labels are noiseless.
 
 With label noise ($\sigma>0$), the residuals never vanish, so the sample gradients do not vanish at the optimum. The gradient estimator has nonzero variance even at $w^\star$, and constant-step SGD keeps bouncing.
 
 ![Noiseless vs noisy: constant step size](figures/sgd_1d_noiseless_vs_noisy.png)
 *Figure 2.5: With noiseless labels, constant-step SGD can converge to high precision because every sample gradient vanishes at the optimum. With noisy labels, constant-step SGD stabilizes at a nonzero noise floor.*
+
+Which regime is more common depends on model expressivity. In classical machine learning, models are often too simple to fit noisy data exactly, so constant-step SGD still sees gradient noise. In deep learning, models can often interpolate even noisy labels, so constant step sizes are frequently acceptable in practice. It is still useful to keep both regimes in mind.
 
 ## 8. Why SGD works at all: unbiasedness and variance
 
@@ -303,7 +311,7 @@ So the expected update matches a gradient descent update:
 
 $$
 \mathbb{E}[w_{k+1}\mid w_k]
-= w_k - \eta,L'(w_k).
+= w_k - \eta L'(w_k).
 $$
 
 Unbiasedness is not the full story. The **variance** of the gradient estimator controls how noisy the iterates are and how quickly you can settle down.
@@ -326,7 +334,7 @@ A basic probability fact:
 If $X_1,\ldots,X_B$ are iid with variance $\mathrm{Var}(X_1)$, then
 
 $$
-\mathrm{Var}\Big(\frac{1}{B}\sum_{j=1}^B X_j\Big) = \frac{1}{B},\mathrm{Var}(X_1).
+\mathrm{Var}\Big(\frac{1}{B}\sum_{j=1}^B X_j\Big) = \frac{1}{B}\,\mathrm{Var}(X_1).
 $$
 
 A minibatch gradient is exactly this kind of average.
@@ -335,7 +343,7 @@ A minibatch gradient is exactly this kind of average.
 
 At iteration $k$:
 
-1. Sample a minibatch $B_k \subset {1,\ldots,n}$ of size $B$.
+1. Sample a minibatch $B_k \subset \\{1,\ldots,n\\}$ of size $B$.
 2. Form the minibatch gradient estimate
 
 $$
@@ -345,7 +353,7 @@ $$
 3. Update
 
 $$
-w_{k+1} = w_k - \eta,G_k.
+w_{k+1} = w_k - \eta G_k.
 $$
 
 The rule of thumb from this lecture is:
@@ -418,6 +426,8 @@ Why monitor validation loss?
 * choose among hyperparameters (step size, schedule, batch size),
 * stop training when the validation loss plateaus.
 
+Validation loss is usually optimistic, because you tune hyperparameters against it, so it tends to understate true out-of-sample error.
+
 ## 11. Conclusion
 
 What you should take from this lecture:
@@ -430,6 +440,7 @@ What you should take from this lecture:
 * Minibatches reduce variance by averaging gradients. They often improve iteration efficiency.
 * Fair comparisons should account for total gradient computations and for parallelism.
 * Diagnostics should include validation loss, not just training loss.
+* These insights carry over to higher-dimensional models.
 
 ## Appendix: code to generate all figures
 
