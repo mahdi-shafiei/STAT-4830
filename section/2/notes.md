@@ -450,9 +450,6 @@ What you should take from this lecture:
 
 This script generates Figures 2.1–2.8.
 
-* Put the code in `script/`.
-* The script saves plots into the `figures/` subdirectory (it creates it if needed).
-
 ```python
 # Save as: script/sgd_1d_all_figures.py
 
